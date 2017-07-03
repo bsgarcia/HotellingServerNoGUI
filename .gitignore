@@ -9,3 +9,8 @@ hotelling_server/management/__pycache__/
 hotelling_server/parameters/map_android_id_server_id copy.json
 hotelling_server/server/__pycache__/
 utils/__pycache__/
+hotelling_server/__pycache__/
+hotelling_server/control/__pycache__/
+hotelling_server/graphics/__pycache__/
+hotelling_server/graphics/widgets/__pycache__/
+
