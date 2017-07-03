@@ -1,37 +1,37 @@
+from multiprocessing import Queue, Event
 from threading import Thread
-from multiprocessing import Event, Queue
 
 from utils.utils import log
-from management.game_manager import GameManager
-from server.server import ServerManager
+from hotelling_server.control import backup, game, server, parameters, statistician
 
 
-class SeniorManager(Thread):
+class Controller(Thread):
 
-    name = "SeniorManager"
+    name = "Controller"
 
-    def __init__(self, manager_queue, graphic_queue, communicate):
+    def __init__(self, model):
 
         super().__init__()
-        
+
+        self.mod = model
+
+        self.parameters = parameters.Parameters(controller=self)
+        self.backup = backup.Backup(controller=self)
+        self.statistician = statistician.Statistician(controller=self)
+        self.server = server.Server(controller=self)
+        self.game = game.Game(controller=self)
+
         # For receiving inputs
-        self.manager_queue = manager_queue
-        
+        self.queue = Queue()
+
         # For giving instructions to graphic process
-        self.graphic_queue = graphic_queue
-        self.communicate = communicate
-        
+        self.graphic_queue = self.mod.ui.queue
+        self.communicate = self.mod.ui.communicate
+
         # For giving go signal to server
-        self.server_queue = Queue()
+        self.server_queue = self.server.queue
         self.running_game = Event()
-        
-        self.server_manager = ServerManager(
-            server_queue=self.server_queue,
-            manager_queue=self.manager_queue,
-            running_game=self.running_game
-        )
-        self.game_manager = GameManager()
-        
+
         self.shutdown = Event()
         self.fatal_error = Event()
         self.continue_game = Event()
@@ -39,38 +39,35 @@ class SeniorManager(Thread):
     def run(self):
 
         log("Waiting for a message.", name=self.name)
-        message = self.manager_queue.get()
+        message = self.queue.get()
         log("Got message: {}".format(message), name=self.name)
 
         self.ask_interface("show_load_game_new_game")
-        
+
         # Launch server manager
-        self.server_manager.start()
+        self.server.start()
+        self.server_queue.put(("Go", ))
 
         while not self.shutdown.is_set():
             log("Waiting for a message.", name=self.name)
-            message = self.manager_queue.get()
+            message = self.queue.get()
             self.handle_message(message)
 
         self.close_program()
 
-    def launch_game(self, parameters):
+    def launch_game(self, param):
 
         self.ask_interface("show_setting_up_frame")
 
-        # Stop server if he was previously running
-        self.server_manager.shutdown()
-
         # Go signal for launching the (properly speaking) server
-        self.server_queue.put(("Go", parameters["local"]))
 
         self.fatal_error.clear()
         self.continue_game.set()
         self.running_game.set()
 
-        graphic_data = self.game_manager.initialize(parameters)
+        self.game.setup(param)
 
-        self.ask_interface("show_experimental_frame", graphic_data)
+        self.ask_interface("show_game_frame", )
 
         log("Game launched.", self.name)
 
@@ -78,12 +75,10 @@ class SeniorManager(Thread):
 
         log("Received stop task", self.name)
         self.continue_game.clear()
-        self.game_manager.last_turn()
         # Wait then for a signal of the request manager for allowing interface to show a button to starting menu
 
     def stop_game_second_phase(self):
 
-        self.game_manager.end_of_game()
         self.running_game.clear()
         self.ask_interface("show_load_game_new_game")
 
@@ -92,13 +87,13 @@ class SeniorManager(Thread):
         log("Close program.", self.name)
         self.shutdown.set()
         self.running_game.set()
-        
+
         # For aborting launching of the (properly speaking) server if it was not launched
-        self.server_queue.put(("Abort", ))
-        
+        self.server_queue.put(("Abort",))
+
         # Stop server if it was running
-        self.server_manager.end()
-        self.server_manager.shutdown()
+        self.server.end()
+        self.server.shutdown()
         log("Program closed.", self.name)
 
     def fatal_error_of_communication(self):
@@ -109,14 +104,13 @@ class SeniorManager(Thread):
             self.continue_game.clear()
 
             self.ask_interface("fatal_error_of_communication")
-        
+
     def ask_interface(self, instruction, arg=None):
 
         self.graphic_queue.put((instruction, arg))
         self.communicate.signal.emit()
 
-
-# ------------------------------- MESSAGE HANDLING ----------------------------------------------- #
+    # ------------------------------- MESSAGE HANDLING ----------------------------------------------- #
 
     def handle_message(self, message):
 
@@ -131,8 +125,8 @@ class SeniorManager(Thread):
         elif message[0] == "parameters_frame":
             self.handle_parameters_frame(message[1:])
 
-        elif message[0] == "experimental_frame":
-            self.handle_experimental_frame(message[1:])
+        elif message[0] == "game_frame":
+            self.handle_game_frame(message[1:])
 
         elif message[0] == "load_game_new_game":
             self.handle_load_game_new_game(message[1:])
@@ -149,7 +143,7 @@ class SeniorManager(Thread):
             self.close_program()
 
         elif information == "retry":
-            self.server_queue.put(("Go", ))
+            self.server_queue.put(("Go",))
 
         else:
             raise Exception(
@@ -172,7 +166,7 @@ class SeniorManager(Thread):
         elif information == "request":
 
             request = message[1]
-            response, message, statistics = self.game_manager.handle_request(request)
+            response, message, statistics = self.game.handle_request(request)
             self.server_queue.put(("reply", response))
             if message is not None:
                 information = message[0]
@@ -194,7 +188,7 @@ class SeniorManager(Thread):
 
                 # If was waiting for ending game
                 if not self.continue_game.is_set():
-                    self.ask_interface("update_stop_button_experimental_frame")
+                    self.ask_interface("update_stop_button_game_frame")
 
         else:
             raise Exception(
@@ -213,11 +207,10 @@ class SeniorManager(Thread):
             self.ask_interface("file_dialog")
 
         elif information == "file":
-            file = message[1]
 
-            parameters = self.game_manager.load_session(file)
-            if parameters:
-                self.launch_game(parameters)
+            param = self.parameters.param["game"]
+            if param:
+                self.launch_game(param)
 
             else:
                 self.ask_interface("error_load_session")
@@ -227,7 +220,7 @@ class SeniorManager(Thread):
                             "but did'nt expected anything like that."
                             .format(self.name, message))
 
-    def handle_experimental_frame(self, message):
+    def handle_game_frame(self, message):
 
         information = message[0]
 
@@ -238,7 +231,7 @@ class SeniorManager(Thread):
                 self.stop_game_second_phase()
 
         else:
-            raise Exception("{}: Received message '{}' emanating from 'experimental_frame'"
+            raise Exception("{}: Received message '{}' emanating from 'game_frame'"
                             "but did'nt expected anything like that."
                             .format(self.name, message))
 
@@ -246,6 +239,7 @@ class SeniorManager(Thread):
 
         information = message[0]
         if information == "parameters":
-            parameters = message[1]
+            param = message[1]
             log("Received parameters.", name=self.name)
-            self.launch_game(parameters)
+            self.launch_game(param)
+

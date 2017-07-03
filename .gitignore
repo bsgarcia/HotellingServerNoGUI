@@ -3,9 +3,9 @@
 .idea/
 draft.py
 fake_client/__pycache__/
-graph/__pycache__/
-interface/__pycache__/
-management/__pycache__/
-parameters/map_android_id_server_id copy.json
-server/__pycache__/
+hotelling_server/graph/__pycache__/
+hotelling_server/interface/__pycache__/
+hotelling_server/management/__pycache__/
+hotelling_server/parameters/map_android_id_server_id copy.json
+hotelling_server/server/__pycache__/
 utils/__pycache__/

@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QLabel, QProgressBar, QSpacerItem
+from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QProgressBar, QSpacerItem
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
@@ -45,29 +45,3 @@ class ProgressionBar(QWidget):
 
         self.progression_bar.setMaximum(100)
         self.progression_bar.setValue(100)
-
-
-class SettingUpFrame(QWidget):
-
-    def __init__(self, parent):
-
-        # noinspection PyArgumentList
-        super().__init__(parent=parent)
-        self.layout = QVBoxLayout()
-        self.progression_bar = ProgressionBar(parent=self)
-        self.initialize()
-
-    def initialize(self):
-
-        self.layout.addWidget(self.progression_bar, alignment=Qt.AlignCenter)
-        self.setLayout(self.layout)
-
-    def show(self):
-
-        self.progression_bar.set_up()
-        super().show()
-
-    def hide(self):
-
-        self.progression_bar.shutdown()
-        super().hide()
