@@ -19,7 +19,7 @@ class Game:
         self.ce = 5
 
         self.roles = (["firm" for n in range(2)]
-                      + ["customer" for n in range(self.n_agents - 2)])[0]
+                      + ["customer" for n in range(self.n_agents - 2)])
 
         self.firms = []
 
@@ -112,9 +112,9 @@ class Game:
     def firm_choice_recording(self, *args):
 
         self.check_timestep(args[1])
-
-        self.data.current_state["firm_positions"][args[0]] = args[3]
-        self.data.current_state["firm_prices"][args[0]] = args[4]
+        
+        self.data.write("firm_positions", args[3]) 
+        self.data.write("firm_prices", arg[4]) 
 
         return self.reply("Ok!"), None
 
@@ -122,8 +122,8 @@ class Game:
 
         self.check_timestep(args[1])
 
-        self.data.current_state["customer_extra_view_choices"][args[0]] = args[3]
-        self.data.current_state["customer_firm_choices"][args[0]] = args[4]
+        self.data.write("customer_extra_view_choice", args[3])
+        self.data.write("customer_firm_choices", args[4])
 
         return self.reply("Ok!"), None
 

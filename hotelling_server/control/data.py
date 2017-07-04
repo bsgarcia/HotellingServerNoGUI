@@ -3,9 +3,11 @@ class Data:
     def __init__(self, controller):
 
         self.controller = controller
+
         self.entries = [
             "firm_positions", "firm_prices", "firm_profits",
             "customer_firm_choices", "customer_extra_view_choices", "customer_utility"]
+
         self.history = {s: [] for s in self.entries}
         self.current_state = {s: [] for s in self.entries}
 
@@ -22,4 +24,8 @@ class Data:
 
         for s in self.entries:
             self.history[s].append(self.current_state[s])
+
+    def write(self, key, value):
+
+        self.current_state[key] = value
 
