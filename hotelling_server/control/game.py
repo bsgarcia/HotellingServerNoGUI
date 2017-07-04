@@ -8,7 +8,7 @@ class Game:
     def __init__(self, controller):
 
         self.controller = controller
-        self.command = {}
+        self.command = {"get_init": self.get_init}
     
     def setup(self, parameters):
         
@@ -20,10 +20,18 @@ class Game:
 
         command = [i for i in request.split("/") if i != ""]
         if command[0] in self.command.keys():
-            to_write, message_to_controller, statistics = self.command[command[0]](*command[1:])
+            to_client, to_controller = self.command[command[0]](*command[1:])
 
         else:
-            to_write, message_to_controller, statistics = "Command contained in request not understood.", None, None
+            to_client, to_controller = "Command contained in request not understood.", None, None
 
-        log("Reply '{}' to request '{}'.".format(to_write, request), name=self.name)
-        return to_write, message_to_controller, statistics
+        log("Reply '{}' to request '{}'.".format(to_client, request), name=self.name)
+        return to_client, to_controller
+
+    def get_init(self, *args):
+
+        android_id = args[0]
+
+        game_id = self.controller.id_manager.get_game_id_from_android_id(android_id)
+        to_client = "{}".format()
+        return game_id, None

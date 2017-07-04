@@ -10,7 +10,6 @@ class Backup:
 
         self.controller = controller
         self.file = "{}/xp_{}.p".format(self.folder, datetime.now().strftime("%y-%m-%d_%H-%M-%S-%f"))
-        self.data = None
 
     @property
     def folder(self):
@@ -22,10 +21,10 @@ class Backup:
             mkdir(folder)
         return folder
 
-    def write(self):
+    def write(self, data):
 
         with open(self.file, "wb") as file:
-            pickle.dump(obj=self.data, file=file)
+            pickle.dump(obj=data, file=file)
 
     def load(self, file):
 
@@ -36,9 +35,8 @@ class Backup:
             self.file = file
             with open(self.file, "rb") as file:
                 try:
-                    self.data = pickle.load(file=file)
+                    data = pickle.load(file=file)
                 except EOFError:
                     return "error"
 
-            return self.data
-
+            return data

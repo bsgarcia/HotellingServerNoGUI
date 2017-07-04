@@ -1,6 +1,7 @@
 import json
 import socket
 from threading import Thread, Event
+import numpy as np
 
 from utils.utils import log
 
@@ -27,7 +28,11 @@ class FakeClient(Thread):
         # The following variables will be set following server responses
         self.continue_game = 1
 
-        self.able_to_handle = ["init"]
+        self.command = {}
+
+    @property
+    def able_to_handle(self):
+        return list(self.command.keys())
 
     def get_init(self):
 
@@ -118,3 +123,35 @@ class FakeClient(Thread):
             self.time_step()
 
         log("End of game.", self.name)
+
+
+class HotellingPlayer(FakeClient):
+
+    def __init__(self):
+        super().__init__()
+
+        self.game_id = 0
+        self.role = ""
+        self.n_positions = 0
+        self.extra_view_possibilities = None
+        self.command = {
+            "init": self.reply_init
+        }
+
+    def reply_init(self, *args):
+
+        self.game_id = args[0]
+        self.role = args[1]
+        self.n_positions = 0
+        self.extra_view_possibilities = np.arange(0, self.n_positions, 2)
+
+    def time_step(self):
+
+        if self.role == "customer":
+            self.customer_extra_view_choice()
+
+    def customer_extra_view_choice(self):
+
+        np.random.choice(self.extra_view_possibilities)
+
+
