@@ -1,6 +1,7 @@
 import json
 import socket
 from threading import Thread, Event
+from multiprocessing import Queue
 import numpy as np
 
 from utils.utils import log
@@ -9,9 +10,9 @@ from utils.utils import log
 class FakeClient(Thread):
 
     with open("parameters/network.json") as file:
-        param = json.load(file)
+        network_parameters = json.load(file)
 
-    ip_address, port = "localhost", param["port"]
+    ip_address, port = "localhost", network_parameters["port"]
     delay_socket_retry = 0.1
     socket_timeout = 0.5
 
@@ -28,24 +29,12 @@ class FakeClient(Thread):
         # The following variables will be set following server responses
         self.continue_game = 1
 
-        self.command = {}
-
-    @property
-    def able_to_handle(self):
-        return list(self.command.keys())
-
-    def get_init(self):
-
-        fake_android_id = self.name
-        self.ask_server("get_init/{}".format(fake_android_id))
-
-    def time_step(self):
-
-        pass
+        self.queue = Queue()
 
     def handle(self, what, *params):
 
         log("Handle {} with params '{}'.".format(what, params), self.name)
+        eval("self.{}(params)".format(what))
 
     def ask_server(self, message):
 
@@ -99,7 +88,7 @@ class FakeClient(Thread):
 
     def treat_server_reply(self, parts):
 
-        if len(parts) > 1 and parts[0] == "reply" and parts[1] in self.able_to_handle:
+        if len(parts) > 1 and parts[0] == "reply" and parts[1]:
             self.handle(what=parts[1], *parts[2:])
             return 1
 
@@ -115,17 +104,11 @@ class FakeClient(Thread):
         Event().wait(self.delay_socket_retry)
         self.ask_server(self.server_demand)
 
-    def run(self):
-
-        self.get_init()
-
-        while self.continue_game:
-            self.time_step()
-
-        log("End of game.", self.name)
-
 
 class HotellingPlayer(FakeClient):
+
+    with open("parameters/game.json") as f:
+        game_parameters = json.load(f)
 
     def __init__(self):
         super().__init__()
@@ -133,25 +116,143 @@ class HotellingPlayer(FakeClient):
         self.game_id = 0
         self.role = ""
         self.n_positions = 0
-        self.extra_view_possibilities = None
-        self.command = {
-            "init": self.reply_init
-        }
+        self.position = 0
+        self.t = 0
+
+        self.customer_attributes = {}
+        self.firm_attributes = {}
+
+    def run(self):
+
+        self.ask_init()
+        self.queue.get()
+
+        while self.continue_game:
+            self.time_step()
+
+        log("End of game.", self.name)
+
+    def ask_init(self):
+
+        fake_android_id = self.name
+        self.ask_server("ask_init/{}".format(fake_android_id))
 
     def reply_init(self, *args):
 
-        self.game_id = args[0]
-        self.role = args[1]
-        self.n_positions = 0
-        self.extra_view_possibilities = np.arange(0, self.n_positions, 2)
+        self.game_id, self.t, self.role, self.position = args[:4]
+
+        if self.role == "firm":
+            self.firm_attributes["price"] = args[4]
+            self.firm_attributes["n_prices"] = args[5]
+
+        self.n_positions = self.game_parameters["n_positions"]
+        self.customer_attributes["extra_view_possibilities"] = np.arange(0, self.n_positions, 2)
+        self.queue.put("Go")
+
+    # ----------- Time step ---------------------- #
 
     def time_step(self):
 
         if self.role == "customer":
-            self.customer_extra_view_choice()
+            self.customer_time_step()
+
+        elif self.role == "firm":
+            self.firm_time_step()
+
+        self.t += 1
+
+    def customer_time_step(self):
+
+        self.ask_customer_firm_choices()
+        positions, prices = self.queue.get()
+        extra_view_choice = self.customer_extra_view_choice()
+        firm_choice = self.customer_firm_choice(positions, prices)
+        self.ask_customer_choice_recording(extra_view_choice, firm_choice)
+        self.queue.get()
+
+    def firm_time_step(self):
+
+        self.ask_firm_opponent_choice()
+        opp_position, opp_price = self.queue.get()
+        pos, price = self.firm_choice(opp_position, opp_price)
+        self.ask_firm_choice_recording(pos, price)
+        self.queue.get()
+        self.ask_firm_n_clients()
+        n_clients = self.queue.get()
+
+    # ----------- Customer choice functions ---------------------- #
 
     def customer_extra_view_choice(self):
 
-        np.random.choice(self.extra_view_possibilities)
+        self.customer_attributes["extra_view_choice"] = \
+            np.random.choice(self.customer_attributes["extra_view_possibilities"])
+        return self.customer_attributes["extra_view_choice"]
 
+    def customer_firm_choice(self, positions, prices):
 
+        field_of_view = [
+            self.position - self.customer_attributes["extra_view_choice"],
+            self.position + self.customer_attributes["extra_view_choice"]
+        ]
+
+        cond0 = positions >= field_of_view[0]
+        cond1 = positions <= field_of_view[1]
+
+        available_prices = prices[cond0 * cond1]
+
+        firm_idx = np.arange(len(positions))
+        available_firm = firm_idx[cond0*cond1]
+
+        if available_prices:
+            self.customer_attributes["min_price"] = min(available_prices)
+            firm_choice = np.random.choice(
+                available_firm[np.where(available_prices == self.customer_attributes["min_price"])[0]]
+            )
+
+        else:
+            self.customer_attributes["min_price"] = 0
+            firm_choice = None
+
+        return firm_choice
+
+    # ------------------------- Firm choice functions --------------------------------- #
+
+    def firm_choice(self, opp_position, opp_price):
+
+        return (np.random.randint(1, self.firm_attributes["n_prices"]),
+                np.random.randint(1, self.n_positions))
+
+    # ------------------------- Customer communication -------------------------------- #
+
+    def ask_customer_firm_choices(self):
+        self.ask_server("customer_firm_choices")
+
+    def reply_customer_firm_choices(self, *args):
+        positions, prices = args
+        self.queue.put((positions, prices))
+
+    def ask_customer_choice_recording(self, extra_view_choice, firm_choice):
+        self.ask_server("customer_choice_recording/{}/{}".format(extra_view_choice, firm_choice))
+
+    def reply_customer_choice_recording(self):
+        self.queue.put("Go")
+
+    # ------------------------- Firm communication ------------------------------------ #
+
+    def ask_firm_opponent_choice(self):
+        self.ask_server("firm_opponent_choice")
+
+    def reply_firm_opponent_choice(self, position, price):
+        self.queue.put((position, price))
+
+    def ask_firm_choice_recording(self, position, price):
+        self.ask_server("firm_choice_recording/{}/{}".format(position, price))
+
+    def reply_firm_choice_recording(self):
+        self.queue.put("Go")
+
+    def ask_firm_n_clients(self):
+        self.ask_server("firm_n_clients")
+
+    def reply_firm_n_clients(self, n):
+        self.queue.put(n)
