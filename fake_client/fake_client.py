@@ -34,6 +34,9 @@ class FakeClient(Thread):
     def handle(self, what, *params):
 
         log("Handle {} with params '{}'.".format(what, params), self.name)
+
+        params = [int(x) if x.isdigit() else x for x in params]
+
         eval("self.{}(params)".format(what))
 
     def ask_server(self, message):
@@ -163,21 +166,21 @@ class HotellingPlayer(FakeClient):
 
     def customer_time_step(self):
 
-        self.ask_customer_firm_choices()
+        self.ask_customer_firm_choices(self.t)
         positions, prices = self.queue.get()
         extra_view_choice = self.customer_extra_view_choice()
         firm_choice = self.customer_firm_choice(positions, prices)
-        self.ask_customer_choice_recording(extra_view_choice, firm_choice)
+        self.ask_customer_choice_recording(self.game_id, self.t, extra_view_choice, firm_choice)
         self.queue.get()
 
     def firm_time_step(self):
 
-        self.ask_firm_opponent_choice()
+        self.ask_firm_opponent_choice(self.game_id, self.t)
         opp_position, opp_price = self.queue.get()
-        pos, price = self.firm_choice(opp_position, opp_price)
-        self.ask_firm_choice_recording(pos, price)
+        pos, price = self.firm_choice(self.game_id, self.t, opp_position, opp_price)
+        self.ask_firm_choice_recording(self.game_id, self.t, pos, price)
         self.queue.get()
-        self.ask_firm_n_clients()
+        self.ask_firm_n_clients(self.game_id, self.t)
         n_clients = self.queue.get()
 
     # ----------- Customer choice functions ---------------------- #
@@ -224,35 +227,35 @@ class HotellingPlayer(FakeClient):
 
     # ------------------------- Customer communication -------------------------------- #
 
-    def ask_customer_firm_choices(self):
-        self.ask_server("customer_firm_choices")
+    def ask_customer_firm_choices(self, t):
+        self.ask_server("customer_firm_choices/{}".format(t))
 
     def reply_customer_firm_choices(self, *args):
         positions, prices = args
         self.queue.put((positions, prices))
 
-    def ask_customer_choice_recording(self, extra_view_choice, firm_choice):
-        self.ask_server("customer_choice_recording/{}/{}".format(extra_view_choice, firm_choice))
+    def ask_customer_choice_recording(self, game_id, t, extra_view_choice, firm_choice):
+        self.ask_server("customer_choice_recording/{}/{}/{}/{}".format(game_id, t, extra_view_choice, firm_choice))
 
     def reply_customer_choice_recording(self):
         self.queue.put("Go")
 
     # ------------------------- Firm communication ------------------------------------ #
 
-    def ask_firm_opponent_choice(self):
-        self.ask_server("firm_opponent_choice")
+    def ask_firm_opponent_choice(self, game_id, t):
+        self.ask_server("firm_opponent_choice/{}/{}".format(game_id, t))
 
     def reply_firm_opponent_choice(self, position, price):
         self.queue.put((position, price))
 
-    def ask_firm_choice_recording(self, position, price):
-        self.ask_server("firm_choice_recording/{}/{}".format(position, price))
+    def ask_firm_choice_recording(self, game_id, t, position, price):
+        self.ask_server("firm_choice_recording/{}/{}".format(game_id, t, position, price))
 
     def reply_firm_choice_recording(self):
         self.queue.put("Go")
 
-    def ask_firm_n_clients(self):
-        self.ask_server("firm_n_clients")
+    def ask_firm_n_clients(self, game_id, t):
+        self.ask_server("firm_n_clients/{}".format(game_id, t)
 
     def reply_firm_n_clients(self, n):
         self.queue.put(n)
