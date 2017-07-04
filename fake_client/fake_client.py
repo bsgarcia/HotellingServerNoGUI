@@ -143,7 +143,7 @@ class HotellingPlayer(FakeClient):
 
         if self.role == "firm":
             self.firm_attributes["price"] = args[4]
-            self.firm_attributes["n_prices"] = args[5]
+            self.firm_attributes["n_prices"] = self.game_parameters["n_prices"]
 
         self.n_positions = self.game_parameters["n_positions"]
         self.customer_attributes["extra_view_possibilities"] = np.arange(0, self.n_positions, 2)
