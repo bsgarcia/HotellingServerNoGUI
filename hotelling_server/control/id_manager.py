@@ -22,13 +22,13 @@ class IDManager(object):
         with open(self.map_android_id_server_id_file) as file:
             self.map_android_id_server_id.update(json.load(file))
 
-    def get_game_id_from_android_id(self, android_id):
+    def get_game_id_from_android_id(self, android_id, max_n):
 
         log("Client with android id {} ask for information.".format(android_id), self.name)
 
         server_id = self.get_server_id(android_id)
         log("I associate server id '{}' to android id '{}'.".format(server_id, android_id), self.name)
-        game_id = self.get_game_id(server_id)
+        game_id = self.get_game_id(server_id, max_n)
         log("I associate game id '{}' to server id '{}'.".format(game_id, server_id), self.name)
 
         return android_id
@@ -42,9 +42,9 @@ class IDManager(object):
 
         return server_id
 
-    def get_game_id(self, server_id):
+    def get_game_id(self, server_id, max_n):
 
-        game_id, new = self.get_mapping(server_id, self.data["map_server_id_game_id"], max_n=self.n)
+        game_id, new = self.get_mapping(server_id, self.data.map_server_id_game_id, max_n)
 
         if game_id != -1:
             if new:

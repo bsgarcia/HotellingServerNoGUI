@@ -2,7 +2,7 @@ from multiprocessing import Queue, Event
 from threading import Thread
 
 from utils.utils import log
-from hotelling_server.control import backup, game, server, parameters, statistician
+from hotelling_server.control import backup, data, game, server, parameters, statistician
 
 
 class Controller(Thread):
@@ -15,14 +15,15 @@ class Controller(Thread):
 
         self.mod = model
 
+        # For receiving inputs
+        self.queue = Queue()
+
+        self.data = data.Data(controller=self)
         self.parameters = parameters.Parameters(controller=self)
         self.backup = backup.Backup(controller=self)
         self.statistician = statistician.Statistician(controller=self)
         self.server = server.Server(controller=self)
         self.game = game.Game(controller=self)
-
-        # For receiving inputs
-        self.queue = Queue()
 
         # For giving instructions to graphic process
         self.graphic_queue = self.mod.ui.queue
@@ -39,10 +40,10 @@ class Controller(Thread):
     def run(self):
 
         log("Waiting for a message.", name=self.name)
-        message = self.queue.get()
-        log("Got message: {}".format(message), name=self.name)
+        go_signal_from_ui = self.queue.get()
+        log("Got go signal from UI: '{}'.".format(go_signal_from_ui), name=self.name)
 
-        self.ask_interface("show_load_game_new_game")
+        self.ask_interface("show_frame_setting_up")
 
         # Launch server manager
         self.server.start()
@@ -57,7 +58,7 @@ class Controller(Thread):
 
     def launch_game(self, param):
 
-        self.ask_interface("show_setting_up_frame")
+        self.ask_interface("show_frame_setting_up")
 
         # Go signal for launching the (properly speaking) server
 
@@ -67,7 +68,7 @@ class Controller(Thread):
 
         self.game.setup(param)
 
-        self.ask_interface("show_game_frame", )
+        self.ask_interface("show_frame_game", )
 
         log("Game launched.", self.name)
 
@@ -80,7 +81,7 @@ class Controller(Thread):
     def stop_game_second_phase(self):
 
         self.running_game.clear()
-        self.ask_interface("show_load_game_new_game")
+        self.ask_interface("show_frame_load_game_new_game")
 
     def close_program(self):
 
@@ -110,136 +111,52 @@ class Controller(Thread):
         self.graphic_queue.put((instruction, arg))
         self.communicate.signal.emit()
 
-    # ------------------------------- MESSAGE HANDLING ----------------------------------------------- #
+    # ------------------------------- Message handling ----------------------------------------------- #
 
     def handle_message(self, message):
 
-        log("Received message '{}'.".format(message), name=self.name)
-
-        if message[0] == "server":
-            self.handle_server(message[1:])
-
-        elif message[0] == "interface":
-            self.handle_interface(message[1:])
-
-        elif message[0] == "parameters_frame":
-            self.handle_parameters_frame(message[1:])
-
-        elif message[0] == "game_frame":
-            self.handle_game_frame(message[1:])
-
-        elif message[0] == "load_game_new_game":
-            self.handle_load_game_new_game(message[1:])
-
+        command = message[0]
+        args = message[1:]
+        if len(args):
+            eval("self.{}(*args)".format(command))
         else:
-            raise Exception("{}: Received message '{}' but did'nt expected anything like that."
-                            .format(self.name, message))
+            eval("self.{}()".format(command))
 
-    def handle_interface(self, message):
+    # ------------------------------ Server interface ----------------------------------------------- #
 
-        information = message[0]
+    def server_running(self):
+        log("Server running.", self.name)
+        self.ask_interface("show_frame_load_game_new_game")
+        # self.server_queue.put(("reply", response))
 
-        if information == "close":
-            self.close_program()
+    # ------------------------------ UI interface (!!!) -------------------------------------- #
 
-        elif information == "retry":
-            self.server_queue.put(("Go",))
+    def ui_run_game(self, interface_parameters):
+        log("UI ask 'run game'.", self.name)
+        self.launch_game(param=interface_parameters)
 
-        else:
-            raise Exception(
-                "{}: Received message '{}' emanating from 'interface' "
-                "but did'nt expected anything like that.".format(self.name, message)
-            )
+    def ui_load_game(self, file):
+        log("UI ask 'load game'.", self.name)
 
-    def handle_server(self, message):
+    def ui_stop_game(self):
+        log("UI ask 'stop game'.", self.name)
+        self.stop_game_first_phase()
 
-        information = message[0]
+    def ui_close_window(self):
+        log("UI ask 'close window'.", self.name)
+        self.close_program()
 
-        if information == "error":
-            log("Error server", name=self.name)
-            self.ask_interface("server_error")
+    def ui_retry_server(self):
+        log("UI ask 'retry server'.", self.name)
+        self.server_queue.put(("Go",))
 
-        elif information == "running":
+    def ui_save_game_parameters(self, param):
+        log("UI ask 'save game parameters'.", self.name)
+        self.parameters.save("interface", param)
+        log("Save interface parameters.", self.name)
 
-            log("Server running.", name=self.name)
+    # ------------------------------ Game interface (!!!) -------------------------------------- #
 
-        elif information == "request":
-
-            request = message[1]
-            response, message, statistics = self.game.handle_request(request)
-            self.server_queue.put(("reply", response))
-            if message is not None:
-                information = message[0]
-
-                if information == "update_done_playing":
-                    done_playing = message[1]
-                    self.ask_interface("update_done_playing", done_playing)
-
-                elif information == "update_done_playing_labels":
-                    done_playing_labels = message[1]
-                    self.ask_interface("update_done_playing_labels", done_playing_labels)
-
-                elif information == "fatal_error":
-                    self.fatal_error_of_communication()
-
-            if statistics is not None:
-
-                self.ask_interface("update_statistics", statistics)
-
-                # If was waiting for ending game
-                if not self.continue_game.is_set():
-                    self.ask_interface("update_stop_button_game_frame")
-
-        else:
-            raise Exception(
-                "{}: Received message '{}' emanating from 'server' "
-                "but did'nt expected anything like that.".format(self.name, message)
-            )
-
-    def handle_load_game_new_game(self, message):
-
-        information = message[0]
-
-        if information == "new":
-            self.ask_interface("show_parameters_frame")
-
-        elif information == "load":
-            self.ask_interface("file_dialog")
-
-        elif information == "file":
-
-            param = self.parameters.param["game"]
-            if param:
-                self.launch_game(param)
-
-            else:
-                self.ask_interface("error_load_session")
-
-        else:
-            raise Exception("{}: Received message '{}' emanating from 'load_game_new_game' "
-                            "but did'nt expected anything like that."
-                            .format(self.name, message))
-
-    def handle_game_frame(self, message):
-
-        information = message[0]
-
-        if information == "stop":
-            if self.continue_game.is_set():
-                self.stop_game_first_phase()
-            else:
-                self.stop_game_second_phase()
-
-        else:
-            raise Exception("{}: Received message '{}' emanating from 'game_frame'"
-                            "but did'nt expected anything like that."
-                            .format(self.name, message))
-
-    def handle_parameters_frame(self, message):
-
-        information = message[0]
-        if information == "parameters":
-            param = message[1]
-            log("Received parameters.", name=self.name)
-            self.launch_game(param)
-
+    def game_stop_game(self):
+        log("'Game' ask 'stop game'.", self.name)
+        self.stop_game_second_phase()

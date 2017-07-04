@@ -1,4 +1,3 @@
-import json
 from os import path
 
 from PyQt5.QtCore import Qt
@@ -11,19 +10,17 @@ class LoadGameNewGameFrame(QWidget):
 
     name = "LoadGameNewGame"
 
-    def __init__(self, parent, controller_queue):
+    def __init__(self, parent):
 
         # noinspection PyArgumentList
         QWidget.__init__(self, parent=parent)
 
-        self.controller_queue = controller_queue
         self.layout = QVBoxLayout()
-
         self.buttons = dict()
 
-        self.initialize()
+        self.setup()
 
-    def initialize(self):
+    def setup(self):
 
         self.buttons["new"] = QPushButton("New game")
         self.buttons["load"] = QPushButton("Load game")
@@ -46,7 +43,7 @@ class LoadGameNewGameFrame(QWidget):
     def click_new_game(self):
 
         self.set_buttons_activation(False)
-        self.controller_queue.put(("load_game_new_game", "new"))
+        self.parent().show_frame_parameters()
 
     def click_load_game(self):
 
@@ -70,7 +67,7 @@ class LoadGameNewGameFrame(QWidget):
         log("User choose file '{}'.".format(file_choice), self.name)
         file = file_choice[0]
         if file:
-            self.controller_queue.put(("load_game_new_game", "file", file))
+            self.parent().run_game_from_file(file)
 
         else:
             self.set_buttons_activation(True)

@@ -8,54 +8,40 @@ class ParametersFrame(QWidget):
 
     name = "ParametersFrame"
 
-    def __init__(self, parent, controller_queue):
+    def __init__(self, parent):
 
         # noinspection PyArgumentList
         QWidget.__init__(self, parent=parent)
 
         self.layout = QVBoxLayout()
-
-        self.controller_queue = controller_queue
-
         self.run_button = QPushButton("Run!")
-
         self.parameters = dict()
-
-        # self.parameters["x1"] = \
-        #     IntParameter(
-        #         text="x1", initial_value=param["x1"],
-        #         value_range=[0, 10**3])
-        # 
-        # self.parameters["x2"] = \
-        #     IntParameter(
-        #         text="x2", initial_value=param["x2"],
-        #         value_range=[0, 10**3])
-        # 
-        # self.parameters["x3"] = \
-        #     IntParameter(
-        #         text="x3", initial_value=param["x3"],
-        #         value_range=[0, 10**3])
 
         self.error = None
 
-        self.initialize()
+        self.setup()
 
-    def initialize(self):
+    def setup(self):
 
-        param = self.parent().mod.controller.parameters.param["game"]
+        param = self.parent().get_parameters()
 
         self.parameters["save"] = \
             CheckParameter(text="Save results", checked=param["save"])
 
-        # self.parameters["random"] = \
-        #     CheckParameter(text="Random results", checked=param["random"])
+        self.parameters["exploration_cost"] = \
+            IntParameter(text="Exploration cost",
+                         initial_value=param["exploration_cost"], value_range=[0, 100])
+
+        self.parameters["utility_consumption"] = \
+            IntParameter(text="Utility consumption",
+                         initial_value=param["utility_consumption"], value_range=[0, 100])
 
         # self.parameters["local"] = \
         #     CheckParameter(text="Local server", checked=param["local"])
 
         form_layout = QFormLayout()
 
-        for p in self.parameters.keys():
+        for p in sorted(self.parameters.keys()):
 
             self.parameters[p].add_to_layout(form_layout)
 
@@ -81,7 +67,7 @@ class ParametersFrame(QWidget):
             log("Push 'run' button.", name=self.name)
 
             # Communicate parameters through the queue
-            self.controller_queue.put(("parameters_frame", "parameters", parameters))
+            self.parent().run_game(parameters)
 
     def get_parameters(self):
 

@@ -44,17 +44,13 @@ class UI(QWidget):
         self.controller_queue = self.mod.controller.queue
 
         self.frames["parameters"] = \
-            parametrization_view.ParametersFrame(parent=self, controller_queue=self.controller_queue)
+            parametrization_view.ParametersFrame(parent=self)
         self.frames["game"] = \
-            game_view.GameFrame(parent=self, controller_queue=self.controller_queue)
+            game_view.GameFrame(parent=self)
         self.frames["setting_up"] = \
             setting_up_view.SettingUpFrame(parent=self)
         self.frames["load_game_new_game"] = \
-            loading_view.LoadGameNewGameFrame(parent=self, controller_queue=self.controller_queue)
-
-        self.initialize()
-
-    def initialize(self):
+            loading_view.LoadGameNewGameFrame(parent=self)
 
         self.setWindowTitle(self.app_name)
 
@@ -74,7 +70,7 @@ class UI(QWidget):
 
         self.setLayout(self.layout)
 
-        self.controller_queue.put(("interface", "running"))
+        self.send_go_signal()
 
     def closeEvent(self, event):
 
@@ -85,7 +81,7 @@ class UI(QWidget):
                 self.check_for_saving_parameters()
 
             log("Close window", name=self.name)
-            self.controller_queue.put(("interface", "close"))
+            self.close_window()
             event.accept()
 
         else:
@@ -96,19 +92,17 @@ class UI(QWidget):
 
         self.already_asked_for_saving_parameters = 1
 
-        if sorted(self.mod.controller.parameters.param["game"].items()) != \
+        if sorted(self.mod.controller.parameters.param["interface"].items()) != \
                 sorted(self.frames["parameters"].get_parameters().items()):
 
             if self.show_question("Do you want to save the change in parameters?"):
 
-                self.mod.controller.parameters.save("game", self.frames["parameters"].get_parameters())
-
-                log('Parameters saved.', name=self.name)
+                self.save_parameters(self.frames["parameters"].get_parameters())
 
             else:
                 log('Saving of parameters aborted.', name=self.name)
 
-    def show_load_game_new_game_frame(self):
+    def show_frame_load_game_new_game(self, *args):
 
         for frame in self.frames.values():
             frame.hide()
@@ -116,7 +110,7 @@ class UI(QWidget):
         self.frames["load_game_new_game"].prepare()
         self.frames["load_game_new_game"].show()
 
-    def show_experimental_frame(self):
+    def show_frame_game(self, *args):
 
         self.frames["game"].prepare()
 
@@ -125,14 +119,14 @@ class UI(QWidget):
 
         self.frames["game"].show()
 
-    def show_setting_up_frame(self):
+    def show_frame_setting_up(self, *args):
 
         for frame in self.frames.values():
             frame.hide()
 
         self.frames["setting_up"].show()
 
-    def show_parameters_frame(self):
+    def show_frame_parameters(self, *args):
 
         for frame in self.frames.values():
             frame.hide()
@@ -179,25 +173,25 @@ class UI(QWidget):
 
         return button_reply == QMessageBox.Ok
 
-    def manage_error_load_session(self):
+    def error_loading_session(self):
 
         self.show_warning(msg="Error in loading the selected file. Please select another one!")
         self.frames["setting_up"].show()
         self.frames["load_game_new_game"].open_file_dialog()
 
-    def manage_server_error(self):
+    def server_error(self):
 
         retry = self.show_critical_and_retry(msg="Server error.")
 
         if retry:
             self.show_setting_up_frame()
-            self.controller_queue.put(("interface", "retry"))
+            self.retry_server()
 
         else:
             if not self.close():
                 self.manage_server_error()
 
-    def manage_fatal_error_of_communication(self):
+    def fatal_error_of_communication(self):
 
         ok = self.show_critical_and_ok(msg="Fatal error of communication. You need to relaunch the game AFTER "
                                            "having relaunched the apps on Android's clients.")
@@ -217,48 +211,10 @@ class UI(QWidget):
             msg = self.queue.get()
             log("I received message '{}'.".format(msg), self.name)
 
-            instruction = msg[0]
+            command = msg[0]
+            args = msg[1:]
 
-            if instruction == "fatal_error_of_communication":
-                self.manage_fatal_error_of_communication()
-
-            elif instruction == "error_load_session":
-                self.manage_error_load_session()
-
-            elif instruction == "server_error":
-                self.manage_server_error()
-
-            elif instruction == "show_experimental_frame":
-                self.show_experimental_frame()
-
-            elif instruction == "show_setting_up_frame":
-                self.show_setting_up_frame()
-
-            elif instruction == "show_parameters_frame":
-                self.show_parameters_frame()
-
-            elif instruction == "show_load_game_new_game":
-                self.show_load_game_new_game_frame()
-
-            elif instruction == "update_stop_button_experimental_frame":
-                self.frames["game"].update_stop_button()
-
-            elif instruction == "update_statistics":
-                statistics = msg[1]
-                self.frames["game"].update_statistics(statistics)
-
-            elif instruction == "update_done_playing":
-                done_playing = msg[1]
-                self.frames["game"].update_done_playing(done_playing)
-
-            elif instruction == "update_done_playing_labels":
-                done_playing_labels = msg[1]
-                self.frames["game"].update_done_playing_labels(done_playing_labels)
-
-            else:
-                raise Exception(
-                    "{}: Received instruction '{}' but did'nt expected anything like that."
-                    .format(self.name, instruction))
+            eval("self.{}(*args)".format(command))
             
             # Able now to handle a new display instruction
             self.occupied.clear()
@@ -266,3 +222,34 @@ class UI(QWidget):
         else:
             # noinspection PyCallByClass, PyTypeChecker
             QTimer.singleShot(100, self.look_for_msg)
+
+    def get_parameters(self):
+
+        return self.mod.controller.parameters.param["interface"]
+
+    # TODO: Replace all the following function by these two lines.
+    # def ask_controller(self, instruction, arg=None):
+    #
+    #     self.graphic_queue.put((instruction, arg))
+
+    def run_game(self, parameters):
+        self.controller_queue.put(("ui_run_game", parameters))
+
+    def load_game(self, file):
+        self.controller_queue.put(("ui_load_game", file))
+
+    def stop_game(self):
+        self.controller_queue.put(("ui_stop_game", ))
+
+    def close_window(self):
+        self.controller_queue.put(("ui_close_window", ))
+
+    def retry_server(self):
+        self.controller_queue.put(("ui_retry_server", ))
+
+    def save_parameters(self, param):
+        self.controller_queue.put(("ui_save_game_parameters", param))
+
+    def send_go_signal(self):
+        self.controller_queue.put(("ui_send_go_signal", ))
+

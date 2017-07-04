@@ -6,7 +6,7 @@ class Parameters:
     def __init__(self, controller):
 
         self.controller = controller
-        self.keys = ["network", "game", "folders", "map_android_id_server_id"]
+        self.keys = ["network", "game", "folders", "map_android_id_server_id", "interface"]
         self.param = {}
         self.setup()
 

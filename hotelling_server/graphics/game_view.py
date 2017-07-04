@@ -10,16 +10,13 @@ class GameFrame(QWidget):
 
     name = "GameFrame"
 
-    def __init__(self, parent, controller_queue):
+    def __init__(self, parent):
 
         # noinspection PyArgumentList
         QWidget.__init__(self, parent=parent)
 
-        self.controller_queue = controller_queue
-
         self.layout = QVBoxLayout()
         self.stop_button = QPushButton()
-
         self.trial_counter = TrialCounter()
 
         self.plot_layout = dict()
@@ -82,13 +79,13 @@ class GameFrame(QWidget):
     def push_stop_button(self):
 
         self.stop_button.setEnabled(False)
-        self.controller_queue.put(("game_frame", "stop"))
+        self.parent().stop_game()
 
     def set_trial_number(self, trial_n):
 
         self.trial_counter.set_trial_number(trial_n)
 
-    def initialize_figures(self, statistics, done_playing):
+    def initialize_figures(self):
 
         for plot in self.plot_layout.values():
             plot.clear()

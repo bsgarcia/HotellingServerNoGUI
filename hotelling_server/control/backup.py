@@ -13,9 +13,7 @@ class Backup:
 
     @property
     def folder(self):
-
-        with open("parameters/localization.json") as file:
-            folder = path.expanduser(json.load(file)["save"])
+        folder = path.expanduser(self.controller.parameters.param["folders"]["save"])
 
         if not path.exists(folder):
             mkdir(folder)

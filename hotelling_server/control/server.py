@@ -20,7 +20,7 @@ class TCPHandler(socketserver.StreamRequestHandler):
             try:
 
                 data = data.decode()
-                self.server.manager_queue.put(("server", "request", data))
+                self.server.manager_queue.put(("server_request", data))
                 manager_response = self.server.server_queue.get()
 
                 if manager_response[0] == "reply":
@@ -87,12 +87,12 @@ class Server(Thread):
                         manager_queue=self.controller_queue,
                         server_queue=self.queue
                     )
-                    self.controller_queue.put(("server", "running"))
+                    self.controller_queue.put(("server_running", ))
                     self.tcp_server.serve_forever()
 
                 except Exception as e:
                     log("Error: {}".format(e), self.name)
-                    self.controller_queue.put(("server", "error"))
+                    self.controller_queue.put(("server_error", ))
 
                 finally:
                     log("Close server...", name=self.name)
