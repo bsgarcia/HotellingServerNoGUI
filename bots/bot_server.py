@@ -10,7 +10,9 @@ class BotController(Logger):
 
     name = "BotController"
 
-    def __init__(self):
+    def __init__(self, firm):
+
+        self.role = firm
 
         self.parameters = {}
         self.shutdown = Event()
@@ -34,6 +36,7 @@ class BotController(Logger):
         self.server.queue.put(("Go", ))
 
         while not self.shutdown.is_set():
+
             self.log("Waiting for a message.")
             message = self.queue.get()
             if message == "break":
@@ -109,19 +112,44 @@ class BotGame(Logger):
         self.log("Reply '{}' to request '{}'.".format(to_client, request))
         return to_client
 
-    def ask_init(self, *args):
+    def ask_init(self, android_id):
 
-        print(args)
-        return "Va chier connard"
+        self.log("Android id is: '{}'.".format(android_id))
 
+        game_id = 0
+        t = 0
+        role = self.controller.role
+        if role == "firm":
+            position = 0
+            price = 0
+            return "reply/reply_init/" + "/".join([str(i) for i in [game_id, t, role, position, price]])
+
+        else:
+            position = 0
+            exploration_cost = 0
+            utility_consumption = 0
+            return "reply/reply_init" + "/".join([str(i) for i in [game_id, t, role, position, exploration_cost, utility_consumption]])
+
+    def ask_firm_opponent_choice(self, game_id, t):
+
+        self.log("Firm {} ask firm opponent choice for t {}.".format(game_id, t))
+        position, price = 0, 0
+        n_clients = 2
+        return "reply/reply_firm_opponent_choice/" + "/".join([str(i) for i in [position, price, n_clients]])
+
+    def ask_firm_choice_recording(self, game_id, t, position, price):
+
+        self.log("Firm {} make choice for t {}: {} for position and {} for price.".format(game_id, t, position, price))
+        return "reply/reply_firm_choice_recording"
+
+    def ask_firm_n_clients(self, game_id, t):
+
+        self.log("Firm {} ask for number of clients as t {}.".format(game_id, t))
+        n_clients = 4
+        return "reply/reply_firm_n_clients/{}".format(n_clients)
 
 
 def main():
 
-    bot_c = BotController()
+    bot_c = BotController("firm")
     bot_c.run()
-
-
-if __name__ == "__main__":
-
-    main()

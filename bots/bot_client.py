@@ -12,7 +12,7 @@ class GenericBotClient(Thread, Logger):
     with open("hotelling_server/parameters/network.json") as file:
         network_parameters = json.load(file)
     ip_address, port = "localhost", network_parameters["port"]
-    delay_socket_retry = 0.1
+    delay_socket_retry = 0.5
     socket_timeout = 0.5
 
     def __init__(self):
@@ -30,11 +30,11 @@ class GenericBotClient(Thread, Logger):
 
         self.queue = Queue()
 
-    def handle(self, what, *params):
+    def handle(self, what, params):
 
         self.log("Handle {} with params '{}'.".format(what, params))
 
-        params = [int(x) if x.isdigit() else x for x in params]
+        params = [int(x) if type(x) == str and x.isdigit() else x for x in params]
 
         command = eval("self.{}".format(what))
         command(*params)
@@ -92,7 +92,7 @@ class GenericBotClient(Thread, Logger):
     def treat_server_reply(self, parts):
 
         if len(parts) > 1 and parts[0] == "reply" and parts[1]:
-            self.handle(what=parts[1], *parts[2:])
+            self.handle(parts[1], parts[2:])
             return 1
 
         else:
@@ -105,7 +105,7 @@ class GenericBotClient(Thread, Logger):
 
         # noinspection PyCallByClass,PyTypeChecker
         Event().wait(self.delay_socket_retry)
-        self.ask_server(self.server_demand)
+        self.queue.put(("ask_server", self.server_demand))
 
 
 class HotellingPlayer(GenericBotClient):
@@ -130,10 +130,12 @@ class HotellingPlayer(GenericBotClient):
     def run(self):
 
         self.ask_init()
-        self.queue.get()
 
         while self.continue_game:
-            self.time_step()
+
+            to_do = self.queue.get()
+            self.handle(to_do[0], to_do[1:])
+            # Event().wait(0.1)
 
         self.log("End of game.")
 
@@ -152,39 +154,33 @@ class HotellingPlayer(GenericBotClient):
 
         self.n_positions = self.game_parameters["n_positions"]
         self.customer_attributes["extra_view_possibilities"] = np.arange(0, self.n_positions, 2)
-        self.queue.put("Go")
+
+        if self.role == "firm":
+            self.queue.put(("ask_firm_opponent_choice", ))
+
+        else:
+            self.queue.put(("ask_customer_firm_choices", ))
 
     # ----------- Time step ---------------------- #
 
-    def time_step(self):
+    # Customer time step
 
-        if self.role == "customer":
-            self.customer_time_step()
+    # self.ask_customer_firm_choices()
+    # positions, prices = self.queue.get()
+    # extra_view_choice = self.customer_extra_view_choice()
+    # firm_choice = self.customer_firm_choice(positions, prices)
+    # self.ask_customer_choice_recording(extra_view_choice, firm_choice)
 
-        elif self.role == "firm":
-            self.firm_time_step()
+    # Firm time step
 
-        self.t += 1
-
-    def customer_time_step(self):
-
-        self.ask_customer_firm_choices()
-        positions, prices = self.queue.get()
-        extra_view_choice = self.customer_extra_view_choice()
-        firm_choice = self.customer_firm_choice(positions, prices)
-        self.ask_customer_choice_recording(extra_view_choice, firm_choice)
-        self.queue.get()
-
-    def firm_time_step(self):
-
-        self.ask_firm_opponent_choice()
-        opp_position, opp_price = self.queue.get()
-        pos, price = self.firm_choice(opp_position, opp_price)
-        self.ask_firm_choice_recording(pos, price)
-        self.queue.get()
-        self.ask_firm_n_clients()
-        n_clients = self.queue.get()
-        self.log("I got {} clients.".format(n_clients))
+    # self.ask_firm_opponent_choice()
+    # opp_position, opp_price = self.queue.get()
+    # pos, price = self.firm_choice(opp_position, opp_price)
+    # self.ask_firm_choice_recording(pos, price)
+    # self.queue.get()
+    # self.ask_firm_n_clients()
+    # n_clients = self.queue.get()
+    # self.log("I got {} clients.".format(n_clients))
 
     # ----------- Customer choice functions ---------------------- #
 
@@ -223,10 +219,28 @@ class HotellingPlayer(GenericBotClient):
 
     # ------------------------- Firm choice functions --------------------------------- #
 
-    def firm_choice(self, opp_position, opp_price):
+    def firm_passive_beginning_of_turn(self):
 
-        return (np.random.randint(1, self.firm_attributes["n_prices"]),
-                np.random.randint(1, self.n_positions))
+        self.ask_firm_opponent_choice()
+
+    def firm_active_beginning_of_turn(self, opp_position, opp_price):
+
+        self.log("Opp position and price are {} and {}.".format(opp_position, opp_price))
+        own_position = np.random.randint(1, self.n_positions)
+        own_price = np.random.randint(1, self.firm_attributes["n_prices"])
+        self.ask_firm_choice_recording(own_position, own_price)
+
+    def firm_active_end_of_turn(self, n_clients):
+
+        self.log("I am active and I got {} clients.".format(n_clients))
+        self.t += 1
+        self.firm_passive_beginning_of_turn()
+
+    def firm_passive_end_of_turn(self, opp_position, opp_price, n_clients):
+
+        self.log("I am passive and I got {} clients.".format(n_clients))
+        self.t += 1
+        self.firm_active_beginning_of_turn(opp_position, opp_price)
 
     # ------------------------- Customer communication -------------------------------- #
 
@@ -246,22 +260,22 @@ class HotellingPlayer(GenericBotClient):
     # ------------------------- Firm communication ------------------------------------ #
 
     def ask_firm_opponent_choice(self):
-        self.ask_server("firm_opponent_choice/{}/{}".format(self.game_id, self.t))
+        self.ask_server("ask_firm_opponent_choice/{}/{}".format(self.game_id, self.t))
 
-    def reply_firm_opponent_choice(self, position, price):
-        self.queue.put((position, price))
+    def reply_firm_opponent_choice(self, position, price, n_clients):
+        self.queue.put(("firm_passive_end_of_turn", position, price, n_clients))
 
     def ask_firm_choice_recording(self, position, price):
-        self.ask_server("firm_choice_recording/{}/{}".format(self.game_id, self.t, position, price))
+        self.ask_server("ask_firm_choice_recording/" + "/".join([str(i) for i in [self.game_id, self.t, position, price]]))
 
     def reply_firm_choice_recording(self):
-        self.queue.put("Go")
+        self.ask_firm_n_clients()
 
     def ask_firm_n_clients(self):
-        self.ask_server("firm_n_clients/{}".format(self.game_id, self.t))
+        self.ask_server("ask_firm_n_clients/" + "/".join([str(i) for i in [self.game_id, self.t]]))
 
     def reply_firm_n_clients(self, n):
-        self.queue.put(n)
+        self.queue.put(("firm_active_end_of_turn", n, ))
 
 
 def main():
