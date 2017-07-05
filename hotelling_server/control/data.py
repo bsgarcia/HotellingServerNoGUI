@@ -69,4 +69,4 @@ class Data:
 
         for s in self.entries:
             self.history[s].append(self.current_state[s])
-k           self.current_state[s] = []
+            self.current_state[s] = []

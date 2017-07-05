@@ -67,12 +67,12 @@ class Game:
         self.data.update_history()
         
         if not self.continue_game:
-            self.controller.game_stop_game()
+            self.end_game()
 
     def check_time_step(self, client_t):
 
         if not client_t == self.t:
-            raise Exception("Time is not synchronized!")
+            raise Exception("Time is not synchronized you cunt!")
 
     @staticmethod
     def reply(*args):
@@ -88,7 +88,7 @@ class Game:
             role = self.data.roles[game_id]
 
             if role == "firm":
-                firm_id = len(self.data.firms_id) + 1 if len(self.data.firms_id) != 0 else 0
+                firm_id = len(self.data.firms_id) if len(self.data.firms_id) != 0 else 0
                 self.data.firms_id[game_id] = firm_id
                 position = self.data.current_state["firm_positions"][firm_id]
                 price = self.data.current_state["firm_prices"][firm_id]
@@ -96,11 +96,12 @@ class Game:
                 return self.reply(game_id, self.t, role, position, price), None
 
             else:
-                customer_id = len(self.data.firms_id) + 1 if len(self.data.firms_id) != 0 else 0
+                customer_id = len(self.data.firms_id) if len(self.data.firms_id) != 0 else 0
                 self.data.customer_id[game_id] = customer_id
                 position = customer_id + 1
                 exploration_cost = self.interface_parameters["exploration_cost"]
                 utility_consumption = self.interface_parameters["utility_consumption"]
+
                 return self.reply(game_id, self.t, role, position, exploration_cost, utility_consumption), None
 
         else:
@@ -119,17 +120,13 @@ class Game:
         if cond0 and cond1:
             self.end_time_step()
 
-#     def run(self, parameters, new):
-
-        # self.setup(parameters, new)
-
     def stop_as_soon_as_possible(self):
 
         self.continue_game = False
 
     def end_game(self):
 
-        self.controller.queue.put(("game_end_game", ))
+        self.controller.queue.put(("game_stop_game", ))
 
     def customer_firm_choices(self, game_id, t):
 
@@ -139,7 +136,7 @@ class Game:
 
         x = self.data.current_state["firm_positions"]
         prices = self.data.current_state["firm_prices"]
-
+        
         return self.reply(self.t, x[0], x[1], prices[0], prices[1]), None
 
     def firm_opponent_choice(self, game_id, t):
@@ -170,6 +167,8 @@ class Game:
 
     def customer_choice_recording(self, game_id, t, extra_view, firm):
 
+        log("Customer {} asks to save its exploration perimeter and firm choice.".format(game_id), name=self.name)
+
         self.check_time_step(t)
 
         self.data.write("customer_extra_view_choice", game_id, extra_view)
@@ -178,6 +177,8 @@ class Game:
         return self.reply("Ok!"), None
 
     def firm_n_clients(self, game_id, t):
+
+        log("Firm {} asks the number of its clients.".format(game_id), name=self.name)
 
         self.check_time_step(t)
 
