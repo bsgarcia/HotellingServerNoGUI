@@ -30,6 +30,16 @@ class Data:
             }
         )
 
+    def load(self, file):
+
+        data = self.controller.backup.load(file=file)
+        self.history = data["history"]
+        self.current_state = data["current_state"]
+        self.firms_id = data["firm_id"]
+        self.customers_id = data["customers_id"]
+        self.map_server_id_android_id = data["map_server_id_android_id"]
+        self.roles = data["roles"]
+
     def update_history(self):
 
         for s in self.entries:

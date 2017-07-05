@@ -136,6 +136,8 @@ class Controller(Thread):
         self.launch_game(param=interface_parameters)
 
     def ui_load_game(self, file):
+        self.data.load(file)
+        self.launch_game(param=None)
         log("UI ask 'load game'.", self.name)
 
     def ui_stop_game(self):

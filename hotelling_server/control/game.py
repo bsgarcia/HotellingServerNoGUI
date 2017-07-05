@@ -25,14 +25,15 @@ class Game:
 
         self.save = None
 
-    def setup(self, parameters):
-
-        self.data.roles = ["firm" for i in range(self.n_firms)] + \
-                          ["customer" for i in range(self.n_customers)]
-
-        np.random.shuffle(self.data.roles)
+    def setup(self, parameters, new):
 
         self.save = parameters["save"]
+
+        if new:
+            self.data.roles = ["firm" for i in range(self.n_firms)] + \
+                              ["customer" for i in range(self.n_customers)]
+
+            np.random.shuffle(self.data.roles)
 
     def handle_request(self, request):
 
