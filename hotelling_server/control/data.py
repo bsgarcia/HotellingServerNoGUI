@@ -19,8 +19,8 @@ class Data(Logger):
 
         self.firms_id = {}  # key: game_id, value: firm_id
         self.customers_id = {}  # key: game_id, value: customer_id
-        self.map_server_id_android_id = {}
-
+        self.map_android_id_server_id = {}
+        self.map_android_id_server_id_file = "hotelling_server/parameters/map_android_id_server_id.json"
         self.roles = []
 
         # --- server parameters --- #
@@ -31,6 +31,9 @@ class Data(Logger):
         self.setup()
 
     def setup(self):
+
+        with open(self.map_android_id_server_id_file) as file:
+            self.map_android_id_server_id.update(json.load(file))
 
         for key in self.keys:
             with open("hotelling_server/parameters/{}.json".format(key)) as file:

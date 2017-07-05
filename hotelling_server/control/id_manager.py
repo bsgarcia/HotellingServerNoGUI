@@ -1,9 +1,5 @@
-import itertools as it
-import json
-
-import numpy as np
-
 from utils.utils import Logger
+import json
 
 
 class IDManager(Logger):
@@ -16,11 +12,10 @@ class IDManager(Logger):
         self.data = controller.data
         self.parameters = None
 
-        self.map_android_id_server_id = dict()
-        self.map_android_id_server_id_file = "parameters/map_android_id_server_id.json"
+        self.map_android_id_server_id = self.controller.data.map_android_id_server_id
 
-        with open(self.map_android_id_server_id_file) as file:
-            self.map_android_id_server_id.update(json.load(file))
+        self.map_android_id_server_id_file = \
+                self.controller.data.map_android_id_server_id_file
 
     def get_game_id_from_android_id(self, android_id, max_n):
 
