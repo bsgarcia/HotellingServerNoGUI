@@ -128,11 +128,13 @@ class BotGame(Logger):
             position = 0
             exploration_cost = 0
             utility_consumption = 0
-            return "reply/reply_init" + "/".join([str(i) for i in [game_id, t, role, position, exploration_cost, utility_consumption]])
+            return "reply/reply_init/" + "/".join([str(i) for i in [game_id, t, role, position, exploration_cost, utility_consumption]])
+
+    # ---------------- Firm questions ----------------------------------------- #
 
     def ask_firm_opponent_choice(self, game_id, t):
 
-        self.log("Firm {} ask firm opponent choice for t {}.".format(game_id, t))
+        self.log("Firm {} asks firm opponent choice for t {}.".format(game_id, t))
         position, price = 0, 0
         n_clients = 2
         return "reply/reply_firm_opponent_choice/" + "/".join([str(i) for i in [position, price, n_clients]])
@@ -144,12 +146,28 @@ class BotGame(Logger):
 
     def ask_firm_n_clients(self, game_id, t):
 
-        self.log("Firm {} ask for number of clients as t {}.".format(game_id, t))
+        self.log("Firm {} asks for number of clients as t {}.".format(game_id, t))
         n_clients = 4
         return "reply/reply_firm_n_clients/{}".format(n_clients)
 
+    # --------------- Customer questions --------------------------------------- #
 
-def main():
+    def ask_customer_firm_choices(self, game_id, t):
 
-    bot_c = BotController("firm")
+        self.log("Customer {} asks for recording his choice as t {}.".format(game_id, t))
+        position_0, position_1, price_0, price_1 = 0, 3, 4, 2
+        return "reply/reply_customer_firm_choices/" + "/".join([str(i) for i in [
+            position_0, position_1, price_0, price_1
+        ]])
+
+    def ask_customer_choice_recording(self, game_id, t, extra_view, firm):
+
+        self.log("Customer {} asks for recording his choice as t {}: "
+                 "{} for extra view, {} for firm.".format(game_id, t, extra_view, firm))
+        return "reply/reply_customer_choice_recording"
+
+
+def main(role):
+
+    bot_c = BotController(role)
     bot_c.run()
