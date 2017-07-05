@@ -162,6 +162,8 @@ class HotellingPlayer(FakeClient):
         elif self.role == "firm":
             self.firm_time_step()
 
+        self.ask_end_of_turn()
+
         self.t += 1
 
     def customer_time_step(self):
@@ -182,6 +184,10 @@ class HotellingPlayer(FakeClient):
         self.queue.get()
         self.ask_firm_n_clients(self.game_id, self.t)
         n_clients = self.queue.get()
+
+    def ask_end_of_turn(self):
+
+        self.ask_server("check_end_of_turn/")
 
     # ----------- Customer choice functions ---------------------- #
 

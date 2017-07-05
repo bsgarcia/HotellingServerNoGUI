@@ -28,6 +28,16 @@ class Data:
         self.param = {}
         self.setup()
 
+    def setup(self):
+
+        for key in self.keys:
+            with open("hotelling_server/parameters/{}.json".format(key)) as file:
+                self.param[key] = json.load(file)
+
+    def save_param(self, key, new_value):
+       
+        self.controller.backup.save_param(key, new_value)
+    
     def save(self):
 
         self.controller.backup.write(
@@ -41,9 +51,9 @@ class Data:
                 }
             )
 
-    def save_param(self, key, new_value):
-       
-        self.controller.backup.save_param(key, new_value)
+    def write(self, key, game_id, value):
+
+        self.current_state[key][game_id] = value
 
     def load(self, file):
 
@@ -59,13 +69,4 @@ class Data:
 
         for s in self.entries:
             self.history[s].append(self.current_state[s])
-
-    def write(self, key, game_id, value):
-
-        self.current_state[key][game_id] = value
-
-    def setup(self):
-
-        for key in self.keys:
-            with open("hotelling_server/parameters/{}.json".format(key)) as file:
-                self.param[key] = json.load(file)
+k           self.current_state[s] = []

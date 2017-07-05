@@ -65,6 +65,9 @@ class Game:
 
         self.t += 1
         self.data.update_history()
+        
+        if not self.continue_game:
+            self.controller.game_stop_game()
 
     def check_time_step(self, client_t):
 
@@ -102,6 +105,31 @@ class Game:
 
         else:
             return "Error", None
+
+    def check_end_of_turn(self):
+
+        current_state = self.data.current_state
+
+        cond0 = all([len(current_state[k]) == self.n_clients
+                for k in ["customer_extra_view_choices","customer_firm_choices"]])
+
+        cond1 = all([len(current_state[k]) == self.n_firms
+                for k in ["firm_positions","firm_prices"]])
+
+        if cond0 and cond1:
+            self.end_time_step()
+
+#     def run(self, parameters, new):
+
+        # self.setup(parameters, new)
+
+    def stop_as_soon_as_possible(self):
+
+        self.continue_game = False
+
+    def end_game(self):
+
+        self.controller.queue.put(("game_end_game", ))
 
     def customer_firm_choices(self, game_id, t):
 
@@ -158,31 +186,4 @@ class Game:
 
         n = len(firm_choices[cond])
 
-        self.check_end_of_turn()
-        
         return self.reply(self.t, n), None
-
-    def check_end_of_turn(self):
-
-        current_state = self.data.current_state
-
-        cond0 = all([len(current_state[k]) == self.n_clients 
-                for k in ["customer_extra_view_choices","customer_firm_choices"]])
-
-        cond1 = all([len(current_state[k]) == self.n_firms
-                for k in ["firm_positions","firm_prices"]])
-
-        if cond0 and cond1:
-            self.end_time_step()
-
-    def run(self):
-
-        pass
-
-    def stop_as_soon_as_possible(self):
-
-        self.continue_game = False
-
-    def end_game(self):
-
-        self.controller.queue.put(("game_end_game", ))
