@@ -70,6 +70,7 @@ class Server(Thread, Logger):
 
         while not self.shutdown_event.is_set():
 
+            self.log("Waiting for a message...")
             msg = self.queue.get()
             self.log("I received msg '{}'.".format(msg))
             if msg and msg[0] == "Go":
@@ -110,3 +111,4 @@ class Server(Thread, Logger):
     def end(self):
 
         self.shutdown_event.set()
+        self.queue.put("break")
