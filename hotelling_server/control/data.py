@@ -19,8 +19,12 @@ class Data(Logger):
 
         self.firms_id = {}  # key: game_id, value: firm_id
         self.customers_id = {}  # key: game_id, value: customer_id
-        self.map_android_id_server_id = {}
-        self.map_android_id_server_id_file = "hotelling_server/parameters/map_android_id_server_id.json"
+
+        self.map_server_id_android_id = {}
+        self.map_server_id_game_id = {}
+
+        self.server_id_in_use = []
+
         self.roles = []
 
         # --- server parameters --- #
@@ -31,9 +35,6 @@ class Data(Logger):
         self.setup()
 
     def setup(self):
-
-        with open(self.map_android_id_server_id_file) as file:
-            self.map_android_id_server_id.update(json.load(file))
 
         for key in self.keys:
             with open("hotelling_server/parameters/{}.json".format(key)) as file:
@@ -52,6 +53,8 @@ class Data(Logger):
                     "firms_id": self.firms_id,
                     "customers_id": self.customers_id,
                     "map_server_id_android_id": self.map_server_id_android_id,
+                    "map_server_id_game_id": self.map_server_id_game_id,
+                    "server_id_in_use": self.server_id_in_use,
                     "roles": self.roles
                 }
             )
@@ -68,6 +71,8 @@ class Data(Logger):
         self.firms_id = data["firms_id"]
         self.customers_id = data["customers_id"]
         self.map_server_id_android_id = data["map_server_id_android_id"]
+        self.map_server_id_game_id = data["server_id_game_id"]
+        self.server_id_in_use = data["server_id_in_use"]
         self.roles = data["roles"]
 
     def update_history(self):
