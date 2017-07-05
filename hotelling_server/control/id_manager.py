@@ -3,10 +3,10 @@ import json
 
 import numpy as np
 
-from utils.utils import log
+from utils.utils import Logger
 
 
-class IDManager(object):
+class IDManager(Logger):
 
     name = "IDManager"
 
@@ -24,12 +24,12 @@ class IDManager(object):
 
     def get_game_id_from_android_id(self, android_id, max_n):
 
-        log("Client with android id {} ask for information.".format(android_id), self.name)
+        self.log("Client with android id {} ask for information.".format(android_id))
 
         server_id = self.get_server_id(android_id)
-        log("I associate server id '{}' to android id '{}'.".format(server_id, android_id), self.name)
+        self.log("I associate server id '{}' to android id '{}'.".format(server_id, android_id))
         game_id = self.get_game_id(server_id, max_n)
-        log("I associate game id '{}' to server id '{}'.".format(game_id, server_id), self.name)
+        self.log("I associate game id '{}' to server id '{}'.".format(game_id, server_id))
 
         return android_id
 

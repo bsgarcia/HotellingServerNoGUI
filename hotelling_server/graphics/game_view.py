@@ -3,10 +3,10 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton
 
 from hotelling_server.graphics.widgets.plot_layouts import DonePlayingLayout
 from hotelling_server.graphics.widgets.trial_counter import TrialCounter
-from utils.utils import log
+from utils.utils import Logger
 
 
-class GameFrame(QWidget):
+class GameFrame(QWidget, Logger):
 
     name = "GameFrame"
 
@@ -57,10 +57,10 @@ class GameFrame(QWidget):
 
     def prepare(self):
 
-        log("Preparing...", self.name)
+        self.log("Preparing...")
         self.prepare_figures()
         self.prepare_stop_button()
-        log("Preparation done!", self.name)
+        self.log("Preparation done!")
         
     def prepare_figures(self):
 
@@ -106,7 +106,7 @@ class GameFrame(QWidget):
         #     initial_data=done_playing
         # )
 
-        log("Figure initialized.", self.name)
+        self.log("Figure initialized.")
 
     def update_statistics(self, data):
 

@@ -3,7 +3,7 @@ from os import path
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog
 
-from utils.utils import log
+from utils.utils import Logger
 
 
 class LoadGameNewGameFrame(QWidget):
@@ -57,14 +57,14 @@ class LoadGameNewGameFrame(QWidget):
 
     def open_file_dialog(self):
 
-        folder_to_open = path.expanduser(self.parent().mod.controller.parameters.param["folders"]["save"])
+        folder_to_open = path.expanduser(self.parent().mod.controller.data.param["folders"]["save"])
 
         # noinspection PyArgumentList
         file_choice = QFileDialog().getOpenFileName(
             self, '',
             folder_to_open,
             "Backup files (*.p)")
-        log("User choose file '{}'.".format(file_choice), self.name)
+        self.log("User choose file '{}'.".format(file_choice))
         file = file_choice[0]
         if file:
             self.parent().run_game_from_file(file)

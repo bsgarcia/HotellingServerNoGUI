@@ -1,8 +1,8 @@
-from utils.utils import log
+from utils.utils import Logger
 import numpy as np
 
 
-class Game:
+class Game(Logger):
 
     name = "Game"
 
@@ -13,8 +13,8 @@ class Game:
 
         self.t = 0
 
-        self.game_parameters = self.controller.parameters.param["game"]
-        self.interface_parameters = self.controller.parameters.param["interface"]
+        self.game_parameters = self.controller.data.param["game"]
+        self.interface_parameters = self.controller.data.param["interface"]
 
         self.n_customers = self.game_parameters["n_customers"]
         self.n_firms = self.game_parameters["n_firms"]
@@ -37,7 +37,7 @@ class Game:
 
     def handle_request(self, request):
 
-        log("Got request: '{}'.".format(request), self.name)
+        self.log("Got request: '{}'.".format(request))
 
         # retrieve whole command
         whole = [i for i in request.split("/") if i != ""]
@@ -58,7 +58,7 @@ class Game:
                 "{}".format(e),
                 None)
 
-        log("Reply '{}' to request '{}'.".format(to_client, request), name=self.name)
+        self.log("Reply '{}' to request '{}'.".format(to_client, request))
         return to_client, to_controller
 
     def end_time_step(self):
@@ -130,7 +130,7 @@ class Game:
 
     def customer_firm_choices(self, game_id, t):
 
-        log("Customer {} asks for firms strategies.".format(game_id), name=self.name)
+        self.log("Customer {} asks for firms strategies.".format(game_id))
 
         self.check_time_step(t)
 
@@ -143,7 +143,7 @@ class Game:
 
         assert self.n_firms == 2, "only works if firms are 2"
 
-        log("Firm {} asks for opponent strategy.".format(game_id), name=self.name)
+        self.log("Firm {} asks for opponent strategy.".format(game_id))
 
         self.check_time_step(t)
 
@@ -156,7 +156,7 @@ class Game:
 
     def firm_choice_recording(self, game_id, t, position, price):
 
-        log("Firm {} asks to save its price and position.".format(game_id), name=self.name)
+        self.log("Firm {} asks to save its price and position.".format(game_id))
 
         self.check_time_step(t)
         
@@ -167,7 +167,7 @@ class Game:
 
     def customer_choice_recording(self, game_id, t, extra_view, firm):
 
-        log("Customer {} asks to save its exploration perimeter and firm choice.".format(game_id), name=self.name)
+        self.log("Customer {} asks to save its exploration perimeter and firm choice.".format(game_id))
 
         self.check_time_step(t)
 
@@ -178,7 +178,7 @@ class Game:
 
     def firm_n_clients(self, game_id, t):
 
-        log("Firm {} asks the number of its clients.".format(game_id), name=self.name)
+        self.log("Firm {} asks the number of its clients.".format(game_id))
 
         self.check_time_step(t)
 

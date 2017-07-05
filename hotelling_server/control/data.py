@@ -1,13 +1,14 @@
 import json
+from utils.utils import Logger
 
 
-class Data:
+class Data(Logger):
 
     def __init__(self, controller):
 
         self.controller = controller
 
-        # --- game variables --- # 
+        # --- game variables --- #
 
         self.entries = [
             "firm_positions", "firm_prices", "firm_profits",

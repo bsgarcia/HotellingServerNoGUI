@@ -68,7 +68,7 @@ class GenericBotClient(Thread, Logger):
                 break
             #
             # except socket.timeout:
-            #     log("Timeout reached.", self.name)
+            #     self.log("Timeout reached.")
             #     self.sock.close()
             #     self.sock = None
 

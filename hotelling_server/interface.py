@@ -5,14 +5,14 @@ from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QMessageBox
 
 from .graphics import game_view, loading_view, parametrization_view, setting_up_view
-from utils.utils import log
+from utils.utils import Logger
 
 
 class Communicate(QObject):
     signal = pyqtSignal()
 
 
-class UI(QWidget):
+class UI(QWidget, Logger):
 
     name = "Interface"
 
@@ -80,19 +80,19 @@ class UI(QWidget):
 
                 self.check_for_saving_parameters()
 
-            log("Close window", name=self.name)
+            self.log("Close window")
             self.close_window()
             event.accept()
 
         else:
-            log("Ignore close window.", name=self.name)
+            self.log("Ignore close window.")
             event.ignore()
 
     def check_for_saving_parameters(self):
 
         self.already_asked_for_saving_parameters = 1
 
-        if sorted(self.mod.controller.parameters.param["interface"].items()) != \
+        if sorted(self.mod.controller.data.param["interface"].items()) != \
                 sorted(self.frames["parameters"].get_parameters().items()):
 
             if self.show_question("Do you want to save the change in parameters?"):
@@ -100,7 +100,7 @@ class UI(QWidget):
                 self.save_parameters(self.frames["parameters"].get_parameters())
 
             else:
-                log('Saving of parameters aborted.', name=self.name)
+                self.log('Saving of parameters aborted.')
 
     def show_frame_load_game_new_game(self, *args):
 
@@ -179,7 +179,7 @@ class UI(QWidget):
         self.frames["setting_up"].show()
         self.frames["load_game_new_game"].open_file_dialog()
 
-    def server_error(self):
+    def server_error(self, msg):
 
         retry = self.show_critical_and_retry(msg="Server error.")
 
@@ -209,7 +209,7 @@ class UI(QWidget):
             self.occupied.set()
 
             msg = self.queue.get()
-            log("I received message '{}'.".format(msg), self.name)
+            self.log("I received message '{}'.".format(msg))
 
             command = msg[0]
             args = msg[1:]
@@ -225,7 +225,7 @@ class UI(QWidget):
 
     def get_parameters(self):
 
-        return self.mod.controller.parameters.param["interface"]
+        return self.mod.controller.data.param["interface"]
 
     # TODO: Replace all the following function by these two lines.
     # def ask_controller(self, instruction, arg=None):

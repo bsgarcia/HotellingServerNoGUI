@@ -2,9 +2,10 @@ from os import path, mkdir
 import json
 import pickle
 from datetime import datetime
+from utils.utils import Logger
 
 
-class Backup:
+class Backup(Logger):
 
     def __init__(self, controller):
 
@@ -13,7 +14,7 @@ class Backup:
 
     @property
     def folder(self):
-        folder = path.expanduser(self.controller.parameters.param["folders"]["save"])
+        folder = path.expanduser(self.controller.data.param["folders"]["save"])
 
         if not path.exists(folder):
             mkdir(folder)

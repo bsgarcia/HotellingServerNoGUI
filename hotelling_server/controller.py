@@ -1,11 +1,11 @@
 from multiprocessing import Queue, Event
 from threading import Thread
 
-from utils.utils import log
-from hotelling_server.control import backup, data, game, server, parameters, statistician
+from utils.utils import Logger 
+from hotelling_server.control import backup, data, game, server, statistician
 
 
-class Controller(Thread):
+class Controller(Thread, Logger):
 
     name = "Controller"
 
@@ -19,7 +19,6 @@ class Controller(Thread):
         self.queue = Queue()
 
         self.data = data.Data(controller=self)
-        self.parameters = parameters.Parameters(controller=self)
         self.backup = backup.Backup(controller=self)
         self.statistician = statistician.Statistician(controller=self)
         self.server = server.Server(controller=self)
@@ -39,9 +38,9 @@ class Controller(Thread):
 
     def run(self):
 
-        log("Waiting for a message.", name=self.name)
+        self.log("Waiting for a message.")
         go_signal_from_ui = self.queue.get()
-        log("Got go signal from UI: '{}'.".format(go_signal_from_ui), name=self.name)
+        self.log("Got go signal from UI: '{}'.".format(go_signal_from_ui))
 
         self.ask_interface("show_frame_setting_up")
 
@@ -50,7 +49,7 @@ class Controller(Thread):
         self.server_queue.put(("Go", ))
 
         while not self.shutdown.is_set():
-            log("Waiting for a message.", name=self.name)
+            self.log("Waiting for a message.")
             message = self.queue.get()
             self.handle_message(message)
 
@@ -70,11 +69,11 @@ class Controller(Thread):
 
         self.ask_interface("show_frame_game", )
 
-        log("Game launched.", self.name)
+        self.log("Game launched.")
 
     def stop_game_first_phase(self):
 
-        log("Received stop task", self.name)
+        self.log("Received stop task")
         self.continue_game.clear()
         # Wait then for a signal of the request manager for allowing interface to show a button to starting menu
 
@@ -85,7 +84,7 @@ class Controller(Thread):
 
     def close_program(self):
 
-        log("Close program.", self.name)
+        self.log("Close program.")
         self.shutdown.set()
         self.running_game.set()
 
@@ -95,7 +94,7 @@ class Controller(Thread):
         # Stop server if it was running
         self.server.end()
         self.server.shutdown()
-        log("Program closed.", self.name)
+        self.log("Program closed.")
 
     def fatal_error_of_communication(self):
 
@@ -125,9 +124,13 @@ class Controller(Thread):
     # ------------------------------ Server interface ----------------------------------------------- #
 
     def server_running(self):
-        log("Server running.", self.name)
+        self.log("Server running.")
         self.ask_interface("show_frame_load_game_new_game")
         # self.server_queue.put(("reply", response))
+
+    def server_error(self):
+        self.log("Server error.")
+        self.ask_interface("server_error")
 
     def server_request(self, server_data):
         response = self.game.handle_request(server_data)
@@ -136,35 +139,35 @@ class Controller(Thread):
     # ------------------------------ UI interface (!!!) -------------------------------------- #
 
     def ui_run_game(self, interface_parameters):
-        log("UI ask 'run game'.", self.name)
+        self.log("UI ask 'run game'.")
         self.launch_game(param=interface_parameters)
 
     def ui_load_game(self, file):
         self.data.load(file)
         self.launch_game(param=None)
-        log("UI ask 'load game'.", self.name)
+        self.log("UI ask 'load game'.")
 
     def ui_stop_game(self):
-        log("UI ask 'stop game'.", self.name)
+        self.log("UI ask 'stop game'.")
         self.stop_game_first_phase()
 
     def ui_close_window(self):
-        log("UI ask 'close window'.", self.name)
+        self.log("UI ask 'close window'.")
         self.close_program()
 
     def ui_retry_server(self):
-        log("UI ask 'retry server'.", self.name)
+        self.log("UI ask 'retry server'.")
         self.server_queue.put(("Go",))
 
     def ui_save_game_parameters(self, param):
-        log("UI ask 'save game parameters'.", self.name)
-        self.parameters.save("interface", param)
-        log("Save interface parameters.", self.name)
+        self.log("UI ask 'save game parameters'.")
+        self.data.save("interface", param)
+        self.log("Save interface parameters.")
 
     # ------------------------------ Game interface (!!!) -------------------------------------- #
 
     def game_stop_game(self):
-        log("'Game' ask 'stop game'.", self.name)
+        self.log("'Game' ask 'stop game'.")
         self.stop_game_second_phase()
 
     # ---------------------- Parameters management -------------------------------------------- #

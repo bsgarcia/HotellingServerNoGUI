@@ -1,10 +1,10 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QPushButton, QLabel, QCheckBox, QLineEdit, QMessageBox
 
-from utils.utils import log
+from utils.utils import Logger
 
 
-class ParametersFrame(QWidget):
+class ParametersFrame(QWidget, Logger):
 
     name = "ParametersFrame"
 
@@ -64,7 +64,7 @@ class ParametersFrame(QWidget):
             self.show_warning(msg=self.error)
 
         else:
-            log("Push 'run' button.", name=self.name)
+            self.log("Push 'run' button.")
 
             # Communicate parameters through the queue
             self.parent().run_game(parameters)
