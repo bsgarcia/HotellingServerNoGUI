@@ -129,6 +129,10 @@ class Controller(Thread):
         self.ask_interface("show_frame_load_game_new_game")
         # self.server_queue.put(("reply", response))
 
+    def server_request(self, server_data):
+        response = self.game.handle_request(server_data)
+        self.server_queue.put(("reply", response))
+
     # ------------------------------ UI interface (!!!) -------------------------------------- #
 
     def ui_run_game(self, interface_parameters):
@@ -162,3 +166,9 @@ class Controller(Thread):
     def game_stop_game(self):
         log("'Game' ask 'stop game'.", self.name)
         self.stop_game_second_phase()
+
+    # ---------------------- Parameters management -------------------------------------------- #
+
+    def get_parameters(self, key):
+
+        return self.data.param[key]

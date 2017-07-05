@@ -22,4 +22,3 @@ class Parameters:
             json.dump(new_value, param_file)
 
         self.param[key] = new_value
-

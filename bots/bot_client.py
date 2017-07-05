@@ -4,14 +4,13 @@ from threading import Thread, Event
 from multiprocessing import Queue
 import numpy as np
 
-from utils.utils import log
+from utils.utils import Logger
 
 
-class FakeClient(Thread):
+class GenericBotClient(Thread, Logger):
 
-    with open("parameters/network.json") as file:
+    with open("hotelling_server/parameters/network.json") as file:
         network_parameters = json.load(file)
-
     ip_address, port = "localhost", network_parameters["port"]
     delay_socket_retry = 0.1
     socket_timeout = 0.5
@@ -33,11 +32,12 @@ class FakeClient(Thread):
 
     def handle(self, what, *params):
 
-        log("Handle {} with params '{}'.".format(what, params), self.name)
+        self.log("Handle {} with params '{}'.".format(what, params))
 
         params = [int(x) if x.isdigit() else x for x in params]
 
-        eval("self.{}(params)".format(what))
+        command = eval("self.{}".format(what))
+        command(*params)
 
     def ask_server(self, message):
 
@@ -45,7 +45,7 @@ class FakeClient(Thread):
 
         while True:
 
-            log("Ask the server: '{}'.".format(message), self.name)
+            self.log("Ask the server: '{}'.".format(message))
 
             sock = None
             try:
@@ -73,17 +73,17 @@ class FakeClient(Thread):
             #     self.sock = None
 
             except Exception as e:
-                log("Exception: {}".format(e), self.name)
+                self.log("Exception: {}".format(e))
                 if sock:
                     sock.close()
 
     def handle_server_response(self, response):
 
         if response != "":
-            log("Received from server: '{}'.".format(response), self.name)
+            self.log("Received from server: '{}'.".format(response))
             parts = response.split("/")
             if self.treat_server_reply(parts):
-                log("Server response handled.", self.name)
+                self.log("Server response handled.")
             else:
                 self.retry_demand(response)
         else:
@@ -96,21 +96,23 @@ class FakeClient(Thread):
             return 1
 
         else:
-            log("Error in treating server reply!", self.name)
+            self.log("Error in treating server reply!")
             return 0
 
     def retry_demand(self, server_response):
 
-        log("Server response is in bad shape: '{}'. Retry the same demand.".format(server_response), self.name)
+        self.log("Server response is in bad shape: '{}'. Retry the same demand.".format(server_response))
 
         # noinspection PyCallByClass,PyTypeChecker
         Event().wait(self.delay_socket_retry)
         self.ask_server(self.server_demand)
 
 
-class HotellingPlayer(FakeClient):
+class HotellingPlayer(GenericBotClient):
 
-    with open("parameters/game.json") as f:
+    name = "HotellingPlayer"
+
+    with open("hotelling_server/parameters/game.json") as f:
         game_parameters = json.load(f)
 
     def __init__(self):
@@ -118,7 +120,7 @@ class HotellingPlayer(FakeClient):
 
         self.game_id = 0
         self.role = ""
-        self.n_positions = 0
+        self.n_positions = self.game_parameters["n_positions"]
         self.position = 0
         self.t = 0
 
@@ -133,7 +135,7 @@ class HotellingPlayer(FakeClient):
         while self.continue_game:
             self.time_step()
 
-        log("End of game.", self.name)
+        self.log("End of game.")
 
     def ask_init(self):
 
@@ -162,32 +164,27 @@ class HotellingPlayer(FakeClient):
         elif self.role == "firm":
             self.firm_time_step()
 
-        self.ask_end_of_turn()
-
         self.t += 1
 
     def customer_time_step(self):
 
-        self.ask_customer_firm_choices(self.t)
+        self.ask_customer_firm_choices()
         positions, prices = self.queue.get()
         extra_view_choice = self.customer_extra_view_choice()
         firm_choice = self.customer_firm_choice(positions, prices)
-        self.ask_customer_choice_recording(self.game_id, self.t, extra_view_choice, firm_choice)
+        self.ask_customer_choice_recording(extra_view_choice, firm_choice)
         self.queue.get()
 
     def firm_time_step(self):
 
-        self.ask_firm_opponent_choice(self.game_id, self.t)
+        self.ask_firm_opponent_choice()
         opp_position, opp_price = self.queue.get()
-        pos, price = self.firm_choice(self.game_id, self.t, opp_position, opp_price)
-        self.ask_firm_choice_recording(self.game_id, self.t, pos, price)
+        pos, price = self.firm_choice(opp_position, opp_price)
+        self.ask_firm_choice_recording(pos, price)
         self.queue.get()
-        self.ask_firm_n_clients(self.game_id, self.t)
+        self.ask_firm_n_clients()
         n_clients = self.queue.get()
-
-    def ask_end_of_turn(self):
-
-        self.ask_server("check_end_of_turn/")
+        self.log("I got {} clients.".format(n_clients))
 
     # ----------- Customer choice functions ---------------------- #
 
@@ -233,34 +230,41 @@ class HotellingPlayer(FakeClient):
 
     # ------------------------- Customer communication -------------------------------- #
 
-    def ask_customer_firm_choices(self, t):
-        self.ask_server("customer_firm_choices/{}".format(t))
+    def ask_customer_firm_choices(self):
+        self.ask_server("customer_firm_choices/{}/{}".format(self.game_id, self.t))
 
     def reply_customer_firm_choices(self, *args):
         positions, prices = args
         self.queue.put((positions, prices))
 
-    def ask_customer_choice_recording(self, game_id, t, extra_view_choice, firm_choice):
-        self.ask_server("customer_choice_recording/{}/{}/{}/{}".format(game_id, t, extra_view_choice, firm_choice))
+    def ask_customer_choice_recording(self, extra_view_choice, firm_choice):
+        self.ask_server("customer_choice_recording/{}/{}/{}/{}".format(self.game_id, self.t, extra_view_choice, firm_choice))
 
     def reply_customer_choice_recording(self):
         self.queue.put("Go")
 
     # ------------------------- Firm communication ------------------------------------ #
 
-    def ask_firm_opponent_choice(self, game_id, t):
-        self.ask_server("firm_opponent_choice/{}/{}".format(game_id, t))
+    def ask_firm_opponent_choice(self):
+        self.ask_server("firm_opponent_choice/{}/{}".format(self.game_id, self.t))
 
     def reply_firm_opponent_choice(self, position, price):
         self.queue.put((position, price))
 
-    def ask_firm_choice_recording(self, game_id, t, position, price):
-        self.ask_server("firm_choice_recording/{}/{}".format(game_id, t, position, price))
+    def ask_firm_choice_recording(self, position, price):
+        self.ask_server("firm_choice_recording/{}/{}".format(self.game_id, self.t, position, price))
 
     def reply_firm_choice_recording(self):
         self.queue.put("Go")
 
-    def ask_firm_n_clients(self, game_id, t):
-        self.ask_server("firm_n_clients/{}".format(game_id, t))
+    def ask_firm_n_clients(self):
+        self.ask_server("firm_n_clients/{}".format(self.game_id, self.t))
+
     def reply_firm_n_clients(self, n):
         self.queue.put(n)
+
+
+def main():
+
+    bc = HotellingPlayer()
+    bc.run()

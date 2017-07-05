@@ -1,6 +1,11 @@
 from datetime import datetime
 
 
-def log(msg, name):
+class Logger:
 
-    print("{} {}: {}".format(datetime.now().strftime("[%y/%m/%d %H:%M:%S:%f]"), name, msg))
+    name = "Logger"
+
+    @classmethod
+    def log(cls, msg):
+
+        print("{} {}: {}".format(datetime.now().strftime("[%y/%m/%d %H:%M:%S:%f]"), cls.name, msg))

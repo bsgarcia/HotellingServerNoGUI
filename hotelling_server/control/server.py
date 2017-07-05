@@ -2,10 +2,10 @@ import socketserver
 from multiprocessing import Queue, Event
 from threading import Thread
 
-from utils.utils import log
+from utils.utils import Logger
 
 
-class TCPHandler(socketserver.StreamRequestHandler):
+class TCPHandler(socketserver.StreamRequestHandler, Logger):
 
     name = "ThreadedTCPRequestHandler"
 
@@ -35,7 +35,7 @@ class TCPHandler(socketserver.StreamRequestHandler):
         else:
             response = "No game is running and/or request is empty."
 
-        log("Reply '{}' to '{}'.".format(response, data), self.name)
+        self.log("Reply '{}' to '{}'.".format(response, data))
 
         # Likewise, self.wfile is a file-like object used to write back to the client
         self.wfile.write(response.encode())
@@ -43,13 +43,13 @@ class TCPHandler(socketserver.StreamRequestHandler):
 
 class TCPGamingServer(socketserver.TCPServer):
 
-    def __init__(self, server_address, manager_queue, server_queue):
+    def __init__(self, server_address, controller_queue, server_queue):
         self.server_queue = server_queue
-        self.controller_queue = manager_queue
+        self.controller_queue = controller_queue
         super().__init__(server_address, TCPHandler)
 
 
-class Server(Thread):
+class Server(Thread, Logger):
 
     name = "Server"
 
@@ -58,7 +58,7 @@ class Server(Thread):
         Thread.__init__(self)
 
         self.cont = controller
-        self.param = self.cont.parameters.param["network"]
+        self.param = self.cont.get_parameters("network")
 
         self.controller_queue = self.cont.queue
         self.queue = Queue()
@@ -71,7 +71,7 @@ class Server(Thread):
         while not self.shutdown_event.is_set():
 
             msg = self.queue.get()
-            log("I received msg '{}'.".format(msg), self.name)
+            self.log("I received msg '{}'.".format(msg))
             if msg and msg[0] == "Go":
                 try:
 
@@ -81,25 +81,25 @@ class Server(Thread):
                     else:
                         ip_address = self.param["ip_address"]
 
-                    log("Try to connect...", self.name)
+                    self.log("Try to connect...")
                     self.tcp_server = TCPGamingServer(
                         server_address=(ip_address, self.param["port"]),
-                        manager_queue=self.controller_queue,
+                        controller_queue=self.controller_queue,
                         server_queue=self.queue
                     )
                     self.controller_queue.put(("server_running", ))
                     self.tcp_server.serve_forever()
 
                 except Exception as e:
-                    log("Error: {}".format(e), self.name)
+                    self.log("Error: {}".format(e))
                     self.controller_queue.put(("server_error", ))
 
                 finally:
-                    log("Close server...", name=self.name)
+                    self.log("Close server...")
                     self.shutdown()
-                    log("Server closed.", self.name)
+                    self.log("Server closed.")
 
-        log("I'm dead.", self.name)
+        self.log("I'm dead.")
 
     def shutdown(self):
 
@@ -110,18 +110,3 @@ class Server(Thread):
     def end(self):
 
         self.shutdown_event.set()
-
-
-def main():
-
-    controller_queue = Queue(),
-
-    s = Server(controller_queue)
-    s.start()
-
-    s.queue.put(("Go", 1))
-
-
-if __name__ == "__main__":
-
-    main()
