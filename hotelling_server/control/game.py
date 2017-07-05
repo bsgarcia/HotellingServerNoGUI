@@ -25,7 +25,7 @@ class Game:
 
         self.save = None
 
-    def setup(self, parameters, new):
+    def setup(self, parameters, new=True):
 
         self.save = parameters["save"]
 

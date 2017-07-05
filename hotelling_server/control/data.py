@@ -24,6 +24,7 @@ class Data:
 
         # --- server parameters --- #
 
+        self.keys = ["network", "game", "folders", "map_android_id_server_id", "interface"]
         self.isparam = False
         self.param = {}
         self.setup()

@@ -261,7 +261,6 @@ class HotellingPlayer(FakeClient):
         self.queue.put("Go")
 
     def ask_firm_n_clients(self, game_id, t):
-        self.ask_server("firm_n_clients/{}".format(game_id, t)
-
+        self.ask_server("firm_n_clients/{}".format(game_id, t))
     def reply_firm_n_clients(self, n):
         self.queue.put(n)
