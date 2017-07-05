@@ -38,3 +38,12 @@ class Backup:
                     return "error"
 
             return data
+
+    def save_param(self, key, new_value):
+
+        with open("hotelling_server/parameters/{}.json".format(key), "w") as param_file:
+                    json.dump(new_value, param_file)
+
+            self.param[key] = new_value
+
+

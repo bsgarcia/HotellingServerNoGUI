@@ -1,8 +1,13 @@
+import json
+
+
 class Data:
 
     def __init__(self, controller):
 
         self.controller = controller
+
+        # --- game variables --- # 
 
         self.entries = [
             "firm_positions", "firm_prices", "firm_profits",
@@ -17,18 +22,28 @@ class Data:
 
         self.roles = []
 
+        # --- server parameters --- #
+
+        self.isparam = False
+        self.param = {}
+        self.setup()
+
     def save(self):
 
         self.controller.backup.write(
-            {
-                "history": self.history,
-                "current_state": self.current_state,
-                "firms_id": self.firms_id,
-                "customers_id": self.customers_id,
-                "map_server_id_android_id": self.map_server_id_android_id,
-                "roles": self.roles
-            }
-        )
+                {
+                    "history": self.history,
+                    "current_state": self.current_state,
+                    "firms_id": self.firms_id,
+                    "customers_id": self.customers_id,
+                    "map_server_id_android_id": self.map_server_id_android_id,
+                    "roles": self.roles
+                }
+            )
+
+    def save_param(self, key, new_value):
+       
+        self.controller.backup.save_param(key, new_value)
 
     def load(self, file):
 
@@ -49,3 +64,8 @@ class Data:
 
         self.current_state[key][game_id] = value
 
+    def setup(self):
+
+        for key in self.keys:
+            with open("hotelling_server/parameters/{}.json".format(key)) as file:
+                self.param[key] = json.load(file)

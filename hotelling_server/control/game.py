@@ -85,7 +85,7 @@ class Game:
             role = self.data.roles[game_id]
 
             if role == "firm":
-                firm_id = len(self.data.firms_id) + 1
+                firm_id = len(self.data.firms_id) + 1 if len(self.data.firms_id) != 0 else 0
                 self.data.firms_id[game_id] = firm_id
                 position = self.data.current_state["firm_positions"][firm_id]
                 price = self.data.current_state["firm_prices"][firm_id]
@@ -93,7 +93,7 @@ class Game:
                 return self.reply(game_id, self.t, role, position, price), None
 
             else:
-                customer_id = len(self.data.customer_id) + 1
+                customer_id = len(self.data.firms_id) + 1 if len(self.data.firms_id) != 0 else 0
                 self.data.customer_id[game_id] = customer_id
                 position = customer_id + 1
                 exploration_cost = self.interface_parameters["exploration_cost"]
@@ -158,10 +158,23 @@ class Game:
 
         n = len(firm_choices[cond])
 
-        self.end_time_step()
-
+        self.check_end_of_turn()
+        
         return self.reply(self.t, n), None
-    
+
+    def check_end_of_turn(self):
+
+        current_state = self.data.current_state
+
+        cond0 = all([len(current_state[k]) == self.n_clients 
+                for k in ["customer_extra_view_choices","customer_firm_choices"]])
+
+        cond1 = all([len(current_state[k]) == self.n_firms
+                for k in ["firm_positions","firm_prices"]])
+
+        if cond0 and cond1:
+            self.end_time_step()
+
     def run(self):
 
         pass
