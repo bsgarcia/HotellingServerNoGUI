@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog
 from utils.utils import Logger
 
 
-class LoadGameNewGameFrame(QWidget):
+class LoadGameNewGameFrame(QWidget, Logger):
 
     name = "LoadGameNewGame"
 
@@ -67,7 +67,7 @@ class LoadGameNewGameFrame(QWidget):
         self.log("User choose file '{}'.".format(file_choice))
         file = file_choice[0]
         if file:
-            self.parent().run_game_from_file(file)
+            self.parent().load_game(file)
 
         else:
             self.set_buttons_activation(True)

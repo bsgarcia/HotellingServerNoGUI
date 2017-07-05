@@ -1,6 +1,6 @@
 from utils.utils import Logger
 import numpy as np
-
+from sys import _getframe as func
 
 class Game(Logger):
 
@@ -25,15 +25,16 @@ class Game(Logger):
 
         self.save = None
 
-    def setup(self, parameters, new=True):
+    @staticmethod
+    def get_name(arg):
+        return arg.f_code.co_name
 
-        self.save = parameters["save"]
+    def new(self):
 
-        if new:
-            self.data.roles = ["firm" for i in range(self.n_firms)] + \
-                              ["customer" for i in range(self.n_customers)]
+        self.data.roles = ["firm" for i in range(self.n_firms)] + \
+                          ["customer" for i in range(self.n_customers)]
 
-            np.random.shuffle(self.data.roles)
+        np.random.shuffle(self.data.roles)
 
     def handle_request(self, request):
 
@@ -74,6 +75,13 @@ class Game(Logger):
         if not client_t == self.t:
             raise Exception("Time is not synchronized you cunt!")
 
+    def record_and_get_opponent_choices(opponent_id):
+        
+        opponent_choices = [self.data.history[self.t - 1][key][opponent_id]
+                           for key in ["firm_positions", "firm_prices"]]
+ 
+        return opponent_choices[0], opponent_choices[1] 
+
     @staticmethod
     def reply(*args):
         return "reply/{}".format("/".join([str(a) for a in args]))
@@ -93,7 +101,7 @@ class Game(Logger):
                 position = self.data.current_state["firm_positions"][firm_id]
                 price = self.data.current_state["firm_prices"][firm_id]
 
-                return self.reply(game_id, self.t, role, position, price), None
+                return self.reply(self.get_name(func()), game_id, self.t, role, position, price), None
 
             else:
                 customer_id = len(self.data.firms_id) if len(self.data.firms_id) != 0 else 0
@@ -102,19 +110,19 @@ class Game(Logger):
                 exploration_cost = self.interface_parameters["exploration_cost"]
                 utility_consumption = self.interface_parameters["utility_consumption"]
 
-                return self.reply(game_id, self.t, role, position, exploration_cost, utility_consumption), None
+                return self.reply(self.get_name(func()), game_id, self.t, role, position, exploration_cost, utility_consumption), None
 
         else:
             return "Error", None
 
-    def check_end_of_turn(self):
+    def ask_end_of_turn(self):
 
         current_state = self.data.current_state
 
         cond0 = all([len(current_state[k]) == self.n_clients
                 for k in ["customer_extra_view_choices","customer_firm_choices"]])
 
-        cond1 = all([len(current_state[k]) == self.n_firms
+        cond1 = all([len(current_state[k]) == self.n_firms 
                 for k in ["firm_positions","firm_prices"]])
 
         if cond0 and cond1:
@@ -128,7 +136,7 @@ class Game(Logger):
 
         self.controller.queue.put(("game_stop_game", ))
 
-    def customer_firm_choices(self, game_id, t):
+    def ask_customer_firm_choices(self, game_id, t):
 
         self.log("Customer {} asks for firms strategies.".format(game_id))
 
@@ -137,9 +145,9 @@ class Game(Logger):
         x = self.data.current_state["firm_positions"]
         prices = self.data.current_state["firm_prices"]
         
-        return self.reply(self.t, x[0], x[1], prices[0], prices[1]), None
+        return self.reply(self.get_name(func()), self.t, x[0], x[1], prices[0], prices[1]), None
 
-    def firm_opponent_choice(self, game_id, t):
+    def ask_firm_opponent_choice(self, game_id, t):
 
         assert self.n_firms == 2, "only works if firms are 2"
 
@@ -147,25 +155,32 @@ class Game(Logger):
 
         self.check_time_step(t)
 
-        opponent_id = (self.data.firms_id[game_id] + 1) % 2
+        # opponent_id = (self.data.firms_id[game_id] + 1) % 2
+        opponent_id = [int(k) for k in self.data.firms_id.keys() if k != str(game_id)][0]
 
-        return (self.reply(self.t,
+        return (self.reply(self.get_name(func()),
+                           self.t,
                            self.data.current_state["firm_positions"][opponent_id],
-                           self.data.current_state["firm_prices"][opponent_id]),
+                           self.data.current_state["firm_prices"][opponent_id]), 
                 None)
 
-    def firm_choice_recording(self, game_id, t, position, price):
+    def ask_firm_choice_recording(self, game_id, t, position, price):
 
         self.log("Firm {} asks to save its price and position.".format(game_id))
 
         self.check_time_step(t)
-        
-        self.data.write("firm_positions", game_id, position)
-        self.data.write("firm_prices", game_id, price)
 
-        return self.reply("Ok!"), None
+        opponent_id = [int(k) for k in self.data.firms_id.keys() if k != str(game_id)][0]
 
-    def customer_choice_recording(self, game_id, t, extra_view, firm):
+        opponent_pos, opponent_price = self.record_and_get_opponent_choices(opponent_id)
+
+        for ids, pos, px in [[game_id, position, price], [opponent_id, opponent_pos, opponent_price]]:
+            self.data.write("firm_positions", int(ids), pos)
+            self.data.write("firm_prices", int(ids), px)
+
+        return self.reply(self.get_name(func()), "Ok!"), None
+
+    def ask_customer_choice_recording(self, game_id, t, extra_view, firm):
 
         self.log("Customer {} asks to save its exploration perimeter and firm choice.".format(game_id))
 
@@ -174,9 +189,9 @@ class Game(Logger):
         self.data.write("customer_extra_view_choice", game_id, extra_view)
         self.data.write("customer_firm_choices", game_id, firm)
 
-        return self.reply("Ok!"), None
+        return self.reply(self.get_name(func()), "Ok!"), None
 
-    def firm_n_clients(self, game_id, t):
+    def ask_firm_n_clients(self, game_id, t):
 
         self.log("Firm {} asks the number of its clients.".format(game_id))
 
@@ -187,4 +202,4 @@ class Game(Logger):
 
         n = len(firm_choices[cond])
 
-        return self.reply(self.t, n), None
+        return self.reply(self.get_name(func()), self.t, n), None

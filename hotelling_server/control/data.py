@@ -62,7 +62,7 @@ class Data(Logger):
         data = self.controller.backup.load(file=file)
         self.history = data["history"]
         self.current_state = data["current_state"]
-        self.firms_id = data["firm_id"]
+        self.firms_id = data["firms_id"]
         self.customers_id = data["customers_id"]
         self.map_server_id_android_id = data["map_server_id_android_id"]
         self.roles = data["roles"]

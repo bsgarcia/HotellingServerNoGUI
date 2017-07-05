@@ -233,7 +233,7 @@ class UI(QWidget, Logger):
     #     self.graphic_queue.put((instruction, arg))
 
     def run_game(self, parameters):
-        self.controller_queue.put(("ui_run_game", parameters))
+        self.controller_queue.put(("ui_run_game"))
 
     def load_game(self, file):
         self.controller_queue.put(("ui_load_game", file))

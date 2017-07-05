@@ -55,7 +55,7 @@ class Controller(Thread, Logger):
 
         self.close_program()
 
-    def launch_game(self, param):
+    def launch_game(self):
 
         self.ask_interface("show_frame_setting_up")
 
@@ -64,8 +64,6 @@ class Controller(Thread, Logger):
         self.fatal_error.clear()
         self.continue_game.set()
         self.running_game.set()
-
-        self.game.setup(param)
 
         self.ask_interface("show_frame_game", )
 
@@ -138,13 +136,14 @@ class Controller(Thread, Logger):
 
     # ------------------------------ UI interface (!!!) -------------------------------------- #
 
-    def ui_run_game(self, interface_parameters):
+    def ui_run_game(self):
         self.log("UI ask 'run game'.")
-        self.launch_game(param=interface_parameters)
+        self.game.new()
+        self.launch_game()
 
     def ui_load_game(self, file):
         self.data.load(file)
-        self.launch_game(param=None)
+        self.launch_game()
         self.log("UI ask 'load game'.")
 
     def ui_stop_game(self):
