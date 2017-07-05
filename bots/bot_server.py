@@ -1,6 +1,5 @@
-import socketserver
 from multiprocessing import Queue, Event
-from threading import Thread
+import json
 
 from utils.utils import Logger
 
@@ -13,11 +12,20 @@ class BotController(Logger):
 
     def __init__(self):
 
+        self.parameters = {}
+        self.shutdown = Event()
         self.queue = Queue()
+
+        self.setup()
+
         self.server = server.Server(controller=self)
         self.game = BotGame(controller=self)
 
-        self.shutdown = Event()
+    def setup(self):
+
+        for key in ["network", "game", "folders", "map_android_id_server_id", "interface"]:
+            with open("hotelling_server/parameters/{}.json".format(key)) as file:
+                self.parameters[key] = json.load(file)
 
     def run(self):
 
@@ -52,15 +60,19 @@ class BotController(Logger):
         response = self.game.handle_request(server_data)
         self.server.queue.put(("reply", response))
 
+    def get_parameters(self, key):
+
+        return self.parameters[key]
+
 
 class BotGame(Logger):
 
     name = "BotGame"
 
-    def __init__(self, role):
+    def __init__(self, controller):
         super().__init__()
 
-        self.role = role
+        self.controller = controller
 
     def handle_request(self, request):
 

@@ -20,17 +20,17 @@ class TCPHandler(socketserver.StreamRequestHandler, Logger):
             try:
 
                 data = data.decode()
-                self.server.manager_queue.put(("server_request", data))
-                manager_response = self.server.server_queue.get()
+                self.server.controller_queue.put(("server_request", data))
+                controller_response = self.server.server_queue.get()
 
-                if manager_response[0] == "reply":
-                    response = manager_response[1]
+                if controller_response[0] == "reply":
+                    response = controller_response[1]
 
                 else:
                     response = "Probably no game is running or trying to shutting down."
 
-            except Exception:
-                response = "Problem with handling request '{}'.". format(data)
+            except Exception as e:
+                response = "Problem with handling request '{}': {}". format(data, e)
 
         else:
             response = "No game is running and/or request is empty."
