@@ -51,16 +51,16 @@ class Game(Logger):
             args = [int(a) if a.isdigit() else a for a in whole[1:]]
    
             # call method
-            to_client, to_controller = self.command(*args)
+            to_client = self.command(*args)
 
         except Exception as e:
-            to_client, to_controller = (
+            to_client = (
                 "Command contained in request not understood.\n"
                 "{}".format(e),
                 None)
 
         self.log("Reply '{}' to request '{}'.".format(to_client, request))
-        return to_client, to_controller
+        return to_client
 
     def end_time_step(self):
 
@@ -75,10 +75,12 @@ class Game(Logger):
         if not client_t == self.t:
             raise Exception("Time is not synchronized you cunt!")
 
-    def record_and_get_opponent_choices(opponent_id):
+    def record_and_get_opponent_choices(self, opponent_id):
         
-        opponent_choices = [self.data.history[self.t - 1][key][opponent_id]
-                           for key in ["firm_positions", "firm_prices"]]
+        opponent_choices = [
+            self.data.history[self.t - 1][key][opponent_id]
+            for key in ["firm_positions", "firm_prices"]
+        ]
  
         return opponent_choices[0], opponent_choices[1] 
 
@@ -101,7 +103,7 @@ class Game(Logger):
                 position = self.data.current_state["firm_positions"][firm_id]
                 price = self.data.current_state["firm_prices"][firm_id]
 
-                return self.reply(self.get_name(func()), game_id, self.t, role, position, price), None
+                return self.reply(self.get_name(func()), game_id, self.t, role, position, price)
 
             else:
                 customer_id = len(self.data.firms_id) if len(self.data.firms_id) != 0 else 0
@@ -110,20 +112,27 @@ class Game(Logger):
                 exploration_cost = self.interface_parameters["exploration_cost"]
                 utility_consumption = self.interface_parameters["utility_consumption"]
 
-                return self.reply(self.get_name(func()), game_id, self.t, role, position, exploration_cost, utility_consumption), None
+                return self.reply(
+                    self.get_name(func()),
+                    game_id, self.t,
+                    role, position, exploration_cost, utility_consumption)
 
         else:
-            return "Error", None
+            return "Error with ID manager. Maybe not authorized to participate."
 
     def ask_end_of_turn(self):
 
         current_state = self.data.current_state
 
-        cond0 = all([len(current_state[k]) == self.n_clients
-                for k in ["customer_extra_view_choices","customer_firm_choices"]])
+        cond0 = all(
+            [len(current_state[k]) == self.n_customers
+             for k in ["customer_extra_view_choices", "customer_firm_choices"]]
+        )
 
-        cond1 = all([len(current_state[k]) == self.n_firms 
-                for k in ["firm_positions","firm_prices"]])
+        cond1 = all(
+            [len(current_state[k]) == self.n_firms
+             for k in ["firm_positions", "firm_prices"]]
+        )
 
         if cond0 and cond1:
             self.end_time_step()
@@ -145,7 +154,7 @@ class Game(Logger):
         x = self.data.current_state["firm_positions"]
         prices = self.data.current_state["firm_prices"]
         
-        return self.reply(self.get_name(func()), self.t, x[0], x[1], prices[0], prices[1]), None
+        return self.reply(self.get_name(func()), self.t, x[0], x[1], prices[0], prices[1])
 
     def ask_firm_opponent_choice(self, game_id, t):
 
@@ -158,11 +167,12 @@ class Game(Logger):
         # opponent_id = (self.data.firms_id[game_id] + 1) % 2
         opponent_id = [int(k) for k in self.data.firms_id.keys() if k != str(game_id)][0]
 
-        return (self.reply(self.get_name(func()),
-                           self.t,
-                           self.data.current_state["firm_positions"][opponent_id],
-                           self.data.current_state["firm_prices"][opponent_id]), 
-                None)
+        return self.reply(
+            self.get_name(func()),
+            self.t,
+            self.data.current_state["firm_positions"][opponent_id],
+            self.data.current_state["firm_prices"][opponent_id]
+        )
 
     def ask_firm_choice_recording(self, game_id, t, position, price):
 
@@ -178,7 +188,7 @@ class Game(Logger):
             self.data.write("firm_positions", int(ids), pos)
             self.data.write("firm_prices", int(ids), px)
 
-        return self.reply(self.get_name(func()), "Ok!"), None
+        return self.reply(self.get_name(func()))
 
     def ask_customer_choice_recording(self, game_id, t, extra_view, firm):
 
@@ -189,7 +199,7 @@ class Game(Logger):
         self.data.write("customer_extra_view_choice", game_id, extra_view)
         self.data.write("customer_firm_choices", game_id, firm)
 
-        return self.reply(self.get_name(func()), "Ok!"), None
+        return self.reply(self.get_name(func()))
 
     def ask_firm_n_clients(self, game_id, t):
 
@@ -202,4 +212,4 @@ class Game(Logger):
 
         n = len(firm_choices[cond])
 
-        return self.reply(self.get_name(func()), self.t, n), None
+        return self.reply(self.get_name(func()), self.t, n)

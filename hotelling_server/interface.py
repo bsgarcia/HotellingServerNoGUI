@@ -1,4 +1,4 @@
-import json
+from os import system
 from multiprocessing import Queue, Event
 
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt
@@ -179,12 +179,12 @@ class UI(QWidget, Logger):
         self.frames["setting_up"].show()
         self.frames["load_game_new_game"].open_file_dialog()
 
-    def server_error(self, msg):
+    def server_error(self, error_message):
 
-        retry = self.show_critical_and_retry(msg="Server error.")
+        retry = self.show_critical_and_retry(msg="Server error.\nError message: '{}'.".format(error_message))
 
         if retry:
-            self.show_setting_up_frame()
+            self.show_frame_setting_up()
             self.retry_server()
 
         else:
@@ -211,10 +211,12 @@ class UI(QWidget, Logger):
             msg = self.queue.get()
             self.log("I received message '{}'.".format(msg))
 
-            command = msg[0]
+            command = eval("self.{}".format(msg[0]))
             args = msg[1:]
-
-            eval("self.{}(*args)".format(command))
+            if args:
+                command(*args)
+            else:
+                command()
             
             # Able now to handle a new display instruction
             self.occupied.clear()
@@ -232,7 +234,7 @@ class UI(QWidget, Logger):
     #
     #     self.graphic_queue.put((instruction, arg))
 
-    def run_game(self, parameters):
+    def run_game(self):
         self.controller_queue.put(("ui_run_game", ))
 
     def load_game(self, file):

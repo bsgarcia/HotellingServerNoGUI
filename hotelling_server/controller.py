@@ -127,9 +127,9 @@ class Controller(Thread, Logger):
         self.ask_interface("show_frame_load_game_new_game")
         # self.server_queue.put(("reply", response))
 
-    def server_error(self):
+    def server_error(self, error_message):
         self.log("Server error.")
-        self.ask_interface("server_error")
+        self.ask_interface("server_error", error_message)
 
     def server_request(self, server_data):
         response = self.game.handle_request(server_data)
@@ -159,9 +159,9 @@ class Controller(Thread, Logger):
         self.log("UI ask 'retry server'.")
         self.server_queue.put(("Go",))
 
-    def ui_save_game_parameters(self, param):
+    def ui_save_interface_parameters(self, param):
         self.log("UI ask 'save game parameters'.")
-        self.data.save("interface", param)
+        self.data.save_param("interface", param)
         self.log("Save interface parameters.")
 
     # ------------------------------ Game interface (!!!) -------------------------------------- #

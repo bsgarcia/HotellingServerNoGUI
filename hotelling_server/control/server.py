@@ -30,7 +30,7 @@ class TCPHandler(socketserver.StreamRequestHandler, Logger):
                     response = "Probably no game is running or trying to shutting down."
 
             except Exception as e:
-                response = "Problem with handling request '{}': {}". format(data, e)
+                response = "Server encountered an exception handling request '{}': '''{}'''.". format(data, e)
 
         else:
             response = "No game is running and/or request is empty."
@@ -93,7 +93,7 @@ class Server(Thread, Logger):
 
                 except Exception as e:
                     self.log("Error: {}".format(e))
-                    self.controller_queue.put(("server_error", ))
+                    self.controller_queue.put(("server_error", str(e)))
 
                 finally:
                     self.log("Close server...")
