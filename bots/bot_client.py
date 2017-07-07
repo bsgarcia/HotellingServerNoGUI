@@ -4,7 +4,7 @@ from threading import Thread, Event
 from multiprocessing import Queue
 import numpy as np
 
-from utils.utils import Logger
+from utils.utils import Logger, function_name
 
 
 class GenericBotClient(Thread, Logger):
@@ -72,7 +72,7 @@ class GenericBotClient(Thread, Logger):
             #     self.sock.close()
             #     self.sock = None
 
-            except Exception as e:
+            except socket.error as e:
                 self.log("Exception: {}".format(e))
                 if sock:
                     sock.close()
@@ -115,14 +115,19 @@ class HotellingPlayer(GenericBotClient):
     with open("hotelling_server/parameters/game.json") as f:
         game_parameters = json.load(f)
 
-    def __init__(self):
+    def __init__(self, name=None):
         super().__init__()
+
+        if name is not None:
+            self.name = name
 
         self.game_id = 0
         self.role = ""
         self.n_positions = self.game_parameters["n_positions"]
         self.position = 0
         self.t = 0
+
+        self.state = ""
 
         self.customer_attributes = {}
         self.firm_attributes = {}
@@ -138,28 +143,6 @@ class HotellingPlayer(GenericBotClient):
             # Event().wait(0.1)
 
         self.log("End of game.")
-
-    def ask_init(self):
-
-        fake_android_id = self.name
-        self.ask_server("ask_init/{}".format(fake_android_id))
-
-    def reply_init(self, *args):
-
-        self.game_id, self.t, self.role, self.position = args[:4]
-
-        if self.role == "firm":
-            self.firm_attributes["price"] = args[4]
-            self.firm_attributes["n_prices"] = self.game_parameters["n_prices"]
-
-        self.n_positions = self.game_parameters["n_positions"]
-        self.customer_attributes["extra_view_possibilities"] = np.arange(0, self.n_positions, 2)
-
-        if self.role == "firm":
-            self.queue.put(("ask_firm_opponent_choice", ))
-
-        else:
-            self.queue.put(("ask_customer_firm_choices", ))
 
     # ----------- Time step ---------------------- #
 
@@ -243,39 +226,97 @@ class HotellingPlayer(GenericBotClient):
         self.t += 1
         self.firm_active_beginning_of_turn(opp_position, opp_price)
 
+    # ------------------------- Init -------------------------------------------------- #
+
+    def ask_init(self):
+
+        fake_android_id = self.name
+        self.state = "init"
+        self.ask_server("ask_init/{}".format(fake_android_id))
+
+    def reply_init(self, *args):
+
+        if self.state == "init":
+
+            self.game_id, self.t, self.role, self.position = args[:4]
+
+            self.n_positions = self.game_parameters["n_positions"]
+
+            if self.role == "firm":
+                self.firm_attributes["state"] = args[4]
+                self.firm_attributes["price"] = args[5]
+                initial_opponent_position = args[6]
+                initial_opponent_price = args[7]
+                self.firm_attributes["n_prices"] = self.game_parameters["n_prices"]
+
+                if self.firm_attributes["state"] == "active":
+                    self.queue.put(("firm_active_beginning_of_turn", initial_opponent_position, initial_opponent_price))
+                else:
+                    self.queue.put(("firm_passive_beginning_of_turn",))
+
+            else:
+                self.customer_attributes["extra_view_possibilities"] = np.arange(0, self.n_positions, 2)
+                self.queue.put(("ask_customer_firm_choices",))
+
+        else:
+            raise Exception("Time problem or state problem with: {}".format(function_name()))
+
     # ------------------------- Customer communication -------------------------------- #
 
     def ask_customer_firm_choices(self):
+        self.state = "customer_firm_choices"
         self.ask_server("ask_customer_firm_choices/{}/{}".format(self.game_id, self.t))
 
-    def reply_customer_firm_choices(self, position_0, position_1, price_0, price_1):
-        self.queue.put(("customer_choice", position_0, position_1, price_0, price_1))
+    def reply_customer_firm_choices(self, t, position_0, position_1, price_0, price_1):
+        if self.t == t and self.state == "customer_firm_choices":
+            self.queue.put(("customer_choice", position_0, position_1, price_0, price_1))
+        else:
+            raise Exception("Time problem or state problem with: {}".format(function_name()))
 
-    def ask_customer_choice_recording(self, extra_view_choice, firm_choice):
-        self.ask_server("ask_customer_choice_recording/{}/{}/{}/{}".format(self.game_id, self.t, extra_view_choice, firm_choice))
+    def ask_customer_choice_recording(self, t, extra_view_choice, firm_choice):
+        self.state = "customer_choice_recording"
+        self.ask_server("ask_customer_choice_recording/" + "/".join([str(i) for i in [
+            self.game_id, self.t, extra_view_choice, firm_choice
+        ]]))
 
-    def reply_customer_choice_recording(self):
-        self.queue.put(("customer_end_of_turn", ))
+    def reply_customer_choice_recording(self, t):
+        if self.t == t and self.state == "customer_choice_recording":
+            self.queue.put(("customer_end_of_turn", ))
+        else:
+            raise Exception("Time problem or state problem with: {}".format(function_name()))
 
     # ------------------------- Firm communication ------------------------------------ #
 
     def ask_firm_opponent_choice(self):
+        self.state = "firm_opponent_choice"
         self.ask_server("ask_firm_opponent_choice/{}/{}".format(self.game_id, self.t))
 
-    def reply_firm_opponent_choice(self, position, price, n_clients):
-        self.queue.put(("firm_passive_end_of_turn", position, price, n_clients))
+    def reply_firm_opponent_choice(self, t, position, price, n_clients):
+        if self.t == t and self.state == "firm_opponent_choice":
+            self.queue.put(("firm_passive_end_of_turn", position, price, n_clients))
+
+        else:
+            raise Exception("Time problem or state problem with: {}".format(function_name()))
 
     def ask_firm_choice_recording(self, position, price):
+        self.state = "firm_choice_recording"
         self.ask_server("ask_firm_choice_recording/" + "/".join([str(i) for i in [self.game_id, self.t, position, price]]))
 
-    def reply_firm_choice_recording(self):
-        self.queue.put(("ask_firm_n_clients", ))
+    def reply_firm_choice_recording(self, t):
+        if self.t == t and self.state == "firm_choice_recording":
+            self.queue.put(("ask_firm_n_clients", ))
+        else:
+            raise Exception("Time problem or state problem with: {}".format(function_name()))
 
     def ask_firm_n_clients(self):
+        self.state = "firm_n_clients"
         self.ask_server("ask_firm_n_clients/" + "/".join([str(i) for i in [self.game_id, self.t]]))
 
-    def reply_firm_n_clients(self, n):
-        self.queue.put(("firm_active_end_of_turn", n, ))
+    def reply_firm_n_clients(self, t, n):
+        if self.t == t and self.state == "firm_n_clients":
+            self.queue.put(("firm_active_end_of_turn", n, ))
+        else:
+            raise Exception("Time problem or state problem with: {}".format(function_name()))
 
 
 def main():

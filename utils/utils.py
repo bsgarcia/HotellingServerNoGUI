@@ -1,4 +1,8 @@
 from datetime import datetime
+import inspect
+
+
+function_name = lambda: inspect.stack()[1][3]
 
 
 class Logger:

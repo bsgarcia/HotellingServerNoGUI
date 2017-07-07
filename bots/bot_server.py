@@ -64,8 +64,8 @@ class BotController(Logger):
     def server_running(self):
         self.log("Server running.")
 
-    def server_error(self):
-        self.log("Server error.")
+    def server_error(self, arg):
+        self.log("Server error: {}.".format(arg))
         self.queue.put("break")
 
     def server_request(self, server_data):
@@ -85,6 +85,7 @@ class BotGame(Logger):
         super().__init__()
 
         self.controller = controller
+        self.t = 0
 
     def handle_request(self, request):
 
@@ -117,54 +118,91 @@ class BotGame(Logger):
         self.log("Android id is: '{}'.".format(android_id))
 
         game_id = 0
-        t = 0
+        t = self.t
         role = self.controller.role
         if role == "firm":
+            state = 'passive'
             position = 0
             price = 0
-            return "reply/reply_init/" + "/".join([str(i) for i in [game_id, t, role, position, price]])
+            opp_position = 0
+            opp_price = 0
+            return "reply/reply_init/" + "/".join([str(i) for i in [
+                game_id, t, role, state, position, price, opp_position, opp_price
+            ]])
 
         else:
             position = 0
             exploration_cost = 0
             utility_consumption = 0
-            return "reply/reply_init/" + "/".join([str(i) for i in [game_id, t, role, position, exploration_cost, utility_consumption]])
+            return "reply/reply_init/" + "/".join([str(i) for i in [
+                game_id, t, role, position, exploration_cost, utility_consumption
+            ]])
 
     # ---------------- Firm questions ----------------------------------------- #
 
     def ask_firm_opponent_choice(self, game_id, t):
 
+        assert self.t == t
+
         self.log("Firm {} asks firm opponent choice for t {}.".format(game_id, t))
         position, price = 0, 0
         n_clients = 2
-        return "reply/reply_firm_opponent_choice/" + "/".join([str(i) for i in [position, price, n_clients]])
+
+        # End of turn for passive firm
+        self.t += 1
+
+        return "reply/reply_firm_opponent_choice/" + "/".join([str(i) for i in [
+            self.t - 1, position, price, n_clients
+        ]])
 
     def ask_firm_choice_recording(self, game_id, t, position, price):
 
+        assert self.t == t
+
         self.log("Firm {} make choice for t {}: {} for position and {} for price.".format(game_id, t, position, price))
-        return "reply/reply_firm_choice_recording"
+        return "reply/reply_firm_choice_recording/" + "/".join([str(i) for i in [
+            self.t
+        ]])
 
     def ask_firm_n_clients(self, game_id, t):
 
+        assert self.t == t
+
         self.log("Firm {} asks for number of clients as t {}.".format(game_id, t))
         n_clients = 4
-        return "reply/reply_firm_n_clients/{}".format(n_clients)
+
+        # End of turn for active firm
+        self.t += 1
+
+        return "reply/reply_firm_n_clients/" + "/".join([str(i) for i in [
+            self.t - 1, n_clients
+        ]])
 
     # --------------- Customer questions --------------------------------------- #
 
     def ask_customer_firm_choices(self, game_id, t):
 
+        assert self.t == t
+
         self.log("Customer {} asks for recording his choice as t {}.".format(game_id, t))
         position_0, position_1, price_0, price_1 = 0, 3, 4, 2
         return "reply/reply_customer_firm_choices/" + "/".join([str(i) for i in [
-            position_0, position_1, price_0, price_1
+            self.t, position_0, position_1, price_0, price_1
         ]])
 
     def ask_customer_choice_recording(self, game_id, t, extra_view, firm):
 
+        assert self.t == t
+
         self.log("Customer {} asks for recording his choice as t {}: "
                  "{} for extra view, {} for firm.".format(game_id, t, extra_view, firm))
-        return "reply/reply_customer_choice_recording"
+
+        # End of turn for customer
+        self.t += 1
+
+        return "reply/reply_customer_choice_recording/" + "/".join([str(i) for i in [
+            self.t - 1
+        ]])
 
 
 def main(role):
