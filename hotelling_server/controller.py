@@ -2,7 +2,7 @@ from multiprocessing import Queue, Event
 from threading import Thread
 
 from utils.utils import Logger 
-from hotelling_server.control import backup, data, game, server, statistician, id_manager
+from hotelling_server.control import backup, data, game, server, statistician, id_manager, time_manager
 
 
 class Controller(Thread, Logger):
@@ -19,6 +19,7 @@ class Controller(Thread, Logger):
         self.queue = Queue()
 
         self.data = data.Data(controller=self)
+        self.time_manager = time_manager.TimeManager(controller=self)
         self.id_manager = id_manager.IDManager(controller=self)
         self.backup = backup.Backup(controller=self)
         self.statistician = statistician.Statistician(controller=self)

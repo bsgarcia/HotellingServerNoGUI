@@ -1,6 +1,5 @@
-from utils.utils import Logger
+from utils.utils import Logger, function_name
 import numpy as np
-from sys import _getframe as func
 
 
 class Game(Logger):
@@ -10,9 +9,8 @@ class Game(Logger):
     def __init__(self, controller):
 
         self.controller = controller
-        self.command = None
-
-        self.t = 0
+        self.data = self.controller.data
+        self.time_manager.time_manager = self.controller.time_manager
 
         self.game_parameters = self.controller.data.param["game"]
         self.interface_parameters = self.controller.data.param["interface"]
@@ -22,27 +20,19 @@ class Game(Logger):
         self.n_agents = self.n_firms + self.n_customers
 
         self.bot_customers = self.interface_parameters["bot_customers"]
-
+        
         self.continue_game = True
 
-        self.has_played = []
-
-        self.data = self.controller.data
-
         self.save = None
-    
+
     #----------------------------------- sides methods --------------------------------------#
-
-    @staticmethod
-    def get_name(arg):
-        return arg.f_code.co_name
-
     def new(self):
         
-        self.data.roles = ["firm_{}".format(("active", "passive")[i]) for i in range(self.n_firms)] + \
+        self.data.roles = ["firm" for i in range(self.n_firms)] + \
                           ["customer" for i in range(self.n_customers)]
 
         np.random.shuffle(self.data.roles)
+        np.random.shuffle(self.data.initial_firm_state)
 
     def handle_request(self, request):
 
@@ -72,38 +62,10 @@ class Game(Logger):
 
         return to_client
 
-    def end_time_step(self):
-        
-        self.log("Game server goes next step.")
-
-        self.has_played = []
-        self.t += 1
-        self.data.update_history()
-
-        if not self.continue_game:
-            self.end_game()
-
-    def switch_firms_role(self, game_id):
-
-        boolean = self.data.roles[game_id] == "firm_active"
-
-        new_role = ("firm_active", "firm_passive")[boolean]
-
-        self.data.roles[game_id] = new_role
-
-        return new_role
-
-    def check_time_step(self, client_t):
-        
-        for i in range(150): 
-            self.log("Time on server is '{}', client's time is '{}'".format(self.t, client_t))
-        if not client_t == self.t:
-            self.log("Time is not synchronized!")
-
     def get_opponent_choices(self, opponent_id):
 
         opponent_choices = [
-            self.data.history[key][self.t - 1][opponent_id]
+            self.data.history[key][self.time_manager.t - 1][opponent_id]
             for key in ["firm_positions", "firm_prices"]
         ]
 
@@ -113,13 +75,13 @@ class Game(Logger):
     def reply(*args):
         return "reply/{}".format("/".join([str(a) if type(a) == int else a.replace("ask", "reply") for a in args]))
 
-    def stop_as_soon_as_possible(self):
+   #  def stop_as_soon_as_possible(self):
 
-        self.continue_game = False
+        # self.continue_game = False
 
-    def end_game(self):
+    # def end_game(self):
 
-        self.controller.queue.put(("game_stop_game", ))
+        # self.controller.queue.put(("game_stop_game", ))
     
     #----------------------------------- clients demands --------------------------------------#
 
@@ -132,11 +94,12 @@ class Game(Logger):
             # pick role
             role = self.data.roles[game_id]
 
-            if "firm" in role:
-                return self.init_firms(self.get_name(func()), game_id, role)
+            if role == "firm":
+
+                return self.init_firms(function_name(), game_id, role)
 
             else:
-                return self.init_customers(self.get_name(func()), game_id, role)
+                return self.init_customers(function_name(), game_id, role)
         else:
             return "Error with ID manager. Maybe not authorized to participate."
 
@@ -153,12 +116,13 @@ class Game(Logger):
         self.log("Number of missing agents: {}".format(len(self.data.roles) - (len(self.data.firms_id) +
             len(self.data.customers_id))))
 
-        return self.reply(func_name, game_id, self.t, role, position, exploration_cost, utility_consumption)
+        return self.reply(func_name, game_id, self.time_manager.t, role, position, exploration_cost, utility_consumption)
 
     def init_firms(self, func_name, game_id, role):
 
         firm_id = len(self.data.firms_id) if len(self.data.firms_id) != 0 else 0
         self.data.firms_id[game_id] = firm_id
+        state = self.data.initial_firm_state[firm_id]  
         position = np.random.randint(self.n_customers)
         price = np.random.randint(self.n_customers)
         self.data.current_state["firm_positions"].append(position)
@@ -167,67 +131,7 @@ class Game(Logger):
         self.log("Number of missing agents: {}".format(len(self.data.roles) - (len(self.data.firms_id) +
             len(self.data.customers_id))))
 
-        return self.reply(func_name, game_id, self.t, role, position, price)
-
-    def ask_end_of_init(self, t, game_id, role, game_started):
-
-        general_role = role[:4] if "firm" in role else role
-
-        agent_id = eval("self.data.{}s_id[game_id]".format(general_role))
-
-        self.log("{} {} asks for end of init.".format(role, agent_id))
-
-        cond0 = len(self.data.firms_id) == self.n_firms
-
-        cond1 = len(self.data.customers_id) == self.n_customers
-
-        if game_id not in self.has_played:
-            self.has_played.append(game_id)
-
-        cond2 = len(self.has_played) == len(self.data.roles)
-
-        self.log("{} are connected out of {}".format(len(self.has_played), self.n_agents))
-
-        if cond0 and cond1 and cond2 or game_started:
-            
-            self.end_time_step()
-
-            return self.reply("new_turn", self.t)
-        else:
-            return self.reply("wait", self.get_name(func()), t, game_id, role, game_started)
-
-    def ask_end_of_turn(self, t, game_id, role):
-
-        agent_id = eval("self.data.{}s_id[game_id]".format(role))
-
-        self.log("{} {} asks for end of turn.".format(role, agent_id))
-
-        current_state = self.data.current_state
-
-        cond0 = all(
-            [len(current_state[k]) == self.n_customers
-             for k in ["customer_extra_view_choices", "customer_firm_choices"]]
-        )
-
-        cond1 = all(
-            [len(current_state[k]) == self.n_firms
-             for k in ["firm_positions", "firm_prices"]]
-        )
-       
-        if game_id not in self.has_played:
-            self.has_played.append(game_id)
-
-        cond2 = len(self.has_played) == len(self.data.roles)
-
-        self.log("{} agents have ended the turn out of {}.".format(len(self.has_played), self.n_agents))
-
-        if cond0 and cond1 and cond2:
-
-            self.end_time_step()
-
-            return self.reply("new_turn", self.t)
-        else:
-            return self.reply("wait", self.get_name(func()), t, game_id, role)
+        return self.reply(func_name, game_id, self.time_manager.t, role, state, position, price)
 
     #----------------------------------- customer demands --------------------------------------#
 
@@ -235,90 +139,163 @@ class Game(Logger):
 
         customer_id = self.data.customers_id[game_id]
 
-        self.log("Customer {} asks for firms strategies.".format(customer_id))
+        self.log("Customer {} asks for recording his choice as t {}.".format(customer_id, t))
 
-        self.check_time_step(t)
-       
-        x = self.data.current_state["firm_positions"]
-        prices = self.data.current_state["firm_prices"]
+        if t == self.time_manager.t:
+            x = self.data.current_state["firm_positions"]
+            prices = self.data.current_state["firm_prices"]
 
-        return self.reply(self.get_name(func()), x[0], x[1], prices[0], prices[1])
+            return self.reply(function_name(), self.time_manager.t, x[0], x[1], prices[0], prices[1])
+        elif t > self.time_manager.t:
+            return "error/time_is_superior"
+        else:
+            # TODO: Check in history
+            x = self.data.current_state["firm_positions"]
+            prices = self.data.current_state["firm_prices"]
+
+            return self.reply(function_name(), self.time_manager.t, x[0], x[1], prices[0], prices[1])
 
     def ask_customer_choice_recording(self, game_id, t, extra_view, firm):
 
         customer_id = self.data.customers_id[game_id]
 
-        self.log("Customer {} asks to save its exploration perimeter and firm choice.".format(customer_id))
+        self.log("Customer {} asks for recording his choice as t {}: "
+                 "{} for extra view, {} for firm.".format(game_id, t, extra_view, firm))
 
-        self.check_time_step(t)
+        if t == self.time_manager.t:
+            self.data.current_state["customer_replies"][customer_id] = 1
 
-        self.data.current_state["customer_extra_view_choices"][customer_id] = extra_view
-        self.data.current_state["customer_firm_choices"][customer_id] = firm
+            self.data.current_state["customer_extra_view_choices"][customer_id] = extra_view
+            self.data.current_state["customer_firm_choices"][customer_id] = firm
+            self.time_manager.time_manager.check_state()
 
+            return self.reply(function_name(), self.time_manager.t)
 
-        return self.reply(self.get_name(func()))
+        elif t > self.time_manager.t:
+            return "error/time_is_superior"
+
+        else:
+            return self.reply(function_name(), t)
 
     #----------------------------------- firm demands --------------------------------------#
 
     def ask_firm_opponent_choice(self, game_id, t):
-
-        assert self.n_firms == 2, "only works if firms are 2"
+        """called by a passive firm"""
 
         firm_id = self.data.firms_id[game_id]
+        self.log("Firm passive {} asks for opponent strategy.".format(firm_id))
 
-        self.log("Firm {} asks for opponent strategy.".format(firm_id))
+        # self.check_time_step(t)
+        
+        if t == self.time_manager.t:
+            opponent_id = (firm_id + 1) % 2
 
-        self.check_time_step(t)
+            firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
+            cond = firm_choices == firm_id
 
-        # opponent_id = (self.data.firms_id[game_id] + 1) % 2
-        opponent_id = [int(k) for k in self.data.firms_id.values() if k != str(firm_id)][0]
+            n = len(firm_choices[cond])
 
-        return self.reply(
-            self.get_name(func()),
-            self.data.current_state["firm_positions"][opponent_id],
-            self.data.current_state["firm_prices"][opponent_id],
-        )
+            if self.time_manager.state == "active_has_played_and_all_customers_replied":
+                self.data.current_state["passive_gets_results"] = True
+                out = self.reply(
+                    function_name(),
+                    self.time_manager.t,
+                    self.data.current_state["firm_positions"][opponent_id],
+                    self.data.current_state["firm_prices"][opponent_id],
+                    n
+                )
+                self.time_manager.check_state()
+                return out
+
+            else:
+                return "error/wait_for_players_to_play"
+
+        elif t > self.time_manager.t:
+            return "error/time_is_superior"
+            
+        else:
+            # TODO: CHANGE with true value found in history 
+            return self.reply(
+                    function_name(),
+                    self.time_manager.t,
+                    self.data.current_state["firm_positions"][opponent_id],
+                    self.data.current_state["firm_prices"][opponent_id],
+                    n
+                )
+                # self.reply_error()
 
     def ask_firm_choice_recording(self, game_id, t, position, price):
+        """called by active firm"""
 
         firm_id = self.data.firms_id[game_id]
 
         self.log("Firm {} asks to save its price and position.".format(firm_id))
+        
+        if t == self.time_manager.t:
+            opponent_id = (firm_id + 1) % 2
 
-        self.check_time_step(t)
+            opponent_pos, opponent_price = self.get_opponent_choices(opponent_id)
 
-        opponent_id = [int(k) for k in self.data.firms_id.values() if k != str(firm_id)][0]
+            for ids, pos, px in [[firm_id, position, price], [opponent_id, opponent_pos, opponent_price]]:
+                self.data.current_state["firm_positions"][int(ids)] = pos
+                self.data.current_state["firm_prices"][int(ids)] = px
 
-        opponent_pos, opponent_price = self.get_opponent_choices(opponent_id)
+            out = self.reply(function_name(), self.time_manager.t)
+            # check state
+            self.data.current_state["active_replied"] = True
+            self.time_manager.check_state()
 
-        for ids, pos, px in [[firm_id, position, price], [opponent_id, opponent_pos, opponent_price]]:
-            self.data.current_state["firm_positions"][int(ids)] = pos
-            self.data.current_state["firm_prices"][int(ids)] = px
+            return out 
 
-        return self.reply(self.get_name(func()))
+        elif t > self.time_manager.t:
+            return "error/time_is_superior"
+
+        else:
+            # TODO: Check in history 
+            opponent_id = (firm_id + 1) % 2
+
+            opponent_pos, opponent_price = self.get_opponent_choices(opponent_id)
+
+            for ids, pos, px in [[firm_id, position, price], [opponent_id, opponent_pos, opponent_price]]:
+                self.data.current_state["firm_positions"][int(ids)] = pos
+                self.data.current_state["firm_prices"][int(ids)] = px
+
+            return self.reply(function_name(), self.time_manager.t)
 
     def ask_firm_n_clients(self, game_id, t):
+        """called by active firm"""
 
         firm_id = self.data.firms_id[game_id]
 
         self.log("Firm {} asks the number of its clients.".format(firm_id))
 
-        self.check_time_step(t)
+        if t == self.time_manager.t:
 
-        firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
-        cond = firm_choices == firm_id
+            if self.time_manager.state == "active_has_played_and_all_customers_replied":
+                firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
+                cond = firm_choices == firm_id
 
-        n = len(firm_choices[cond])
+                n = len(firm_choices[cond])
+                
+                out = self.reply(function_name(), self.time_manager.t, n)
 
-        return self.reply(self.get_name(func()), self.t, n)
-   
-    def ask_role(self, game_id, t):
+                self.data.current_state["active_gets_results"] = True
+                self.time_manager.check_state()
 
-        firm_id = self.data.firms_id[game_id]
+                return out
 
-        self.log("Firm {} asks for its role (active vs passive).".format(firm_id))
+            else:
+                return "error/wait_for_players_to_play"
 
-        self.check_time_step(t)
-        
-        return self.reply(self.get_name(func()), self.t, self.data.roles[game_id])
+        elif t > self.time_manager.t: 
 
+            return "error/time_is_superior"
+
+        else:
+            # TODO: Check in history t - 1 
+            firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
+            cond = firm_choices == firm_id
+
+            n = len(firm_choices[cond])
+
+            return self.reply(function_name(), self.time_manager.t, n)
