@@ -23,7 +23,7 @@ class Data(Logger):
         self.map_server_id_android_id = {}
         self.map_server_id_game_id = {}
 
-        self.server_id_in_use = []
+        self.server_id_in_use = {}
 
         self.roles = []
 
@@ -79,4 +79,3 @@ class Data(Logger):
 
         for s in self.entries:
             self.history[s].append(self.current_state[s])
-            self.current_state[s] = []

@@ -28,6 +28,9 @@ class ParametersFrame(QWidget, Logger):
         self.parameters["save"] = \
             CheckParameter(text="Save results", checked=param["save"])
 
+        self.parameters["bot_customers"] = \
+            CheckParameter(text="Bot customers", checked=param["bot_customers"])
+
         self.parameters["exploration_cost"] = \
             IntParameter(text="Exploration cost",
                          initial_value=param["exploration_cost"], value_range=[0, 100])
@@ -57,8 +60,6 @@ class ParametersFrame(QWidget, Logger):
 
         self.run_button.setEnabled(False)
 
-        parameters = self.get_parameters()
-
         if self.error:
 
             self.show_warning(msg=self.error)
@@ -66,8 +67,7 @@ class ParametersFrame(QWidget, Logger):
         else:
             self.log("Push 'run' button.")
 
-            # Communicate parameters through the queue
-            self.parent().run_game(parameters)
+            self.parent().run_game()
 
     def get_parameters(self):
 

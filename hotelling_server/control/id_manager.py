@@ -1,4 +1,5 @@
 from utils.utils import Logger
+import json
 
 
 class IDManager(Logger):
@@ -20,20 +21,21 @@ class IDManager(Logger):
         game_id = self.get_game_id(server_id, max_n)
         self.log("I associate game id '{}' to server id '{}'.".format(game_id, server_id))
 
-        return android_id
+        return game_id 
 
     def get_server_id(self, android_id):
 
         server_id, new = self.get_mapping(android_id, self.data.param["map_android_id_server_id"])
+
         if new:
-            self.data.save_param("map_android_id_server_id", new_value=self.data.param["map_android_id_server_id"])
+            self.data.save_param("map_android_id_server_id", self.data.param["map_android_id_server_id"])
 
         return server_id
 
     def get_game_id(self, server_id, max_n):
 
         game_id, new = self.get_mapping(server_id, self.data.map_server_id_game_id, max_n)
-
+        
         if game_id != -1:
             if new:
                 self.data.map_server_id_game_id.update({server_id: game_id})
@@ -67,4 +69,4 @@ class IDManager(Logger):
 
     def get_server_id_in_use(self):
 
-        return self.data["server_id_in_use"]
+        return self.data.server_id_in_use

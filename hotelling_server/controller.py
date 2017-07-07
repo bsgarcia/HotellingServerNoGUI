@@ -80,6 +80,7 @@ class Controller(Thread, Logger):
 
         self.running_game.clear()
         self.ask_interface("show_frame_load_game_new_game")
+        self.game.stop_as_soon_as_possible()
 
     def close_program(self):
 
