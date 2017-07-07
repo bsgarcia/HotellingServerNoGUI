@@ -76,8 +76,6 @@ class Game(Logger):
         
         self.log("Game server goes next step.")
 
-        self.switch_firms_role()
-
         self.has_played = []
         self.t += 1
         self.data.update_history()
@@ -97,7 +95,7 @@ class Game(Logger):
 
     def check_time_step(self, client_t):
         
-        for i in range(30): 
+        for i in range(150): 
             self.log("Time on server is '{}', client's time is '{}'".format(self.t, client_t))
         if not client_t == self.t:
             self.log("Time is not synchronized!")
@@ -320,9 +318,7 @@ class Game(Logger):
 
         self.log("Firm {} asks for its role (active vs passive).".format(firm_id))
 
-        role = self.switch_firms_role(game_id)
-
         self.check_time_step(t)
         
-        return self.reply(self.get_name(func()), self.t, role)
+        return self.reply(self.get_name(func()), self.t, self.data.roles[game_id])
 
