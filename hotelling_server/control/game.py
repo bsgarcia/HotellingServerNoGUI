@@ -25,7 +25,7 @@ class Game(Logger):
 
         self.save = None
 
-    #----------------------------------- sides methods --------------------------------------#
+    # ----------------------------------- sides methods --------------------------------------#
     def new(self):
         
         self.data.roles = ["firm" for i in range(self.n_firms)] + \
@@ -57,7 +57,6 @@ class Game(Logger):
                 "{}".format(str(e))
                 )
 
-
         self.log("Reply '{}' to request '{}'.".format(to_client, request))
 
         return to_client
@@ -83,7 +82,7 @@ class Game(Logger):
 
         # self.controller.queue.put(("game_stop_game", ))
     
-    #----------------------------------- clients demands --------------------------------------#
+    # ----------------------------------- clients demands --------------------------------------#
 
     def ask_init(self, android_id):
 
@@ -142,20 +141,22 @@ class Game(Logger):
         self.log("Customer {} asks for recording his choice as t {}.".format(customer_id, t))
 
         if t == self.time_manager.t:
-            x = self.data.current_state["firm_positions"]
-            prices = self.data.current_state["firm_prices"]
+            if self.time_manager.state == "active_replied":
+                x = self.data.current_state["firm_positions"]
+                prices = self.data.current_state["firm_prices"]
 
-            return self.reply(function_name(), self.time_manager.t, x[0], x[1], prices[0], prices[1])
+                return self.reply(function_name(), self.time_manager.t, x[0], x[1], prices[0], prices[1])
+            else:
+                return "error/wait"
 
         elif t > self.time_manager.t:
             return "error/time_is_superior"
 
         else:
-            # TODO: Check in history
-            x = self.data.current_state["firm_positions"]
-            prices = self.data.current_state["firm_prices"]
+            x = self.data.history["firm_positions"][t]
+            prices = self.data.history["firm_prices"][t]
 
-            return self.reply(function_name(), self.time_manager.t, x[0], x[1], prices[0], prices[1])
+            return self.reply(function_name(), t, x[0], x[1], prices[0], prices[1])
 
     def ask_customer_choice_recording(self, game_id, t, extra_view, firm):
 
@@ -165,11 +166,14 @@ class Game(Logger):
                  "{} for extra view, {} for firm.".format(game_id, t, extra_view, firm))
 
         if t == self.time_manager.t:
-            self.data.current_state["customer_replies"][customer_id] = 1
 
-            self.data.current_state["customer_extra_view_choices"][customer_id] = extra_view
-            self.data.current_state["customer_firm_choices"][customer_id] = firm
-            self.time_manager.time_manager.check_state()
+            if not self.data.current_state["customer_replies"][customer_id]:
+
+                self.data.current_state["customer_replies"][customer_id] = 1
+
+                self.data.current_state["customer_extra_view_choices"][customer_id] = extra_view
+                self.data.current_state["customer_firm_choices"][customer_id] = firm
+                self.time_manager.time_manager.check_state()
 
             return self.reply(function_name(), self.time_manager.t)
 
@@ -190,13 +194,15 @@ class Game(Logger):
         
         if t == self.time_manager.t:
 
-            firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
-            cond = firm_choices == firm_id
-
-            n = sum(cond)
-
             if self.time_manager.state == "active_has_played_and_all_customers_replied":
+
+                # Get number of clients
+                firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
+                cond = firm_choices == firm_id
+                n = sum(cond)
+
                 self.data.current_state["passive_gets_results"] = True
+
                 out = self.reply(
                     function_name(),
                     self.time_manager.t,
@@ -204,17 +210,19 @@ class Game(Logger):
                     self.data.current_state["firm_prices"][opponent_id],
                     n
                 )
+
                 self.time_manager.check_state()
                 return out
 
             else:
-                return "error/wait_for_players_to_play"
+                return "error/wait"
 
         elif t > self.time_manager.t:
             return "error/time_is_superior"
             
         else:
 
+            # Get number of clients
             firm_choices = np.asarray(self.data.history["customer_firm_choices"][t])
             cond = firm_choices == opponent_id
             n = sum(cond)
@@ -236,17 +244,21 @@ class Game(Logger):
 
         if t == self.time_manager.t:
 
-            opponent_id = (firm_id + 1) % 2
-            opponent_pos, opponent_price = self.get_opponent_choices(opponent_id)
-
-            for ids, pos, px in [[firm_id, position, price], [opponent_id, opponent_pos, opponent_price]]:
-                self.data.current_state["firm_positions"][int(ids)] = pos
-                self.data.current_state["firm_prices"][int(ids)] = px
-
             out = self.reply(function_name(), self.time_manager.t)
-            # check state
-            self.data.current_state["active_replied"] = True
-            self.time_manager.check_state()
+
+            if not self.data.current_state["active_replied"]:
+
+                # Register choice
+                opponent_id = (firm_id + 1) % 2
+                opponent_pos, opponent_price = self.get_opponent_choices(opponent_id)
+
+                for ids, pos, px in [[firm_id, position, price], [opponent_id, opponent_pos, opponent_price]]:
+                    self.data.current_state["firm_positions"][int(ids)] = pos
+                    self.data.current_state["firm_prices"][int(ids)] = px
+
+                # check state
+                self.data.current_state["active_replied"] = True
+                self.time_manager.check_state()
 
             return out 
 
@@ -266,9 +278,9 @@ class Game(Logger):
         if t == self.time_manager.t:
 
             if self.time_manager.state == "active_has_played_and_all_customers_replied":
+
                 firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
                 cond = firm_choices == firm_id
-
                 n = sum(cond)
                 
                 out = self.reply(function_name(), self.time_manager.t, n)
@@ -279,7 +291,7 @@ class Game(Logger):
                 return out
 
             else:
-                return "error/wait_for_players_to_play"
+                return "error/wait"
 
         elif t > self.time_manager.t:
             return "error/time_is_superior"

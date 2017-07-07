@@ -82,4 +82,4 @@ class Data(Logger):
 
         for s in self.entries:
             self.history[s].append(self.current_state[s])
-            self.cu
+
