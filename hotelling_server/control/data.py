@@ -13,7 +13,9 @@ class Data(Logger):
         self.entries = [
             "firm_positions", "firm_prices", "firm_profits",
             "customer_firm_choices", "customer_extra_view_choices", "customer_utility", "n_client", 
-            "customer_replies", "active_replied", "passive_gets_results", "active_gets_results"]
+            "customer_replies", "active_replied", "passive_gets_results", "active_gets_results",
+            "firm_states"
+        ]
 
         self.history = {s: [] for s in self.entries}
         self.current_state = {s: [] for s in self.entries}
@@ -27,8 +29,6 @@ class Data(Logger):
         self.server_id_in_use = {}
 
         self.roles = []
-
-        self.initial_firm_state = ["active", "passive"]
 
         # --- server parameters --- #
 

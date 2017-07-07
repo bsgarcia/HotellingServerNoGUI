@@ -209,7 +209,7 @@ class HotellingPlayer(GenericBotClient):
 
     def firm_active_beginning_of_turn(self, opp_position, opp_price):
 
-        self.log("Opp position and price are {} and {}.".format(opp_position, opp_price))
+        self.log("Active firm: opp position and price are {} and {}.".format(opp_position, opp_price))
         own_position = np.random.randint(1, self.n_positions)
         own_price = np.random.randint(1, self.firm_attributes["n_prices"])
         self.ask_firm_choice_recording(own_position, own_price)
@@ -273,7 +273,7 @@ class HotellingPlayer(GenericBotClient):
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 
-    def ask_customer_choice_recording(self, t, extra_view_choice, firm_choice):
+    def ask_customer_choice_recording(self, extra_view_choice, firm_choice):
         self.state = "customer_choice_recording"
         self.ask_server("ask_customer_choice_recording/" + "/".join([str(i) for i in [
             self.game_id, self.t, extra_view_choice, firm_choice

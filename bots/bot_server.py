@@ -121,7 +121,7 @@ class BotGame(Logger):
         t = self.t
         role = self.controller.role
         if role == "firm":
-            state = 'passive'
+            state = 'active'
             position = 0
             price = 0
             opp_position = 0
