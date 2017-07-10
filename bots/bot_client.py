@@ -3,6 +3,7 @@ import socket
 from threading import Thread, Event
 from multiprocessing import Queue
 import numpy as np
+from time import sleep
 
 from utils.utils import Logger, function_name
 
@@ -97,6 +98,7 @@ class GenericBotClient(Thread, Logger):
 
         else:
             self.log("Error in treating server reply!")
+            Event().wait(0.5)
             return 0
 
     def retry_demand(self, server_response):
@@ -182,7 +184,7 @@ class HotellingPlayer(GenericBotClient):
         available_prices = prices[cond0 * cond1]
 
         firm_idx = np.arange(len(positions))
-        available_firm = firm_idx[cond0*cond1]
+        available_firm = firm_idx[cond0 * cond1]
 
         if len(available_prices):
             self.customer_attributes["min_price"] = min(available_prices)

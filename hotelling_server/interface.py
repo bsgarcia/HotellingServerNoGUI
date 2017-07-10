@@ -1,4 +1,4 @@
-from os import system
+from os import system, getenv
 from multiprocessing import Queue, Event
 
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt
@@ -55,6 +55,9 @@ class UI(QWidget, Logger):
         self.setWindowTitle(self.app_name)
 
         self.communicate.signal.connect(self.look_for_msg)
+        
+        if getenv("USER") == "getz":
+            self.dimensions = 300, 100, 900, 450
 
         self.setGeometry(*self.dimensions)
 

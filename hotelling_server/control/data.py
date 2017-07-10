@@ -14,7 +14,7 @@ class Data(Logger):
             "firm_positions", "firm_prices", "firm_profits",
             "customer_firm_choices", "customer_extra_view_choices", "customer_utility", "n_client", 
             "customer_replies", "active_replied", "passive_gets_results", "active_gets_results",
-            "firm_states"
+            "firm_states", "init_done"
         ]
 
         self.history = {s: [] for s in self.entries}
@@ -27,6 +27,8 @@ class Data(Logger):
         self.map_server_id_game_id = {}
 
         self.server_id_in_use = {}
+
+        self.time_manager_state = ""
 
         self.roles = []
 
@@ -58,7 +60,7 @@ class Data(Logger):
                     "map_server_id_android_id": self.map_server_id_android_id,
                     "map_server_id_game_id": self.map_server_id_game_id,
                     "server_id_in_use": self.server_id_in_use,
-                    "roles": self.roles
+                    "roles": self.roles,
                 }
             )
 
@@ -74,7 +76,7 @@ class Data(Logger):
         self.firms_id = data["firms_id"]
         self.customers_id = data["customers_id"]
         self.map_server_id_android_id = data["map_server_id_android_id"]
-        self.map_server_id_game_id = data["server_id_game_id"]
+        self.map_server_id_game_id = data["map_server_id_game_id"]
         self.server_id_in_use = data["server_id_in_use"]
         self.roles = data["roles"]
 

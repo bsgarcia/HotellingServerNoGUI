@@ -75,13 +75,13 @@ class Controller(Thread, Logger):
 
         self.log("Received stop task")
         self.continue_game.clear()
+        self.time_manager.stop_as_soon_as_possible()
         # Wait then for a signal of the request manager for allowing interface to show a button to starting menu
 
     def stop_game_second_phase(self):
 
         self.running_game.clear()
         self.ask_interface("show_frame_load_game_new_game")
-        self.game.stop_as_soon_as_possible()
 
     def close_program(self):
 
@@ -114,7 +114,7 @@ class Controller(Thread, Logger):
     # ------------------------------- Message handling ----------------------------------------------- #
 
     def handle_message(self, message):
-        
+
         command = message[0]
         args = message[1:]
         if len(args):
@@ -141,11 +141,13 @@ class Controller(Thread, Logger):
 
     def ui_run_game(self):
         self.log("UI ask 'run game'.")
+        self.time_manager.setup()
         self.game.new()
         self.launch_game()
 
     def ui_load_game(self, file):
         self.data.load(file)
+        self.time_manager.restart()
         self.launch_game()
         self.log("UI ask 'load game'.")
 

@@ -3,7 +3,7 @@ from bots.bot_client import HotellingPlayer
 
 def main():
 
-    n = 3
+    n = 13
 
     for i in range(n):
 

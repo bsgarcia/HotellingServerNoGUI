@@ -22,8 +22,6 @@ class Game(Logger):
         self.n_agents = self.n_firms + self.n_customers
 
         self.bot_customers = self.interface_parameters["bot_customers"]
-        
-        self.continue_game = True
 
         self.save = None
 
@@ -33,8 +31,7 @@ class Game(Logger):
         self.data.roles = ["firm" for i in range(self.n_firms)] + \
                           ["customer" for i in range(self.n_customers)]
 
-        # np.random.shuffle(self.data.roles)
-        # np.random.shuffle(self.data.initial_firm_state)
+        np.random.shuffle(self.data.roles)
 
         self.data.current_state["firm_states"] = ["active", "passive"]
 
@@ -56,15 +53,20 @@ class Game(Logger):
 
         # retrieve method arguments
         args = [int(a) if a.isdigit() else a for a in whole[1:]]
+        
+        if self.data.current_state["init_done"]:
 
-        # call method
-        to_client = command(*args)
-        #
-        # except socket.error as e:
-        #     to_client = (
-        #         "Command contained in request not understood: "
-        #         "{}".format(str(e))
-        #         )
+            # call method
+            to_client = command(*args)
+            self.log("ACTUAL STATE: {}".format(self.time_manager.state))
+
+        elif not self.data.current_state["init_done"] and command == self.ask_init:
+
+            to_client = command(*args)
+
+        else:
+            
+            to_client = "error/wait_init"
 
         self.log("Reply '{}' to request '{}'.".format(to_client, request))
 
@@ -87,16 +89,11 @@ class Game(Logger):
 
     @staticmethod
     def reply(*args):
-        return "reply/{}".format("/".join([str(a) if type(a) in (int, np.int64) else a.replace("ask", "reply") for a in args]))
+        return "reply/{}".format("/".join(
+            [str(a) if type(a) in (int, np.int64) else a.replace("ask", "reply") for a in args]
+                )
+            )
 
-   #  def stop_as_soon_as_possible(self):
-
-        # self.continue_game = False
-
-    # def end_game(self):
-
-        # self.controller.queue.put(("game_stop_game", ))
-    
     # ----------------------------------- clients demands --------------------------------------#
 
     def ask_init(self, android_id):
@@ -123,23 +120,28 @@ class Game(Logger):
         position = customer_id + 1
         exploration_cost = self.interface_parameters["exploration_cost"]
         utility_consumption = self.interface_parameters["utility_consumption"]
-        # self.data.current_state["customer_extra_view_choices"].append(-1)
-        # self.data.current_state["customer_firm_choices"].append(-1)
         
         self.log("Number of missing agents: {}".format(len(self.data.roles) - (len(self.data.firms_id) +
             len(self.data.customers_id))))
+
+        if len(self.data.firms_id) + len(self.data.customers_id) == len(self.data.roles):
+            self.data.current_state["init_done"] = True
 
         return self.reply(func_name, game_id, self.time_manager.t, role, position, exploration_cost, utility_consumption)
 
     def init_firms(self, func_name, game_id, role):
 
         if game_id not in self.data.firms_id.keys():
+
             firm_id = len(self.data.firms_id) % 2
             self.data.firms_id[game_id] = firm_id
+        
+        # if device already asked for init, get id
         else:
+
             firm_id = self.data.firms_id[game_id]
 
-        opponent_id = (firm_id+1) % 2
+        opponent_id = (firm_id + 1) % 2
 
         state = self.data.current_state["firm_states"][firm_id]
 
@@ -151,6 +153,9 @@ class Game(Logger):
         self.log("Number of missing agents: {}".format(len(self.data.roles) -
                                                        (len(self.data.firms_id) + len(self.data.customers_id))))
 
+        if len(self.data.firms_id) + len(self.data.customers_id) == len(self.data.roles):
+            self.data.current_state["init_done"] = True
+
         return self.reply(func_name, game_id, self.time_manager.t, role, position, state, price,
                           opp_position, opp_price)
 
@@ -161,6 +166,7 @@ class Game(Logger):
         customer_id = self.data.customers_id[game_id]
 
         self.log("Customer {} asks for firm choices as t {}.".format(customer_id, t))
+        self.log("Client's time is {}, server's time is {}.".format(t, self.time_manager.t))
 
         if t == self.time_manager.t:
             if self.time_manager.state == "active_has_played":
@@ -186,6 +192,7 @@ class Game(Logger):
 
         self.log("Customer {} asks for recording his choice as t {}: "
                  "{} for extra view, {} for firm.".format(game_id, t, extra_view, firm))
+        self.log("Client's time is {}, server's time is {}.".format(t, self.time_manager.t))
 
         if t == self.time_manager.t:
 
@@ -220,6 +227,7 @@ class Game(Logger):
         firm_id = self.data.firms_id[game_id]
         opponent_id = (firm_id + 1) % 2
         self.log("Firm passive {} asks for opponent strategy.".format(firm_id))
+        self.log("Client's time is {}, server's time is {}.".format(t, self.time_manager.t))
         
         if t == self.time_manager.t:
 
@@ -229,7 +237,7 @@ class Game(Logger):
                 firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
                 cond = firm_choices == firm_id
                 n = sum(cond)
-
+                
                 self.data.current_state["passive_gets_results"] = True
 
                 out = self.reply(
@@ -251,7 +259,7 @@ class Game(Logger):
             
         else:
 
-            # Get number of clients
+            # Get number of clients of previous turn
             firm_choices = np.asarray(self.data.history["customer_firm_choices"][t])
             cond = firm_choices == opponent_id
             n = sum(cond)
@@ -270,6 +278,7 @@ class Game(Logger):
         firm_id = self.data.firms_id[game_id]
 
         self.log("Firm active {} asks to save its price and position.".format(firm_id))
+        self.log("Client's time is {}, server's time is {}.".format(t, self.time_manager.t))
 
         if t == self.time_manager.t:
 
@@ -280,8 +289,9 @@ class Game(Logger):
                 # Register choice
                 opponent_id = (firm_id + 1) % 2
                 opponent_pos, opponent_price = self.get_opponent_choices(opponent_id)
+                
 
-                for ids, pos, px in [[firm_id, position, price], [opponent_id, opponent_pos, opponent_price]]:
+                for ids, pos, px in [(firm_id, position, price), (opponent_id, opponent_pos, opponent_price)]:
                     self.data.current_state["firm_positions"][int(ids)] = pos
                     self.data.current_state["firm_prices"][int(ids)] = px
 
@@ -303,6 +313,7 @@ class Game(Logger):
         firm_id = self.data.firms_id[game_id]
 
         self.log("Firm active {} asks the number of its clients.".format(firm_id))
+        self.log("Client's time is {}, server's time is {}.".format(t, self.time_manager.t))
 
         if t == self.time_manager.t:
 

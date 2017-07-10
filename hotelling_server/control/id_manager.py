@@ -37,8 +37,10 @@ class IDManager(Logger):
         game_id, new = self.get_mapping(server_id, self.data.map_server_id_game_id, max_n)
         
         if game_id != -1:
+
             if new:
                 self.data.map_server_id_game_id.update({server_id: game_id})
+
             self.data.server_id_in_use[game_id] = server_id
 
         return game_id
