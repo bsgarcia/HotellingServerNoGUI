@@ -105,10 +105,9 @@ class BotGame(Logger):
             to_client = command(*args)
 
         except Exception as e:
-            to_client, to_controller = (
-                "Command contained in request not understood.\n"
-                "{}".format(e),
-                None)
+            to_client = \
+                "Command contained in request not understood. I go error '{}'.".format(e)
+            raise e
 
         self.log("Reply '{}' to request '{}'.".format(to_client, request))
         return to_client

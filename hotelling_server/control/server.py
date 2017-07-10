@@ -1,25 +1,20 @@
 import socketserver
+import http.server
 from multiprocessing import Queue, Event
 from threading import Thread
 
 from utils.utils import Logger
 
 
-class TCPHandler(socketserver.StreamRequestHandler, Logger):
+class HttpHandler(http.server.SimpleHTTPRequestHandler, Logger):
 
-    name = "ThreadedTCPRequestHandler"
+    def do_GET(self):
 
-    def handle(self):
-
-        # self.rfile is a file-like object created by the handler;
-        # we can now use e.g. readline() instead of raw recv() calls
-        data = self.rfile.readline().strip()
+        data = self.path
 
         if data:
 
             try:
-
-                data = data.decode()
                 self.server.controller_queue.put(("server_request", data))
                 controller_response = self.server.server_queue.get()
 
@@ -33,12 +28,21 @@ class TCPHandler(socketserver.StreamRequestHandler, Logger):
                 response = "Server encountered an exception handling request '{}': '''{}'''.". format(data, e)
 
         else:
-            response = "No game is running and/or request is empty."
+            response = "Request is empty."
 
         self.log("Reply '{}' to '{}'.".format(response, data))
 
-        # Likewise, self.wfile is a file-like object used to write back to the client
+        # Send response status code
+        self.send_response(200)
+
+        # Send headers
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+
         self.wfile.write(response.encode())
+
+    def log_message(self, *args):
+        return
 
 
 class TCPGamingServer(socketserver.TCPServer):
@@ -46,7 +50,7 @@ class TCPGamingServer(socketserver.TCPServer):
     def __init__(self, server_address, controller_queue, server_queue):
         self.server_queue = server_queue
         self.controller_queue = controller_queue
-        super().__init__(server_address, TCPHandler)
+        super().__init__(server_address, HttpHandler)  # TCPHandler)
 
 
 class Server(Thread, Logger):

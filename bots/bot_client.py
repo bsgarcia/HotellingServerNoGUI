@@ -1,9 +1,9 @@
 import json
-import socket
 from threading import Thread, Event
 from multiprocessing import Queue
 import numpy as np
-from time import sleep
+import requests
+import http.client
 
 from utils.utils import Logger, function_name
 
@@ -13,8 +13,7 @@ class GenericBotClient(Thread, Logger):
     with open("hotelling_server/parameters/network.json") as file:
         network_parameters = json.load(file)
     ip_address, port = "localhost", network_parameters["port"]
-    delay_socket_retry = 0.5
-    socket_timeout = 0.5
+    delay_retry = 1
 
     def __init__(self):
 
@@ -44,69 +43,35 @@ class GenericBotClient(Thread, Logger):
 
         self.server_demand = message
 
+        self.log("Ask the server: '{}'.".format(message))
+
         while True:
-
-            self.log("Ask the server: '{}'.".format(message))
-
-            sock = None
             try:
+                r = requests.get('http://{}:{}/{}'.format(self.ip_address, self.port, message))
+                received = r.text
+                parts = [i for i in received.split("/") if len(i)]
 
-                # Create a socket (SOCK_STREAM means a TCP socket)
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(self.socket_timeout)
+                if len(parts) > 1 and parts[0] == "reply":
+                    break
 
-                # Connect to server and send data
-                sock.connect((self.ip_address, self.port))
+                else:
+                    self.log("Response in bad shape: '{}'.".format(received))
+                    Event().wait(self.delay_retry)
 
-                sock.sendall(bytes(message + "\n", "utf-8"))
+            except Exception as e:
+                self.log("I got trouble with connection: '{}'.".format(e))
+                Event().wait(self.delay_retry)
 
-                received = sock.recv(1024)
-                while not received:
-                    Event().wait(self.delay_socket_retry)
-                    sock.recv(1024)
+        self.log("Received from server: '{}'.".format(received))
 
-                self.handle_server_response(received.decode())
-                break
-            #
-            # except socket.timeout:
-            #     self.log("Timeout reached.")
-            #     self.sock.close()
-            #     self.sock = None
-
-            except socket.error as e:
-                self.log("Exception: {}".format(e))
-                if sock:
-                    sock.close()
-
-    def handle_server_response(self, response):
-
-        if response != "":
-            self.log("Received from server: '{}'.".format(response))
-            parts = response.split("/")
-            if self.treat_server_reply(parts):
-                self.log("Server response handled.")
-            else:
-                self.retry_demand(response)
-        else:
-            self.retry_demand("No response.")
-
-    def treat_server_reply(self, parts):
-
-        if len(parts) > 1 and parts[0] == "reply" and parts[1]:
-            self.handle(parts[1], parts[2:])
-            return 1
-
-        else:
-            self.log("Error in treating server reply!")
-            Event().wait(0.5)
-            return 0
+        self.handle(what=parts[1], params=parts[2:])
 
     def retry_demand(self, server_response):
 
         self.log("Server response is in bad shape: '{}'. Retry the same demand.".format(server_response))
 
         # noinspection PyCallByClass,PyTypeChecker
-        Event().wait(self.delay_socket_retry)
+        Event().wait(self.delay_retry)
         self.queue.put(("ask_server", self.server_demand))
 
 
