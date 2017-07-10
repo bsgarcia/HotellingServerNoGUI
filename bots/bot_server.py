@@ -126,7 +126,7 @@ class BotGame(Logger):
             opp_position = 0
             opp_price = 0
             return "reply/reply_init/" + "/".join([str(i) for i in [
-                game_id, t, role, state, position, price, opp_position, opp_price
+                game_id, t, role, position, state, price, opp_position, opp_price
             ]])
 
         else:
