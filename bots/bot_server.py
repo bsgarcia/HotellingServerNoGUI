@@ -94,20 +94,14 @@ class BotGame(Logger):
         # retrieve whole command
         whole = [i for i in request.split("/") if i != ""]
 
-        try:
-            # retrieve method
-            command = eval("self.{}".format(whole[0]))
+        # retrieve method
+        command = eval("self.{}".format(whole[0]))
 
-            # retrieve method arguments
-            args = [int(a) if a.isdigit() else a for a in whole[1:]]
+        # retrieve method arguments
+        args = [int(a) if a.isdigit() else a for a in whole[1:]]
 
-            # call method
-            to_client = command(*args)
-
-        except Exception as e:
-            to_client = \
-                "Command contained in request not understood. I go error '{}'.".format(e)
-            raise e
+        # call method
+        to_client = command(*args)
 
         self.log("Reply '{}' to request '{}'.".format(to_client, request))
         return to_client
