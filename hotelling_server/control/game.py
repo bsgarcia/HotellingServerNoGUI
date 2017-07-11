@@ -44,6 +44,10 @@ class Game(Logger):
     def handle_request(self, request):
 
         self.log("Got request: '{}'.".format(request))
+        self.log("ACTUAL STATE: {}".format(self.time_manager.state))
+
+        # save data in case server shuts down
+        self.data.save()
 
         # retrieve whole command
         whole = [i for i in request.split("/") if i != ""]
@@ -54,21 +58,23 @@ class Game(Logger):
         # retrieve method arguments
         args = [int(a) if a.isdigit() else a for a in whole[1:]]
         
-        if self.data.current_state["init_done"]:
-
-            # call method
-            to_client = command(*args)
-            self.log("ACTUAL STATE: {}".format(self.time_manager.state))
-
-        elif not self.data.current_state["init_done"] and command == self.ask_init:
-
-            to_client = command(*args)
-
-        else:
-            
+        # don't launch methods if init is not done 
+        if not self.data.current_state["init_done"] and command != self.ask_init:
             to_client = "error/wait_init"
 
+        # save when game ends, tell clients that game is ending
+        elif self.time_manager.end:
+            self.data.save()
+            to_client = "reply/end_game"
+
+        # regular launch method
+        else:
+            to_client = command(*args)
+
         self.log("Reply '{}' to request '{}'.".format(to_client, request))
+
+        # save in case server shuts down
+        self.data.save()
 
         return to_client
 
@@ -91,10 +97,10 @@ class Game(Logger):
     def reply(*args):
         return "reply/{}".format("/".join(
             [str(a) if type(a) in (int, np.int64) else a.replace("ask", "reply") for a in args]
-                )
             )
+        )
 
-    # ----------------------------------- clients demands --------------------------------------#
+    # ----------------------------------- all devices demands --------------------------------------#
 
     def ask_init(self, android_id):
 
@@ -115,30 +121,30 @@ class Game(Logger):
 
     def init_customers(self, func_name, game_id, role):
 
-        customer_id = len(self.data.customers_id) if len(self.data.customers_id) != 0 else 0
-        self.data.customers_id[game_id] = customer_id
+        if game_id not in self.data.customers_id.keys():
+
+            customer_id = len(self.data.customers_id) if len(self.data.customers_id) != 0 else 0
+            self.data.customers_id[game_id] = customer_id
+
+        else:
+            customer_id = self.data.customers_id[game_id]
+
         position = customer_id + 1
         exploration_cost = self.interface_parameters["exploration_cost"]
         utility_consumption = self.interface_parameters["utility_consumption"]
-        
-        self.log("Number of missing agents: {}".format(len(self.data.roles) - (len(self.data.firms_id) +
-            len(self.data.customers_id))))
 
-        if len(self.data.firms_id) + len(self.data.customers_id) == len(self.data.roles):
-            self.data.current_state["init_done"] = True
+        self.check_remaining_agents()
 
         return self.reply(func_name, game_id, self.time_manager.t, role, position, exploration_cost, utility_consumption)
 
     def init_firms(self, func_name, game_id, role):
 
         if game_id not in self.data.firms_id.keys():
-
             firm_id = len(self.data.firms_id) % 2
             self.data.firms_id[game_id] = firm_id
-        
+
         # if device already asked for init, get id
         else:
-
             firm_id = self.data.firms_id[game_id]
 
         opponent_id = (firm_id + 1) % 2
@@ -150,14 +156,20 @@ class Game(Logger):
         opp_position = self.data.current_state["firm_positions"][opponent_id]
         opp_price = self.data.current_state["firm_prices"][opponent_id]
 
-        self.log("Number of missing agents: {}".format(len(self.data.roles) -
-                                                       (len(self.data.firms_id) + len(self.data.customers_id))))
-
-        if len(self.data.firms_id) + len(self.data.customers_id) == len(self.data.roles):
-            self.data.current_state["init_done"] = True
+        self.check_remaining_agents()
 
         return self.reply(func_name, game_id, self.time_manager.t, role, position, state, price,
                           opp_position, opp_price)
+
+    def check_remaining_agents(self):
+
+        remaining = len(self.data.roles) - (len(self.data.firms_id) + len(self.data.customers_id))
+
+        self.log("Number of missing agents: {}".format(remaining))
+
+        if not remaining:
+            self.data.current_state["init_done"] = True
+            self.time_manager.check_state()
 
     # ----------------------------------- customer demands --------------------------------------#
 
@@ -189,7 +201,7 @@ class Game(Logger):
     def ask_customer_choice_recording(self, game_id, t, extra_view, firm):
 
         customer_id = self.data.customers_id[game_id]
-
+        
         self.log("Customer {} asks for recording his choice as t {}: "
                  "{} for extra view, {} for firm.".format(game_id, t, extra_view, firm))
         self.log("Client's time is {}, server's time is {}.".format(t, self.time_manager.t))
@@ -228,7 +240,7 @@ class Game(Logger):
         opponent_id = (firm_id + 1) % 2
         self.log("Firm passive {} asks for opponent strategy.".format(firm_id))
         self.log("Client's time is {}, server's time is {}.".format(t, self.time_manager.t))
-        
+
         if t == self.time_manager.t:
 
             if self.time_manager.state == "active_has_played_and_all_customers_replied":
@@ -237,7 +249,7 @@ class Game(Logger):
                 firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
                 cond = firm_choices == firm_id
                 n = sum(cond)
-                
+
                 self.data.current_state["passive_gets_results"] = True
 
                 out = self.reply(
@@ -326,6 +338,7 @@ class Game(Logger):
                 out = self.reply(function_name(), self.time_manager.t, n)
 
                 self.data.current_state["active_gets_results"] = True
+
                 self.time_manager.check_state()
 
                 return out

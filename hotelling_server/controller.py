@@ -142,12 +142,16 @@ class Controller(Thread, Logger):
     def ui_run_game(self):
         self.log("UI ask 'run game'.")
         self.time_manager.setup()
+        parameters  = self.get_state_parameters()
+        self.ask_interface("show_state_table", parameters)
         self.game.new()
         self.launch_game()
 
     def ui_load_game(self, file):
         self.data.load(file)
-        self.time_manager.restart()
+        self.time_manager.setup()
+        parameters  = self.get_state_parameters()
+        self.ask_interface("show_state_table", parameters)
         self.launch_game()
         self.log("UI ask 'load game'.")
 
@@ -175,6 +179,19 @@ class Controller(Thread, Logger):
         self.stop_game_second_phase()
 
     # ---------------------- Parameters management -------------------------------------------- #
+    
+    def get_state_parameters(self):
+        
+        return {
+                    "history": self.data.history,
+                    "current_state": self.data.current_state,
+                    "firms_id": self.data.firms_id,
+                    "customers_id": self.data.customers_id,
+                    "server_id_in_use": self.data.server_id_in_use,
+                    "roles": self.data.roles,
+                    "time_manager_t": self.data.controller.time_manager.t,
+                    "time_manager_state": self.data.controller.time_manager.state
+               }
 
     def get_parameters(self, key):
 

@@ -28,7 +28,8 @@ class Data(Logger):
 
         self.server_id_in_use = {}
 
-        self.time_manager_state = ""
+        self.time_manager_state = "beginning_init"
+        self.time_manager_t = 0
 
         self.roles = []
 
@@ -61,6 +62,8 @@ class Data(Logger):
                     "map_server_id_game_id": self.map_server_id_game_id,
                     "server_id_in_use": self.server_id_in_use,
                     "roles": self.roles,
+                    "time_manager_t": self.controller.time_manager.t,
+                    "time_manager_state": self.controller.time_manager.state
                 }
             )
 
@@ -79,6 +82,8 @@ class Data(Logger):
         self.map_server_id_game_id = data["map_server_id_game_id"]
         self.server_id_in_use = data["server_id_in_use"]
         self.roles = data["roles"]
+        self.time_manager_state = data["time_manager_state"]
+        self.time_manager_t = data["time_manager_t"]
 
     def update_history(self):
 

@@ -1,5 +1,6 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem
 
 from hotelling_server.graphics.widgets.plot_layouts import DonePlayingLayout
 from hotelling_server.graphics.widgets.trial_counter import TrialCounter
@@ -84,6 +85,33 @@ class GameFrame(QWidget, Logger):
     def set_trial_number(self, trial_n):
 
         self.trial_counter.set_trial_number(trial_n)
+
+    def initialize_state_table(self, parameters):
+
+        colors = {
+            "blue": QColor(36, 110, 189),
+        }
+
+        rows = len(parameters["firms_id"]) + len(parameters["customers_id"])
+        columns = len(parameters["current_state"])
+
+        self.table = QTableWidget(rows, columns)
+
+        self.table.verticalHeader().setVisible(False)
+        self.table.horizontalHeader().setVisible(False)
+
+        for y in range(rows):
+            self.table.setRowHeight(y, 8)
+        for x in range(columns):
+            self.table.setColumnWidth(x, 8)
+
+        # assign items to each cell 
+        for row in range(rows):
+            for column in range(columns):
+                item = QTableWidgetItem(self.table).setBackground(colors["blue"])
+                self.table.setItem(row, column, item)
+
+        self.layout.addWidget(self.table)
 
     def initialize_figures(self):
 

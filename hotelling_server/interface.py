@@ -104,6 +104,11 @@ class UI(QWidget, Logger):
 
             else:
                 self.log('Saving of parameters aborted.')
+    
+    def show_state_table(self, param):
+
+        self.frames["game"].initialize_state_table(param)
+        self.frames["game"].hide()
 
     def show_frame_load_game_new_game(self, *args):
 
