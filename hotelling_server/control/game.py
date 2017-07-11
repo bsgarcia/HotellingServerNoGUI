@@ -31,9 +31,10 @@ class Game(Logger):
         self.data.roles = ["firm" for i in range(self.n_firms)] + \
                           ["customer" for i in range(self.n_customers)]
 
-        np.random.shuffle(self.data.roles)
+        # np.random.shuffle(self.data.roles)
 
         self.data.current_state["firm_states"] = ["active", "passive"]
+        self.data.current_state["n_client"] = [0, 0]
 
         self.data.current_state["firm_positions"] = np.random.randint(1, self.game_parameters["n_positions"], size=2)
         self.data.current_state["firm_prices"] = np.random.randint(1, self.game_parameters["n_prices"], size=2)
@@ -250,6 +251,7 @@ class Game(Logger):
                 cond = firm_choices == firm_id
                 n = sum(cond)
 
+                self.data.current_state["n_client"][firm_id] = n
                 self.data.current_state["passive_gets_results"] = True
 
                 out = self.reply(
@@ -337,6 +339,7 @@ class Game(Logger):
                 
                 out = self.reply(function_name(), self.time_manager.t, n)
 
+                self.data.current_state["n_client"][firm_id] = n
                 self.data.current_state["active_gets_results"] = True
 
                 self.time_manager.check_state()

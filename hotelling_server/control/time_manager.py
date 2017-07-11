@@ -10,6 +10,7 @@ class TimeManager(Logger):
         self.data = controller.data
         self.state = ""
         self.t = 0
+        self.end = False
 
     def setup(self):
         self.state = self.data.time_manager_state
@@ -59,6 +60,7 @@ class TimeManager(Logger):
 
         self.log("Game server goes next step.")
         self.data.update_history()
+        self.data.current_state["firm_states"] = self.data.current_state["firm_states"][::-1]
 
         if not self.continue_game:
             self.state = "beginning_time_step"
@@ -66,6 +68,7 @@ class TimeManager(Logger):
             self.end = True
 
         self.t += 1
+        self.controller.queue.put(("update_data_viewer", ))
 
     def stop_as_soon_as_possible(self):
         self.continue_game = False

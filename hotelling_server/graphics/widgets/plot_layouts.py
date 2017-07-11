@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QVBoxLayout, QLabel, QWidget
 
-from hotelling_server.graphics.widgets.plot import ThreeLinesPlot, DonePlayingPlot
+from hotelling_server.graphics.widgets.plot import OneLinePlot, DonePlayingPlot
 
 
 class DonePlayingLayout(QVBoxLayout):
@@ -37,22 +37,25 @@ class DonePlayingLayout(QVBoxLayout):
         self.done_playing_plot.clear()
 
 
-class PlotLayout(QVBoxLayout):
+class PlotLayout(QWidget):
 
-    def __init__(self, parent, title, plot_class=ThreeLinesPlot):
+    def __init__(self, parent, title, plot_class=OneLinePlot):
 
         super().__init__()
-        self.plot = plot_class(
-            parent=parent, width=200, height=100, dpi=100)
 
+        self.setParent(parent)
+
+        self.plot = plot_class(width=200, height=100, dpi=100)
+
+        self.layout = QVBoxLayout(self)
         self.title = title
 
         self.initialize()
 
     def initialize(self):
 
-        self.addWidget(self.plot, alignment=Qt.AlignCenter)
-        self.addWidget(QLabel(self.title), alignment=Qt.AlignCenter)
+        self.layout.addWidget(self.plot, alignment=Qt.AlignCenter)
+        self.layout.addWidget(QLabel(self.title), alignment=Qt.AlignCenter)
 
     def initialize_figure(self, initial_data, labels):
 
