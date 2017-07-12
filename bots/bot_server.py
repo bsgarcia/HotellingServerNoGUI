@@ -1,5 +1,6 @@
 from multiprocessing import Queue, Event
 import json
+import numpy as np
 
 from utils.utils import Logger
 
@@ -115,16 +116,16 @@ class BotGame(Logger):
         role = self.controller.role
         if role == "firm":
             state = 'active'
-            position = 0
-            price = 0
-            opp_position = 0
-            opp_price = 0
+            position = np.random.randint(1, 12)
+            price = np.random.randint(1, 12)
+            opp_position = np.random.randint(1, 12)
+            opp_price = np.random.randint(1, 12)
             return "reply/reply_init/" + "/".join([str(i) for i in [
                 game_id, t, role, position, state, price, opp_position, opp_price
             ]])
 
         else:
-            position = 0
+            position = np.random.randint(1, 12)
             exploration_cost = 0
             utility_consumption = 0
             return "reply/reply_init/" + "/".join([str(i) for i in [
@@ -138,8 +139,8 @@ class BotGame(Logger):
         assert self.t == t
 
         self.log("Firm {} asks firm opponent choice for t {}.".format(game_id, t))
-        position, price = 0, 0
-        n_clients = 2
+        position, price = np.random.randint(1, 12, 2)
+        n_clients = np.random.randint(0, 12)
 
         # End of turn for passive firm
         self.t += 1
@@ -162,7 +163,7 @@ class BotGame(Logger):
         assert self.t == t
 
         self.log("Firm {} asks for number of clients as t {}.".format(game_id, t))
-        n_clients = 4
+        n_clients = np.random.randint(0, 12)
 
         # End of turn for active firm
         self.t += 1
@@ -178,7 +179,7 @@ class BotGame(Logger):
         assert self.t == t
 
         self.log("Customer {} asks for recording his choice as t {}.".format(game_id, t))
-        position_0, position_1, price_0, price_1 = 0, 3, 4, 2
+        position_0, position_1, price_0, price_1 = np.random.randint(1, 12, size=4)
         return "reply/reply_customer_firm_choices/" + "/".join([str(i) for i in [
             self.t, position_0, position_1, price_0, price_1
         ]])
