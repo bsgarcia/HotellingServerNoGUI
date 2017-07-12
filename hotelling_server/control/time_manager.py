@@ -4,21 +4,22 @@ from utils.utils import Logger
 
 
 class TimeManager(Logger):
+
     def __init__(self, controller):
         self.controller = controller
         self.data = controller.data
-        self.state = "beginning_init"
-        self.data.current_state["init_done"] = False
-        self.log("NEW STATE: {}.".format(self.state))
+        self.state = ""
         self.t = 0
-        self.continue_game = True
+        self.end = False
 
     def setup(self):
-        self.beginning_time_step()
-
-    def restart(self):
-        self.state = "beginning_time_step"
+        self.state = self.data.time_manager_state
+        self.log("NEW STATE: {}.".format(self.state))
+        self.t = self.data.time_manager_t
+        self.end = False
         self.continue_game = True
+        self.beginning_time_step()
+        self.log("Players already inititialized: {}".format(self.data.current_state["init_done"]))
 
     def check_state(self):
         if self.state == "beginning_init":
@@ -26,7 +27,7 @@ class TimeManager(Logger):
                 self.state = "beginning_time_step"
                 self.log("NEW STATE: {}.".format(self.state))
 
-        if self.state == "beginning_time_step":
+        elif self.state == "beginning_time_step":
             if self.data.current_state["active_replied"]:
                 self.state = "active_has_played"
                 self.log("NEW STATE: {}.".format(self.state))
@@ -42,7 +43,7 @@ class TimeManager(Logger):
                 self.state = "end_time_step"
                 self.log("NEW STATE: {}.".format(self.state))
                 self.end_time_step()
-                
+
                 if self.continue_game:
                     self.beginning_time_step()
                     self.state = "beginning_time_step"
@@ -58,15 +59,16 @@ class TimeManager(Logger):
     def end_time_step(self):
 
         self.log("Game server goes next step.")
-
-        self.data.save()
+        self.data.update_history()
+        self.data.current_state["firm_states"] = self.data.current_state["firm_states"][::-1]
 
         if not self.continue_game:
+            self.state = "beginning_time_step"
             self.controller.queue.put(("game_stop_game", ))
-        else:
-            self.data.update_history()
-        
+            self.end = True
+
         self.t += 1
+        self.controller.queue.put(("update_data_viewer", ))
 
     def stop_as_soon_as_possible(self):
         self.continue_game = False

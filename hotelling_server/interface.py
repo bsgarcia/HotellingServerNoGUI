@@ -105,6 +105,12 @@ class UI(QWidget, Logger):
             else:
                 self.log('Saving of parameters aborted.')
 
+    def update_data_viewer(self, param):
+
+        self.frames["game"].update_state_table(param)
+        self.frames["game"].set_trial_number(param["time_manager_t"])
+        self.frames["game"].update_statistics(param["statistics"])
+
     def show_frame_load_game_new_game(self, *args):
 
         for frame in self.frames.values():

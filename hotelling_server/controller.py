@@ -142,12 +142,16 @@ class Controller(Thread, Logger):
     def ui_run_game(self):
         self.log("UI ask 'run game'.")
         self.time_manager.setup()
+        # parameters  = self.get_state_parameters()
+        # self.ask_interface("update_data_viewer", parameters)
         self.game.new()
         self.launch_game()
 
     def ui_load_game(self, file):
         self.data.load(file)
-        self.time_manager.restart()
+        self.time_manager.setup()
+        # parameters  = self.get_state_parameters()
+        # self.ask_interface("update_data_viewer", parameters)
         self.launch_game()
         self.log("UI ask 'load game'.")
 
@@ -174,7 +178,27 @@ class Controller(Thread, Logger):
         self.log("'Game' ask 'stop game'.")
         self.stop_game_second_phase()
 
+    def update_data_viewer(self):
+        self.log("'Game' ask 'update_data_viewer'.")
+        self.statistician.compute_distance()
+        parameters = self.get_current_data()
+        self.ask_interface("update_data_viewer", parameters)
+
     # ---------------------- Parameters management -------------------------------------------- #
+    
+    def get_current_data(self):
+        
+        return {
+                    "history": self.data.history,
+                    "current_state": self.data.current_state,
+                    "firms_id": self.data.firms_id,
+                    "customers_id": self.data.customers_id,
+                    "server_id_in_use": self.data.server_id_in_use,
+                    "roles": self.data.roles,
+                    "time_manager_t": self.data.controller.time_manager.t,
+                    "time_manager_state": self.data.controller.time_manager.state,
+                    "statistics": self.statistician.data
+               }
 
     def get_parameters(self, key):
 

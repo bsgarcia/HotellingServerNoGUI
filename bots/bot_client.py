@@ -106,20 +106,13 @@ class HotellingPlayer(GenericBotClient):
         while self.continue_game:
 
             to_do = self.queue.get()
+
             self.handle(to_do[0], to_do[1:])
-            # Event().wait(0.1)
 
         self.log("End of game.")
 
-    # ----------- Time step ---------------------- #
-
-    # Customer time step
-
-    # self.ask_customer_firm_choices()
-    # positions, prices = self.queue.get()
-    # extra_view_choice = self.customer_extra_view_choice()
-    # firm_choice = self.customer_firm_choice(positions, prices)
-    # self.ask_customer_choice_recording(extra_view_choice, firm_choice)
+    def end_game(self):
+        self.continue_game = False
 
     # ----------- Customer choice functions ---------------------- #
 
@@ -271,7 +264,7 @@ class HotellingPlayer(GenericBotClient):
 
     def reply_firm_choice_recording(self, t):
         if self.t == t and self.state == "firm_choice_recording":
-            self.queue.put(("ask_firm_n_clients", ))
+            self.queue.put(("ask_firm_n_clients",))
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 
@@ -281,7 +274,7 @@ class HotellingPlayer(GenericBotClient):
 
     def reply_firm_n_clients(self, t, n):
         if self.t == t and self.state == "firm_n_clients":
-            self.queue.put(("firm_active_end_of_turn", n, ))
+            self.queue.put(("firm_active_end_of_turn", n,))
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 

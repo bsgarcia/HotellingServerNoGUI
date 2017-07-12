@@ -48,6 +48,7 @@ class HttpHandler(http.server.SimpleHTTPRequestHandler, Logger):
 class TCPGamingServer(socketserver.TCPServer):
 
     def __init__(self, server_address, controller_queue, server_queue):
+        self.allow_reuse_address = True
         self.server_queue = server_queue
         self.controller_queue = controller_queue
         super().__init__(server_address, HttpHandler)  # TCPHandler)

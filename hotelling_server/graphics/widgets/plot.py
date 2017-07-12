@@ -124,14 +124,14 @@ class OneLinePlot(MplCanvas):
         )
 
         # Customize axes
-        self.axes.set_ylim(-0.01, 1.1)
+        # self.axes.set_ylim(-0.01, 1.1)
         self.axes.legend(framealpha=0, fontsize=self.font_size)
         self.axes.set_autoscaley_on(True)
 
     def update_plot(self, data):
 
-        self.line.set_xdata(range(len(data)))
-        self.line.set_ydata(data)
+        self.line.set_xdata(data[0])
+        self.line.set_ydata(data[1])
 
         self.axes.relim()
         self.axes.autoscale_view()
