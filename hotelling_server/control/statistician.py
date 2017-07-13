@@ -20,7 +20,7 @@ class Statistician(Logger):
         for i in range(len(self.pos)):
             self.pos[i].append(pos[i])
 
-        self.data["distance"] = self.pos
+        self.data["firm_distance"] = self.pos
 
     def compute_mean_extra_view_choices(self):
 
@@ -28,7 +28,7 @@ class Statistician(Logger):
 
         self.mean_extra_view_choices.append(mean)
 
-        self.data["mean_extra_view_choices"] = self.mean_extra_view_choices
+        self.data["customer_mean_extra_view_choices"] = self.mean_extra_view_choices
 
     def compute_profits(self):
 
@@ -37,7 +37,7 @@ class Statistician(Logger):
         for i in range(len(self.profits)):
             self.profits[i].append(profits[i])
 
-        self.data["profits"] = self.profits
+        self.data["firm_profits"] = self.profits
 
     def compute_mean_utility(self):
 
@@ -45,4 +45,4 @@ class Statistician(Logger):
 
         self.mean_utility.append(mean)
 
-        self.data["mean_utility"] = self.mean_utility
+        self.data["customer_mean_utility"] = self.mean_utility

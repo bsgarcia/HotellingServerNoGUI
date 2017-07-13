@@ -27,31 +27,31 @@ class GameFrame(QWidget, Logger):
 
         self.plot_layout = dict()
 
-        self.plot_layout["profits"] = PlotLayout(
+        self.plot_layout["firm_profits"] = PlotLayout(
                 parent=self,
                 title="",
                 plot_class=TwoLinesPlot
         )
 
-        self.plot_layout["distance"] = PlotLayout(
+        self.plot_layout["firm_distance"] = PlotLayout(
                 parent=self,
                 title="",
                 plot_class=TwoLinesPlot
         )
 
-        self.plot_layout["mean_extra_view_choices"] = PlotLayout(
+        self.plot_layout["customer_mean_extra_view_choices"] = PlotLayout(
                 parent=self,
                 title="",
                 plot_class=OneLinePlot
         )
 
-        self.plot_layout["mean_utility"] = PlotLayout(
+        self.plot_layout["customer_mean_utility"] = PlotLayout(
                 parent=self,
                 title="",
                 plot_class=OneLinePlot
         )
 
-        self.done_playing_layout = DonePlayingLayout(parent=self)
+        # self.done_playing_layout = DonePlayingLayout(parent=self)
 
         self.setup()
 
@@ -63,7 +63,7 @@ class GameFrame(QWidget, Logger):
         self.switch_button.setText("View figures")
         self.layout.addWidget(self.switch_button, stretch=0)
 
-        for widget in self.plot_layout.values():
+        for key, widget in sorted(self.plot_layout.items()):
             self.layout.addWidget(widget, stretch=1)
             widget.hide()
 
@@ -198,21 +198,21 @@ class GameFrame(QWidget, Logger):
         for widget in self.plot_layout.values():
             widget.plot.clear()
 
-        self.done_playing_layout.clear()
+        # self.done_playing_layout.clear()
 
-        self.plot_layout["distance"].initialize_figure(
+        self.plot_layout["firm_distance"].initialize_figure(
                 initial_data=[np.arange(11), np.arange(11)], labels=["position A", "position B"]
         )
 
-        self.plot_layout["profits"].initialize_figure(
+        self.plot_layout["firm_profits"].initialize_figure(
                 initial_data=[np.arange(11), np.arange(11)], labels=["profits A", "profits B"]
         )
 
-        self.plot_layout["mean_extra_view_choices"].initialize_figure(
+        self.plot_layout["customer_mean_extra_view_choices"].initialize_figure(
                 initial_data=np.arange(11), labels="mean view choices"
         )
 
-        self.plot_layout["mean_utility"].initialize_figure(
+        self.plot_layout["customer_mean_utility"].initialize_figure(
                 initial_data=np.arange(11), labels="mean customer utility"
         )
         # self.plot_layout["exchanges"].initialize_figure(
