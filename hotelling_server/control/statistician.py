@@ -4,20 +4,45 @@ from utils.utils import Logger
 
 class Statistician(Logger):
 
-    def __init__(self,  controller):
+    def __init__(self, controller):
 
         self.controller = controller
         self.data = {}
-        self.pos = []
+        self.pos = [[], []]
+        self.profits = [[], []]
+        self.mean_extra_view_choices = []
+        self.mean_utility = []
 
     def compute_distance(self):
 
         pos = self.controller.data.current_state["firm_positions"]
-        t = self.controller.time_manager.t
 
-        x = np.arange(t)
-        y = abs(pos[0] - pos[1])
+        for i in range(len(self.pos)):
+            self.pos[i].append(pos[i])
 
-        self.pos.append(y)
+        self.data["distance"] = self.pos
 
-        self.data["distance"] = (x, self.pos)
+    def compute_mean_extra_view_choices(self):
+
+        mean = np.mean(self.controller.data.current_state["customer_extra_view_choices"])
+
+        self.mean_extra_view_choices.append(mean)
+
+        self.data["mean_extra_view_choices"] = self.mean_extra_view_choices
+
+    def compute_profits(self):
+
+        profits = self.controller.data.current_state["firm_profits"]
+
+        for i in range(len(self.profits)):
+            self.profits[i].append(profits[i])
+
+        self.data["profits"] = self.profits
+
+    def compute_mean_utility(self):
+
+        mean = np.mean(self.controller.data.current_state["customer_utility"])
+
+        self.mean_utility.append(mean)
+
+        self.data["mean_utility"] = self.mean_utility

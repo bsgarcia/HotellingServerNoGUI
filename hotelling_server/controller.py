@@ -67,7 +67,7 @@ class Controller(Thread, Logger):
         self.continue_game.set()
         self.running_game.set()
 
-        self.ask_interface("show_frame_game", )
+        self.ask_interface("show_frame_game", self.get_current_data())
 
         self.log("Game launched.")
 
@@ -180,7 +180,13 @@ class Controller(Thread, Logger):
 
     def update_data_viewer(self):
         self.log("'Game' ask 'update_data_viewer'.")
+
+        # needs to be moved elsewhere?
         self.statistician.compute_distance()
+        self.statistician.compute_mean_extra_view_choices()
+        self.statistician.compute_profits()
+        self.statistician.compute_mean_utility()
+
         parameters = self.get_current_data()
         self.ask_interface("update_data_viewer", parameters)
 

@@ -121,7 +121,7 @@ class UI(QWidget, Logger):
 
     def show_frame_game(self, *args):
 
-        self.frames["game"].prepare()
+        self.frames["game"].prepare(args[0])
 
         for frame in self.frames.values():
             frame.hide()

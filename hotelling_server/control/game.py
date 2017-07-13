@@ -35,6 +35,7 @@ class Game(Logger):
 
         self.data.current_state["firm_states"] = ["active", "passive"]
         self.data.current_state["n_client"] = [0, 0]
+        self.data.current_state["firm_profits"] = [0, 0]
 
         self.data.current_state["firm_positions"] = np.random.randint(1, self.game_parameters["n_positions"], size=2)
         self.data.current_state["firm_prices"] = np.random.randint(1, self.game_parameters["n_prices"], size=2)
@@ -78,6 +79,19 @@ class Game(Logger):
         self.data.save()
 
         return to_client
+    
+    def compute_utility(self):
+        
+        uc = self.interface_parameters["utility_consumption"]
+        ec = self.interface_parameters["exploration_cost"]
+        firm_choices = self.data.current_state["customer_firm_choices"]
+        view_choices = self.data.current_state["customer_extra_view_choices"]
+        prices = self.data.current_state["firm_prices"]
+
+        utility = [int(firm_choices[i] >= 0) * uc - ((ec * view_choices[i]) + prices[firm_choices[i]])
+                  for i in self.data.customers_id.values()]
+        
+        self.data.current_state["customer_utility"] = utility
 
     def get_opponent_choices(self, opponent_id):
 
@@ -246,11 +260,16 @@ class Game(Logger):
 
             if self.time_manager.state == "active_has_played_and_all_customers_replied":
 
+                # compute utility for all customers
+                self.compute_utility()
+
                 # Get number of clients
                 firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
                 cond = firm_choices == firm_id
                 n = sum(cond)
-
+                price = self.data.current_state["firm_prices"][firm_id]
+                
+                self.data.current_state["firm_profits"][firm_id] += n * price
                 self.data.current_state["n_client"][firm_id] = n
                 self.data.current_state["passive_gets_results"] = True
 
@@ -339,6 +358,9 @@ class Game(Logger):
                 
                 out = self.reply(function_name(), self.time_manager.t, n)
 
+                price = self.data.current_state["firm_prices"][firm_id]
+                
+                self.data.current_state["firm_profits"][firm_id] += n * price
                 self.data.current_state["n_client"][firm_id] = n
                 self.data.current_state["active_gets_results"] = True
 

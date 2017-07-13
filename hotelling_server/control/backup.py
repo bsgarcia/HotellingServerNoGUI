@@ -44,5 +44,3 @@ class Backup(Logger):
 
         with open("hotelling_server/parameters/{}.json".format(key), "w") as param_file:
             json.dump(new_value, param_file)
-
-

@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QWidget
 
-from hotelling_server.graphics.widgets.plot import OneLinePlot, DonePlayingPlot
+from hotelling_server.graphics.widgets.plot import OneLinePlot, DonePlayingPlot, TwoLinesPlot
 
 
 class DonePlayingLayout(QVBoxLayout):

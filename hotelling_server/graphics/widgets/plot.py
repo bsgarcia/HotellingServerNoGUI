@@ -5,6 +5,7 @@ from matplotlib.figure import Figure
 
 from matplotlib.backends import qt_compat
 use_pyside = qt_compat.QT_API == qt_compat.QT_API_PYSIDE
+from utils.utils import Logger
 
 
 class MplCanvas(FigureCanvas):
@@ -130,8 +131,8 @@ class OneLinePlot(MplCanvas):
 
     def update_plot(self, data):
 
-        self.line.set_xdata(data[0])
-        self.line.set_ydata(data[1])
+        self.line.set_xdata(range(len(data)))
+        self.line.set_ydata(data)
 
         self.axes.relim()
         self.axes.autoscale_view()
@@ -160,6 +161,53 @@ class ThreeLinesPlot(MplCanvas):
 
         self.lines = []
         for i in range(3):
+            line, = \
+                self.axes.plot(
+                    x,
+                    initial_data[i],
+                    linewidth=self.line_width,
+                    color=self.colors[i],
+                    label=labels[i]
+                )
+            self.lines.append(line)
+
+        # Custom axes
+        self.axes.legend(framealpha=0, fontsize=self.font_size)
+        # frame = legend.get_frame()
+        # frame.set_alpha(0)
+
+        self.axes.set_autoscaley_on(True)
+
+    def update_plot(self, data):
+
+        for line, d in zip(self.lines, data):
+            line.set_xdata(range(len(d)))
+            line.set_ydata(d)
+
+        self.axes.relim()
+        self.axes.autoscale_view()
+
+        # We need to draw *and* flush
+        self.draw()
+        self.flush_events()
+
+class TwoLinesPlot(MplCanvas, Logger):
+
+    font_size = 8
+    line_width = 2
+    colors = ["blue", "green"]
+
+    def __init__(self, *args, **kwargs):
+
+        MplCanvas.__init__(self, *args, **kwargs)
+        self.lines = None
+
+    def initialize(self, initial_data, labels):
+
+        x = np.arange(len(initial_data[0])) if len(initial_data) else []
+
+        self.lines = []
+        for i in range(2):
             line, = \
                 self.axes.plot(
                     x,
