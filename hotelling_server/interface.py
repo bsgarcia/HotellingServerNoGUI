@@ -238,13 +238,16 @@ class UI(QWidget, Logger):
 
         return self.mod.controller.data.param["interface"]
 
+    def get_current_parameters(self):
+        return self.frames["parameters"].get_parameters()
+
     # TODO: Replace all the following function by these two lines.
     # def ask_controller(self, instruction, arg=None):
     #
     #     self.graphic_queue.put((instruction, arg))
 
     def run_game(self):
-        self.controller_queue.put(("ui_run_game", ))
+        self.controller_queue.put(("ui_run_game", self.get_current_parameters()))
 
     def load_game(self, file):
         self.controller_queue.put(("ui_load_game", file))

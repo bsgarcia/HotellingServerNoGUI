@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout
 import numpy as np
 
 from hotelling_server.graphics.widgets.plot_layouts import DonePlayingLayout, OneLinePlot, PlotLayout, TwoLinesPlot
@@ -17,6 +17,7 @@ class GameFrame(QWidget, Logger):
         QWidget.__init__(self, parent=parent)
 
         self.layout = QVBoxLayout()
+
         self.stop_button = QPushButton()
         self.switch_button = QPushButton()
 
@@ -60,13 +61,14 @@ class GameFrame(QWidget, Logger):
         self.setLayout(self.layout)
         self.layout.addLayout(self.trial_counter, stretch=0)
 
-        self.switch_button.setText("View figures")
         self.layout.addWidget(self.switch_button, stretch=0)
 
+        # add plots and then hide it
         for key, widget in sorted(self.plot_layout.items()):
             self.layout.addWidget(widget, stretch=1)
             widget.hide()
 
+        # add tables
         for widget in self.table.values():
             self.layout.addWidget(widget)
 
@@ -81,7 +83,7 @@ class GameFrame(QWidget, Logger):
 
         self.log("Preparing...")
         self.prepare_figures()
-        self.prepare_stop_button()
+        self.prepare_buttons()
         self.prepare_state_table(parameters)
         self.log("Preparation done!")
 
@@ -90,10 +92,11 @@ class GameFrame(QWidget, Logger):
         self.initialize_figures()
         # self.update_done_playing_labels(data["done_playing_labels"])
 
-    def prepare_stop_button(self):
+    def prepare_buttons(self):
 
         self.stop_button.setText("Stop task")
         self.stop_button.setEnabled(True)
+        self.switch_button.setText("View figures")
 
     def push_switch_button(self):
 
@@ -123,10 +126,11 @@ class GameFrame(QWidget, Logger):
 
     def prepare_state_table(self, parameters):
 
-        game_ids, labels, fancy_labels = self.get_state_table_labels(parameters)
+        ids, labels, fancy_labels = self.get_state_table_labels(parameters)
 
         for role in ["firm", "customer"]:
-            rows = game_ids[role]
+
+            rows = ids[role]
             columns = labels[role]
 
             # set height and width
@@ -143,27 +147,27 @@ class GameFrame(QWidget, Logger):
 
     def update_state_table(self, parameters):
 
-        game_ids, labels, fancy_labels = self.get_state_table_labels(parameters)
+        ids, labels, fancy_labels = self.get_state_table_labels(parameters)
 
         for role in ["firm", "customer"]:
 
-            rows = game_ids[role]
+            rows = ids[role]
             columns = labels[role]
 
             self.table[role].setColumnCount(len(columns))
             self.table[role].setRowCount(len(rows))
 
-            # set row names (game ids)
+            # set row names (server ids, game ids)
             for i, idx in enumerate(rows):
-                self.table[role].setVerticalHeaderItem(i, QTableWidgetItem(str(idx)))
+                self.table[role].setVerticalHeaderItem(i, QTableWidgetItem("{}: {}".format(*idx)))
 
             self.fill_state_table(role, rows, columns, parameters)
 
     def fill_state_table(self, role, rows, columns, parameters):
 
         # for each game_id
-        for x, game_id in enumerate(rows):
-            
+        for x, (server_id, game_id) in enumerate(rows):
+
             # for each label
             for y, label in enumerate(columns):
                 data = parameters["current_state"][label]
@@ -176,13 +180,20 @@ class GameFrame(QWidget, Logger):
 
     def get_state_table_labels(self, parameters):
 
-        # get game ids
-        game_ids = {"firm": list(parameters["firms_id"].keys()),
-                    "customer": list(parameters["customers_id"].keys())}
+        server_id_game_id = parameters["map_server_id_game_id"].items()
+
+        ids = {"firm": [],
+               "customer": []}
+        
+        # sort server ids and game ids by role (firm vs customer)
+        for role in ["firm", "customer"]:
+            ids[role] = [(server_id, game_id) for server_id, game_id in server_id_game_id
+                    if parameters["roles"][game_id] == role]
 
         # pick wanted labels
-        firm_labels = "firm_profits", "firm_prices", "firm_positions", "firm_states", "n_client"
-        customer_labels = "customer_firm_choices", "customer_extra_view_choices", "customer_utility"
+        firm_labels = ("firm_profits", "firm_prices", "firm_positions", "firm_states", "n_client",
+        "firm_cumulative_profits")
+        customer_labels = ("customer_firm_choices", "customer_extra_view_choices", "customer_utility")
 
         labels = {"firm": firm_labels,
                    "customer": customer_labels}
@@ -191,7 +202,7 @@ class GameFrame(QWidget, Logger):
         fancy_labels = {"firm": [name.replace("_", " ").capitalize() for name in firm_labels],
                         "customer": [name.replace("_", " ").capitalize() for name in customer_labels]}
 
-        return game_ids, labels, fancy_labels
+        return ids, labels, fancy_labels
 
     def initialize_figures(self):
 

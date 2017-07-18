@@ -11,7 +11,7 @@ class Data(Logger):
         # --- game variables --- #
 
         self.entries = [
-            "firm_positions", "firm_prices", "firm_profits",
+            "firm_positions", "firm_prices", "firm_profits", "firm_cumulative_profits",
             "customer_firm_choices", "customer_extra_view_choices", "customer_utility", "n_client", 
             "customer_replies", "active_replied", "passive_gets_results", "active_gets_results",
             "firm_states", "init_done"

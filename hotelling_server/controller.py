@@ -122,7 +122,7 @@ class Controller(Thread, Logger):
         else:
             eval("self.{}()".format(command))
 
-    # ------------------------------ Server interface ----------------------------------------------- #
+    # ------------------------------ Server interface -----------------------#
 
     def server_running(self):
         self.log("Server running.")
@@ -137,23 +137,19 @@ class Controller(Thread, Logger):
         response = self.game.handle_request(server_data)
         self.server_queue.put(("reply", response))
 
-    # ------------------------------ UI interface (!!!) -------------------------------------- #
+    # ------------------------------ UI interface (!!!) ----------------------#
 
-    def ui_run_game(self):
+    def ui_run_game(self, interface_parameters):
         self.log("UI ask 'run game'.")
         self.time_manager.setup()
-        # parameters  = self.get_state_parameters()
-        # self.ask_interface("update_data_viewer", parameters)
-        self.game.new()
+        self.game.new(interface_parameters)
         self.launch_game()
 
     def ui_load_game(self, file):
+        self.log("UI ask 'load game'.")
         self.data.load(file)
         self.time_manager.setup()
-        # parameters  = self.get_state_parameters()
-        # self.ask_interface("update_data_viewer", parameters)
         self.launch_game()
-        self.log("UI ask 'load game'.")
 
     def ui_stop_game(self):
         self.log("UI ask 'stop game'.")
@@ -203,7 +199,8 @@ class Controller(Thread, Logger):
                     "roles": self.data.roles,
                     "time_manager_t": self.data.controller.time_manager.t,
                     "time_manager_state": self.data.controller.time_manager.state,
-                    "statistics": self.statistician.data
+                    "statistics": self.statistician.data,
+                    "map_server_id_game_id": self.data.map_server_id_game_id
                }
 
     def get_parameters(self, key):

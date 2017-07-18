@@ -21,21 +21,24 @@ class Game(Logger):
         self.n_firms = self.game_parameters["n_firms"]
         self.n_agents = self.n_firms + self.n_customers
 
-        self.bot_customers = self.interface_parameters["bot_customers"]
-
         self.save = None
 
     # ----------------------------------- sides methods --------------------------------------#
-    def new(self):
-        
+    def new(self, interface_parameters):
+
         self.data.roles = ["firm" for i in range(self.n_firms)] + \
                           ["customer" for i in range(self.n_customers)]
 
-        # np.random.shuffle(self.data.roles)
+        np.random.shuffle(self.data.roles)
 
-        self.data.current_state["firm_states"] = ["active", "passive"]
+        self.interface_parameters = interface_parameters
+
+        self.bot_customers = self.interface_parameters["bot_customers"]
+
+        self.data.current_state["firm_states"] = ["passive", "active"]
         self.data.current_state["n_client"] = [0, 0]
         self.data.current_state["firm_profits"] = [0, 0]
+        self.data.current_state["firm_cumulative_profits"] = [0, 0]
 
         self.data.current_state["firm_positions"] = np.random.randint(1, self.game_parameters["n_positions"], size=2)
         self.data.current_state["firm_prices"] = np.random.randint(1, self.game_parameters["n_prices"], size=2)
@@ -46,7 +49,7 @@ class Game(Logger):
     def handle_request(self, request):
 
         self.log("Got request: '{}'.".format(request))
-        self.log("ACTUAL STATE: {}".format(self.time_manager.state))
+        self.log("CURRENT STATE: {}".format(self.time_manager.state))
 
         # save data in case server shuts down
         self.data.save()
@@ -79,9 +82,9 @@ class Game(Logger):
         self.data.save()
 
         return to_client
-    
+
     def compute_utility(self):
-        
+
         uc = self.interface_parameters["utility_consumption"]
         ec = self.interface_parameters["exploration_cost"]
         firm_choices = self.data.current_state["customer_firm_choices"]
@@ -90,7 +93,7 @@ class Game(Logger):
 
         utility = [int(firm_choices[i] >= 0) * uc - ((ec * view_choices[i]) + prices[firm_choices[i]])
                   for i in self.data.customers_id.values()]
-        
+
         self.data.current_state["customer_utility"] = utility
 
     def get_opponent_choices(self, opponent_id):
@@ -122,23 +125,40 @@ class Game(Logger):
         game_id = self.controller.id_manager.get_game_id_from_android_id(android_id, max_n=len(self.data.roles))
 
         if game_id != -1:
+            
+            # regular behavior
+            if not self.bot_customers:
 
-            # pick role
-            role = self.data.roles[game_id]
+                # pick role
+                role = self.data.roles[game_id]
 
-            if role == "firm":
-                return self.init_firms(function_name(), game_id, role)
+                if role == "firm":
+                    return self.init_firms(function_name(), game_id, role)
 
+                else:
+                    return self.init_customers(function_name(), game_id, role)
+
+            # if customers are bot, affect roles by checking android_id,
+            # and reset self.data.roles list.
             else:
-                return self.init_customers(function_name(), game_id, role)
+
+                if "player" in android_id.lower():
+                    role = "customer"
+                    self.data.roles[game_id] = role
+                    return self.init_customers(function_name(), game_id, role)
+
+                else:
+                    role = "firm"
+                    self.data.roles[game_id] = role
+                    return self.init_firms(function_name(), game_id, role)
+
         else:
             return "Error with ID manager. Maybe not authorized to participate."
 
     def init_customers(self, func_name, game_id, role):
 
         if game_id not in self.data.customers_id.keys():
-
-            customer_id = len(self.data.customers_id) if len(self.data.customers_id) != 0 else 0
+            customer_id = len(self.data.customers_id)
             self.data.customers_id[game_id] = customer_id
 
         else:
@@ -155,7 +175,7 @@ class Game(Logger):
     def init_firms(self, func_name, game_id, role):
 
         if game_id not in self.data.firms_id.keys():
-            firm_id = len(self.data.firms_id) % 2
+            firm_id = len(self.data.firms_id)
             self.data.firms_id[game_id] = firm_id
 
         # if device already asked for init, get id
@@ -269,7 +289,8 @@ class Game(Logger):
                 n = sum(cond)
                 price = self.data.current_state["firm_prices"][firm_id]
                 
-                self.data.current_state["firm_profits"][firm_id] += n * price
+                self.data.current_state["firm_cumulative_profits"][firm_id] += n * price
+                self.data.current_state["firm_profits"][firm_id] = n * price
                 self.data.current_state["n_client"][firm_id] = n
                 self.data.current_state["passive_gets_results"] = True
 
@@ -360,7 +381,8 @@ class Game(Logger):
 
                 price = self.data.current_state["firm_prices"][firm_id]
                 
-                self.data.current_state["firm_profits"][firm_id] += n * price
+                self.data.current_state["firm_cumulative_profits"][firm_id] += n * price
+                self.data.current_state["firm_profits"][firm_id] = n * price
                 self.data.current_state["n_client"][firm_id] = n
                 self.data.current_state["active_gets_results"] = True
 

@@ -3,7 +3,6 @@ from threading import Thread, Event
 from multiprocessing import Queue
 import numpy as np
 import requests
-import http.client
 
 from utils.utils import Logger, function_name
 
@@ -12,7 +11,7 @@ class GenericBotClient(Thread, Logger):
 
     with open("hotelling_server/parameters/network.json") as file:
         network_parameters = json.load(file)
-    ip_address, port = "localhost", network_parameters["port"]
+    ip_address, port = "192.168.100.100", network_parameters["port"]
     delay_retry = 1
 
     def __init__(self):
