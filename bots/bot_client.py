@@ -11,7 +11,8 @@ class GenericBotClient(Thread, Logger):
 
     with open("hotelling_server/parameters/network.json") as file:
         network_parameters = json.load(file)
-    ip_address, port = "192.168.100.100", network_parameters["port"]
+    ip_address = network_parameters["ip_address"] if not network_parameters["local"] else "localhost"
+    port = network_parameters["port"]
     delay_retry = 1
 
     def __init__(self):
@@ -74,9 +75,9 @@ class GenericBotClient(Thread, Logger):
         self.queue.put(("ask_server", self.server_demand))
 
 
-class HotellingPlayer(GenericBotClient):
+class HotellingBot(GenericBotClient):
 
-    name = "HotellingPlayer"
+    name = "HotellingBot"
 
     with open("hotelling_server/parameters/game.json") as f:
         game_parameters = json.load(f)

@@ -1,4 +1,5 @@
 import numpy as np
+from bots.bot_client import HotellingBot
 
 
 from utils.utils import Logger, function_name
@@ -45,6 +46,17 @@ class Game(Logger):
 
         self.data.current_state["customer_extra_view_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
         self.data.current_state["customer_firm_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
+
+        if self.bot_customers:
+            self.launch_bot_customers()
+
+    def launch_bot_customers(self):
+
+        n = self.n_customers
+
+        for i in range(n):
+            bc = HotellingBot(name="HotellingBot{}".format(i))
+            bc.start()
 
     def handle_request(self, request):
 
@@ -142,7 +154,7 @@ class Game(Logger):
             # and reset self.data.roles list.
             else:
 
-                if "player" in android_id.lower():
+                if "bot" in android_id.lower():
                     role = "customer"
                     self.data.roles[game_id] = role
                     return self.init_customers(function_name(), game_id, role)
