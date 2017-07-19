@@ -4,7 +4,7 @@ from multiprocessing import Queue, Event
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QMessageBox
 
-from .graphics import game_view, loading_view, parametrization_view, setting_up_view
+from .graphics import game_view, loading_view, parametrization_view, setting_up_view, assignement_view
 from utils.utils import Logger
 
 
@@ -42,13 +42,19 @@ class UI(QWidget, Logger):
     def setup(self):
 
         self.controller_queue = self.mod.controller.queue
+        
+        self.frames["assign"] = \
+                assignement_view.AssignementFrame(parent=self)
 
         self.frames["parameters"] = \
             parametrization_view.ParametersFrame(parent=self)
+
         self.frames["game"] = \
             game_view.GameFrame(parent=self)
+
         self.frames["setting_up"] = \
             setting_up_view.SettingUpFrame(parent=self)
+
         self.frames["load_game_new_game"] = \
             loading_view.LoadGameNewGameFrame(parent=self)
 
@@ -142,6 +148,14 @@ class UI(QWidget, Logger):
 
         self.frames["parameters"].prepare()
         self.frames["parameters"].show()
+
+    def show_frame_assignement(self, *args):
+
+        for frame in self.frames.values():
+            frame.hide()
+
+        self.frames["assign"].prepare()
+        self.frames["assign"].show()
 
     def show_question(self, instructions):
 
@@ -239,12 +253,11 @@ class UI(QWidget, Logger):
         return self.mod.controller.data.param["interface"]
 
     def get_current_parameters(self):
-        return self.frames["parameters"].get_parameters()
-
-    # TODO: Replace all the following function by these two lines.
-    # def ask_controller(self, instruction, arg=None):
-    #
-    #     self.graphic_queue.put((instruction, arg))
+        return {"parametrization": self.frames["parameters"].get_parameters(),
+                "assignement": self.frames["assign"].get_parameters()}
+    
+    def get_game_parameters(self):
+        return self.mod.controller.data.param["game"]
 
     def run_game(self):
         self.controller_queue.put(("ui_run_game", self.get_current_parameters()))

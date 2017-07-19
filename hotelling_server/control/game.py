@@ -1,5 +1,5 @@
 import numpy as np
-from bots.bot_client import HotellingBot
+from bots.local_bot_client import HotellingLocalBots
 
 
 from utils.utils import Logger, function_name
@@ -25,18 +25,14 @@ class Game(Logger):
         self.save = None
 
     # ----------------------------------- sides methods --------------------------------------#
-    def new(self, interface_parameters):
+    def new(self, parameters):
 
-        self.data.roles = ["firm" for i in range(self.n_firms)] + \
-                          ["customer" for i in range(self.n_customers)]
+        self.parametrization = parameters["parametrization"]
 
-        np.random.shuffle(self.data.roles)
+        self.data.assignement = parameters["assignement"]
+        self.data.roles = ["" for i in range(self.n_agents)]
 
-        self.interface_parameters = interface_parameters
-
-        self.bot_customers = self.interface_parameters["bot_customers"]
-
-        self.data.current_state["firm_states"] = ["passive", "active"]
+        self.data.current_state["firm_states"] = ["active", "passive"]
         self.data.current_state["n_client"] = [0, 0]
         self.data.current_state["firm_profits"] = [0, 0]
         self.data.current_state["firm_cumulative_profits"] = [0, 0]
@@ -47,16 +43,25 @@ class Game(Logger):
         self.data.current_state["customer_extra_view_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
         self.data.current_state["customer_firm_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
 
-        if self.bot_customers:
-            self.launch_bot_customers()
+        self.launch_bots()
 
-    def launch_bot_customers(self):
+    def launch_bots(self):
 
-        n = self.n_customers
+        n_firms = 0
+        n_customers = 0
+        n_agents_to_wait = 0
 
-        for i in range(n):
-            bc = HotellingBot(name="HotellingBot{}".format(i))
-            bc.start()
+        for i in self.data.assignement:
+            if i[2]:
+                n_firms += i[1] == "firm"
+                n_customers += i[1] == "customer"
+
+            else:
+                n_agents_to_wait += 1
+
+        if n_firms > 0 or n_customers > 0:
+            bots = HotellingLocalBots(self.controller, n_firms, n_customers, n_agents_to_wait)
+            bots.start()
 
     def handle_request(self, request):
 
@@ -97,8 +102,8 @@ class Game(Logger):
 
     def compute_utility(self):
 
-        uc = self.interface_parameters["utility_consumption"]
-        ec = self.interface_parameters["exploration_cost"]
+        uc = self.parametrization["utility_consumption"]
+        ec = self.parametrization["exploration_cost"]
         firm_choices = self.data.current_state["customer_firm_choices"]
         view_choices = self.data.current_state["customer_extra_view_choices"]
         prices = self.data.current_state["firm_prices"]
@@ -107,6 +112,12 @@ class Game(Logger):
                   for i in self.data.customers_id.values()]
 
         self.data.current_state["customer_utility"] = utility
+
+    def get_role(self, server_id):
+
+        for i in self.data.assignement:
+            if i[0] == server_id:
+                return i[1]
 
     def get_opponent_choices(self, opponent_id):
 
@@ -134,35 +145,19 @@ class Game(Logger):
 
     def ask_init(self, android_id):
 
-        game_id = self.controller.id_manager.get_game_id_from_android_id(android_id, max_n=len(self.data.roles))
+        server_id, game_id = self.controller.id_manager.get_game_id_from_android_id(android_id, max_n=len(self.data.roles))
 
         if game_id != -1:
-            
-            # regular behavior
-            if not self.bot_customers:
 
-                # pick role
-                role = self.data.roles[game_id]
+            role = self.get_role(server_id)
 
-                if role == "firm":
-                    return self.init_firms(function_name(), game_id, role)
+            self.data.roles[game_id] = role
 
-                else:
-                    return self.init_customers(function_name(), game_id, role)
+            if role == "firm":
+                return self.init_firms(function_name(), game_id, role)
 
-            # if customers are bot, affect roles by checking android_id,
-            # and reset self.data.roles list.
             else:
-
-                if "bot" in android_id.lower():
-                    role = "customer"
-                    self.data.roles[game_id] = role
-                    return self.init_customers(function_name(), game_id, role)
-
-                else:
-                    role = "firm"
-                    self.data.roles[game_id] = role
-                    return self.init_firms(function_name(), game_id, role)
+                return self.init_customers(function_name(), game_id, role)
 
         else:
             return "Error with ID manager. Maybe not authorized to participate."

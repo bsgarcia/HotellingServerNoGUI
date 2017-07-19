@@ -43,7 +43,7 @@ class LoadGameNewGameFrame(QWidget, Logger):
     def click_new_game(self):
 
         self.set_buttons_activation(False)
-        self.parent().show_frame_parameters()
+        self.parent().show_frame_assignement()
 
     def click_load_game(self):
 

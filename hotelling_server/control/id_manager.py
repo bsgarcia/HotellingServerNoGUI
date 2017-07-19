@@ -21,7 +21,7 @@ class IDManager(Logger):
         game_id = self.get_game_id(server_id, max_n)
         self.log("I associate game id '{}' to server id '{}'.".format(game_id, server_id))
 
-        return game_id 
+        return server_id, game_id 
 
     def get_server_id(self, android_id):
 

@@ -28,9 +28,6 @@ class ParametersFrame(QWidget, Logger):
         self.parameters["save"] = \
             CheckParameter(text="Save results", checked=param["save"])
 
-        self.parameters["bot_customers"] = \
-            CheckParameter(text="Bot customers", checked=param["bot_customers"])
-
         self.parameters["exploration_cost"] = \
             IntParameter(text="Exploration cost",
                          initial_value=param["exploration_cost"], value_range=[0, 100])
@@ -38,9 +35,6 @@ class ParametersFrame(QWidget, Logger):
         self.parameters["utility_consumption"] = \
             IntParameter(text="Utility consumption",
                          initial_value=param["utility_consumption"], value_range=[0, 100])
-
-        # self.parameters["local"] = \
-        #     CheckParameter(text="Local server", checked=param["local"])
 
         form_layout = QFormLayout()
 

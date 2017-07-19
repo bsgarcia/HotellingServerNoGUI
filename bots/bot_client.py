@@ -152,7 +152,7 @@ class HotellingBot(GenericBotClient):
 
         else:
             self.customer_attributes["min_price"] = 0
-            firm_choice = None
+            firm_choice = -1
 
         return firm_choice
 
@@ -215,7 +215,7 @@ class HotellingBot(GenericBotClient):
                     self.queue.put(("firm_passive_beginning_of_turn",))
 
             else:
-                self.customer_attributes["extra_view_possibilities"] = np.arange(0, self.n_positions, 2)
+                self.customer_attributes["extra_view_possibilities"] = np.arange(0, self.n_positions - 1)
                 self.queue.put(("ask_customer_firm_choices",))
 
         else:

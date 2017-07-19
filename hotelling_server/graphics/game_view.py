@@ -126,7 +126,7 @@ class GameFrame(QWidget, Logger):
 
     def prepare_state_table(self, parameters):
 
-        ids, labels, fancy_labels = self.get_state_table_labels(parameters)
+        ids, labels, fancy_labels = self.get_state_table_data(parameters)
 
         for role in ["firm", "customer"]:
 
@@ -147,7 +147,7 @@ class GameFrame(QWidget, Logger):
 
     def update_state_table(self, parameters):
 
-        ids, labels, fancy_labels = self.get_state_table_labels(parameters)
+        ids, labels, fancy_labels = self.get_state_table_data(parameters)
 
         for role in ["firm", "customer"]:
 
@@ -178,13 +178,21 @@ class GameFrame(QWidget, Logger):
                     string = str(data[role_id])
                     self.table[role].setItem(x, y, QTableWidgetItem(string))
 
-    def get_state_table_labels(self, parameters):
+    def get_state_table_data(self, parameters):
 
-        server_id_game_id = parameters["map_server_id_game_id"].items()
+        server_id = list(parameters["map_server_id_game_id"].items())
+        bot_firm_id = list(parameters["bot_firms_id"].items())
+        bot_customer_id = list(parameters["bot_customers_id"].items())
+
+        add = bot_firm_id + bot_customer_id
+        
+        bot_game_id = [("Bot", game_id) for game_id, i in add]
+
+        server_id_game_id = server_id + bot_game_id
 
         ids = {"firm": [],
                "customer": []}
-        
+
         # sort server ids and game ids by role (firm vs customer)
         for role in ["firm", "customer"]:
             ids[role] = [(server_id, game_id) for server_id, game_id in server_id_game_id
