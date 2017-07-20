@@ -35,6 +35,7 @@ class Data(Logger):
         self.time_manager_t = 0
         
         self.assignement = {}
+        self.parametrization = {}
         self.roles = []
 
         # --- server parameters --- #

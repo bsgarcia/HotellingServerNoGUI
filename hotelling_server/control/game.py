@@ -27,7 +27,7 @@ class Game(Logger):
     # ----------------------------------- sides methods --------------------------------------#
     def new(self, parameters):
 
-        self.parametrization = parameters["parametrization"]
+        self.data.parametrization = parameters["parametrization"]
 
         self.data.assignement = parameters["assignement"]
         self.data.roles = ["" for i in range(self.n_agents)]
@@ -102,8 +102,8 @@ class Game(Logger):
 
     def compute_utility(self):
 
-        uc = self.parametrization["utility_consumption"]
-        ec = self.parametrization["exploration_cost"]
+        uc = self.data.parametrization["utility_consumption"]
+        ec = self.data.parametrization["exploration_cost"]
         firm_choices = self.data.current_state["customer_firm_choices"]
         view_choices = self.data.current_state["customer_extra_view_choices"]
         prices = self.data.current_state["firm_prices"]
