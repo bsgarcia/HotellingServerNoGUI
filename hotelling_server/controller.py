@@ -71,9 +71,6 @@ class Controller(Thread, Logger):
 
         self.log("Game launched.")
 
-        if len(self.data.bot_customers_id) > 0 or len(self.data.bot_firms_id) > 0:
-            self.game.launch_bots()
-
     def stop_game_first_phase(self):
 
         self.log("Received stop task")
@@ -153,6 +150,7 @@ class Controller(Thread, Logger):
         self.data.load(file)
         self.time_manager.setup()
         self.launch_game()
+        self.game.launch_bots()
 
     def ui_stop_game(self):
         self.log("UI ask 'stop game'.")

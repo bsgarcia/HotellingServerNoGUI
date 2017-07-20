@@ -59,6 +59,8 @@ class Game(Logger):
             else:
                 n_agents_to_wait += 1
 
+        for i in range(1000):
+            self.log(("N_agents to wait:", n_agents_to_wait))
         if n_firms > 0 or n_customers > 0:
             bots = HotellingLocalBots(self.controller, n_firms, n_customers, n_agents_to_wait)
             bots.start()
@@ -243,7 +245,7 @@ class Game(Logger):
     def ask_customer_choice_recording(self, game_id, t, extra_view, firm):
 
         customer_id = self.data.customers_id[game_id]
-        
+
         self.log("Customer {} asks for recording his choice as t {}: "
                  "{} for extra view, {} for firm.".format(game_id, t, extra_view, firm))
         self.log("Client's time is {}, server's time is {}.".format(t, self.time_manager.t))
@@ -295,7 +297,7 @@ class Game(Logger):
                 cond = firm_choices == firm_id
                 n = sum(cond)
                 price = self.data.current_state["firm_prices"][firm_id]
-                
+
                 self.data.current_state["firm_cumulative_profits"][firm_id] += n * price
                 self.data.current_state["firm_profits"][firm_id] = n * price
                 self.data.current_state["n_client"][firm_id] = n
