@@ -1,5 +1,4 @@
 # Created by .ignore support plugin (hsz.mobi)
-.gitignore (1)
 .idea/
 draft.py
 fake_client/__pycache__/
@@ -13,8 +12,7 @@ hotelling_server/__pycache__/
 hotelling_server/control/__pycache__/
 hotelling_server/graphics/__pycache__/
 hotelling_server/graphics/widgets/__pycache__/
-*/__pycache__/
-**/__pycache__/
 bots/__pycache__/
+
 
 
