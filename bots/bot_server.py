@@ -38,12 +38,25 @@ class BotController(Logger):
 
         while not self.shutdown.is_set():
 
-            self.log("Waiting for a message.")
-            message = self.queue.get()
-            if message == "break":
-                break
-            else:
-                self.handle_message(message)
+            try:
+                self.log("Waiting for a message.")
+                message = self.queue.get()
+                if message == "break":
+                    break
+                else:
+                    self.handle_message(message)
+
+            except KeyboardInterrupt:
+
+                self.game.end = self.game.t
+
+                while True:
+                    self.log("Waiting for a message.")
+                    message = self.queue.get()
+                    if message == "break":
+                        break
+                    else:
+                        self.handle_message(message)
 
         self.close_program()
 
@@ -87,6 +100,7 @@ class BotGame(Logger):
 
         self.controller = controller
         self.t = 0
+        self.end = -1
 
     def handle_request(self, request):
 
@@ -120,16 +134,18 @@ class BotGame(Logger):
             price = np.random.randint(1, 12)
             opp_position = np.random.randint(1, 12)
             opp_price = np.random.randint(1, 12)
+            profits = np.random.randint(1000) 
             return "reply/reply_init/" + "/".join([str(i) for i in [
-                game_id, t, role, position, state, price, opp_position, opp_price
+                game_id, t, role, position, state, price, opp_position, opp_price, profits
             ]])
 
         else:
             position = np.random.randint(1, 12)
             exploration_cost = 0
             utility_consumption = 0
+            utility = np.random.randint(1000) 
             return "reply/reply_init/" + "/".join([str(i) for i in [
-                game_id, t, role, position, exploration_cost, utility_consumption
+                game_id, t, role, position, exploration_cost, utility_consumption, utility
             ]])
 
     # ---------------- Firm questions ----------------------------------------- #
@@ -141,12 +157,13 @@ class BotGame(Logger):
         self.log("Firm {} asks firm opponent choice for t {}.".format(game_id, t))
         position, price = np.random.randint(1, 12, 2)
         n_clients = np.random.randint(0, 12)
+        n_opp = np.random.randint(0, 12)
 
         # End of turn for passive firm
         self.t += 1
 
         return "reply/reply_firm_opponent_choice/" + "/".join([str(i) for i in [
-            self.t - 1, position, price, n_clients
+            self.t - 1, position, price, n_clients, n_opp, int(t == self.end)
         ]])
 
     def ask_firm_choice_recording(self, game_id, t, position, price):
@@ -164,12 +181,13 @@ class BotGame(Logger):
 
         self.log("Firm {} asks for number of clients as t {}.".format(game_id, t))
         n_clients = np.random.randint(0, 12)
+        n_opp = np.random.randint(0, 12)
 
         # End of turn for active firm
         self.t += 1
 
         return "reply/reply_firm_n_clients/" + "/".join([str(i) for i in [
-            self.t - 1, n_clients
+            self.t - 1, n_clients, n_opp, int(t == self.end)
         ]])
 
     # --------------- Customer questions --------------------------------------- #
@@ -195,7 +213,7 @@ class BotGame(Logger):
         self.t += 1
 
         return "reply/reply_customer_choice_recording/" + "/".join([str(i) for i in [
-            self.t - 1
+            self.t - 1, int(self.end == t)
         ]])
 
 

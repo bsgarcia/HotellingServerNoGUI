@@ -150,7 +150,7 @@ class Controller(Thread, Logger):
         self.data.load(file)
         self.time_manager.setup()
         self.launch_game()
-        self.game.launch_bots()
+        self.game.load()
 
     def ui_stop_game(self):
         self.log("UI ask 'stop game'.")
@@ -164,9 +164,9 @@ class Controller(Thread, Logger):
         self.log("UI ask 'retry server'.")
         self.server_queue.put(("Go",))
 
-    def ui_save_interface_parameters(self, param):
+    def ui_save_game_parameters(self, key, data):
         self.log("UI ask 'save game parameters'.")
-        self.data.save_param("interface", param)
+        self.data.save_param(key, data)
         self.log("Save interface parameters.")
 
     # ------------------------------ Game interface (!!!) -------------------------------------- #

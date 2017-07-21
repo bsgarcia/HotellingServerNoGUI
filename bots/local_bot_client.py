@@ -37,20 +37,17 @@ class HotellingLocalBots(Logger, Thread):
 
         while True:
 
-            # if all non bot agents are connected break and start to init
-            all_agents = list(self.data.firms_id.items()) + list(self.data.customers_id.items())
-            bots = list(self.data.bot_firms_id.items()) + list(self.data.bot_customers_id.items())
-
-            non_bots = [(i, j) for i, j in all_agents if (i, j) not in bots]
-
+            # if all non bot agents are connected break
+            non_bots = self.get_non_bot_agents()
             cond = len(non_bots) == self.n_agents_to_wait
 
             if cond:
                 break
 
+        # start to init bots 
         self.init()
 
-        while self.time_manager.continue_game:
+        while True:
 
             for firm_id in self.data.bot_firms_id.values():
 
@@ -67,6 +64,20 @@ class HotellingLocalBots(Logger, Thread):
                 self.data.save()
 
             self.time_manager.check_state()
+
+            Event().wait(1)
+
+            if self.time_manager.ending_t or not self.controller.server.is_alive():
+                break
+
+    def get_non_bot_agents(self):
+
+        all_agents = list(self.data.firms_id.items()) + list(self.data.customers_id.items())
+        bots = list(self.data.bot_firms_id.items()) + list(self.data.bot_customers_id.items())
+
+        non_bots = [(i, j) for i, j in all_agents if (i, j) not in bots]
+        
+        return non_bots
 
     def init(self):
 

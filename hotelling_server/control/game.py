@@ -17,6 +17,7 @@ class Game(Logger):
 
         self.game_parameters = self.controller.data.param["game"]
         self.interface_parameters = self.controller.data.param["interface"]
+        self.assignement = self.controller.data.param["assignement"]
 
         self.n_customers = self.game_parameters["n_customers"]
         self.n_firms = self.game_parameters["n_firms"]
@@ -27,9 +28,12 @@ class Game(Logger):
     # ----------------------------------- sides methods --------------------------------------#
     def new(self, parameters):
 
-        self.data.parametrization = parameters["parametrization"]
-
+        self.data.interface = parameters["parametrization"]
         self.data.assignement = parameters["assignement"]
+
+        self.interface_parameters = self.data.interface
+        self.assignement = self.data.assignement
+
         self.data.roles = ["" for i in range(self.n_agents)]
 
         self.data.current_state["firm_states"] = ["active", "passive"]
@@ -42,6 +46,14 @@ class Game(Logger):
 
         self.data.current_state["customer_extra_view_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
         self.data.current_state["customer_firm_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
+        self.data.current_state["customer_utility"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
+
+        self.launch_bots()
+
+    def load(self):
+
+        self.interface_parameters = self.data.interface
+        self.assignement = self.data.assignement
 
         self.launch_bots()
 
@@ -51,16 +63,14 @@ class Game(Logger):
         n_customers = 0
         n_agents_to_wait = 0
 
-        for i in self.data.assignement:
-            if i[2]:
-                n_firms += i[1] == "firm"
-                n_customers += i[1] == "customer"
+        for server_id, role, bot in self.assignement:
+            if bot:
+                n_firms += role == "firm"
+                n_customers += role == "customer"
 
             else:
                 n_agents_to_wait += 1
 
-        for i in range(1000):
-            self.log(("N_agents to wait:", n_agents_to_wait))
         if n_firms > 0 or n_customers > 0:
             bots = HotellingLocalBots(self.controller, n_firms, n_customers, n_agents_to_wait)
             bots.start()
@@ -81,13 +91,13 @@ class Game(Logger):
 
         # retrieve method arguments
         args = [int(a) if a.isdigit() else a for a in whole[1:]]
-        
+
         # don't launch methods if init is not done 
         if not self.data.current_state["init_done"] and command != self.ask_init:
             to_client = "error/wait_init"
 
         # save when game ends, tell clients that game is ending
-        elif self.time_manager.end:
+        elif self.time_manager.ending_t != -1:
             self.data.save()
             to_client = "reply/end_game"
 
@@ -104,8 +114,8 @@ class Game(Logger):
 
     def compute_utility(self):
 
-        uc = self.data.parametrization["utility_consumption"]
-        ec = self.data.parametrization["exploration_cost"]
+        uc = self.interface_parameters["utility_consumption"]
+        ec = self.interface_parameters["exploration_cost"]
         firm_choices = self.data.current_state["customer_firm_choices"]
         view_choices = self.data.current_state["customer_extra_view_choices"]
         prices = self.data.current_state["firm_prices"]
@@ -117,8 +127,8 @@ class Game(Logger):
 
     def get_role(self, server_id):
 
-        for i in self.data.assignement:
-            if i[0] == server_id:
+        for i in self.assignement:
+            if int(i[0]) == server_id:
                 return i[1]
 
     def get_opponent_choices(self, opponent_id):
@@ -176,10 +186,12 @@ class Game(Logger):
         position = customer_id + 1
         exploration_cost = self.interface_parameters["exploration_cost"]
         utility_consumption = self.interface_parameters["utility_consumption"]
+        utility = self.data.current_state["customer_utility"][customer_id]
 
         self.check_remaining_agents()
 
-        return self.reply(func_name, game_id, self.time_manager.t, role, position, exploration_cost, utility_consumption)
+        return self.reply(func_name, game_id, self.time_manager.t, role, position, exploration_cost,
+                utility_consumption, utility)
 
     def init_firms(self, func_name, game_id, role):
 
@@ -199,11 +211,12 @@ class Game(Logger):
         price = self.data.current_state["firm_prices"][firm_id]
         opp_position = self.data.current_state["firm_positions"][opponent_id]
         opp_price = self.data.current_state["firm_prices"][opponent_id]
+        profits = self.data.current_state["firm_cumulative_profits"][firm_id]
 
         self.check_remaining_agents()
 
         return self.reply(func_name, game_id, self.time_manager.t, role, position, state, price,
-                          opp_position, opp_price)
+                          opp_position, opp_price, profits)
 
     def check_remaining_agents(self):
 
@@ -257,7 +270,8 @@ class Game(Logger):
                 self.data.current_state["customer_replies"][customer_id] = 1
 
                 self.data.current_state["customer_extra_view_choices"][customer_id] = extra_view
-                if firm != 'None':
+
+                if firm != '-1':
                     self.data.current_state["customer_firm_choices"][customer_id] = firm
                 else:
                     self.data.current_state["customer_firm_choices"][customer_id] = -1
@@ -267,7 +281,8 @@ class Game(Logger):
             else:
                 self.log("Customer {} asks for recording his choice as t {} but already replied"
                          .format(game_id, t, extra_view, firm))
-            return self.reply(function_name(), self.time_manager.t)
+
+            return self.reply(function_name(), self.time_manager.t, int(t == self.time_manager.ending_t))
 
         elif t > self.time_manager.t:
             return "error/time_is_superior"
@@ -296,6 +311,10 @@ class Game(Logger):
                 firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
                 cond = firm_choices == firm_id
                 n = sum(cond)
+                
+                cond = firm_choices == opponent_id
+                n_opp = sum(cond)
+
                 price = self.data.current_state["firm_prices"][firm_id]
 
                 self.data.current_state["firm_cumulative_profits"][firm_id] += n * price
@@ -308,7 +327,9 @@ class Game(Logger):
                     self.time_manager.t,
                     self.data.current_state["firm_positions"][opponent_id],
                     self.data.current_state["firm_prices"][opponent_id],
-                    n
+                    n,
+                    n_opp,
+                    int(t == self.time_manager.ending_t)
                 )
 
                 self.time_manager.check_state()
@@ -324,15 +345,20 @@ class Game(Logger):
 
             # Get number of clients of previous turn
             firm_choices = np.asarray(self.data.history["customer_firm_choices"][t])
-            cond = firm_choices == opponent_id
+            cond = firm_choices == firm_id
             n = sum(cond)
+
+            cond = firm_choices == opponent_id
+            n_opp = sum(cond)
 
             return self.reply(
                     function_name(),
                     t,
                     self.data.history["firm_positions"][t][opponent_id],
                     self.data.history["firm_prices"][t][opponent_id],
-                    n
+                    n,
+                    n_opp,
+                    int(t == self.time_manager.ending_t)
                 )
 
     def ask_firm_choice_recording(self, game_id, t, position, price):
@@ -374,6 +400,7 @@ class Game(Logger):
         """called by active firm"""
 
         firm_id = self.data.firms_id[game_id]
+        opponent_id = (firm_id + 1) % 2
 
         self.log("Firm active {} asks the number of its clients.".format(firm_id))
         self.log("Client's time is {}, server's time is {}.".format(t, self.time_manager.t))
@@ -385,11 +412,14 @@ class Game(Logger):
                 firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
                 cond = firm_choices == firm_id
                 n = sum(cond)
-                
-                out = self.reply(function_name(), self.time_manager.t, n)
+
+                cond = firm_choices == opponent_id
+                n_opp = sum(cond)
+
+                out = self.reply(function_name(), self.time_manager.t, n, n_opp, int(t == self.time_manager.ending_t))
 
                 price = self.data.current_state["firm_prices"][firm_id]
-                
+
                 self.data.current_state["firm_cumulative_profits"][firm_id] += n * price
                 self.data.current_state["firm_profits"][firm_id] = n * price
                 self.data.current_state["n_client"][firm_id] = n
@@ -410,4 +440,4 @@ class Game(Logger):
             cond = firm_choices == firm_id
             n = sum(cond)
 
-            return self.reply(function_name(), t, n)
+            return self.reply(function_name(), t, n, int(t == self.time_manager.ending_t))

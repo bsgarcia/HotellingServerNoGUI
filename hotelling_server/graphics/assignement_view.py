@@ -1,4 +1,4 @@
-from PyQt5.QtCore import Qt, QObject
+from PyQt5.QtCore import Qt, QObject, QEvent
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QPushButton,
         QLabel, QCheckBox, QLineEdit, QMessageBox, QGridLayout, QRadioButton, QButtonGroup, QHBoxLayout)
 
@@ -19,7 +19,8 @@ class AssignementFrame(QWidget, Logger):
         self.parameters = dict()
 
         self.error = None
-
+        
+        self.setup_done = False 
         self.setup()
 
     def setup(self):
@@ -27,26 +28,27 @@ class AssignementFrame(QWidget, Logger):
         game_param = self.parent().get_game_parameters()
 
         roles = ["firm" for i in range(game_param["n_firms"])] \
-                +["customer" for i in range(game_param["n_customers"])]
+                + ["customer" for i in range(game_param["n_customers"])]
 
         n_agents = len(roles)
-
 
         labels = "Server id", "Firm " + " Customer", "Bot"
 
         self.parameters["assign"] = [[] for i in range(n_agents)]
+        
+        # ----- check if an old config exists --------- #
 
-        for i in range(n_agents):
+        old_assign = self.parent().mod.controller.data.param["assignement"]
 
-            self.parameters["assign"][i].append(IntParameter(text=labels[0],
-                initial_value="", value_range=[0, 1000]))
+        if len(old_assign) != len(self.parameters["assign"]):
+            self.show_warning(msg="assignement.json not matching game.json config file!")
+            self.new_setup(n_agents, roles)
+        else:
+            self.load_setup(old_assign)
 
-            self.parameters["assign"][i].append(RadioParameter(checked=roles[i]))
+        # --------- fill layout ----------------------------------- #
 
-            self.parameters["assign"][i].append(CheckParameter(parent=self,
-                checked=True, idx=i))
-
-        # prepare layout
+         # prepare layout
         grid_layout = QGridLayout()
 
         # add labels
@@ -69,6 +71,30 @@ class AssignementFrame(QWidget, Logger):
 
         self.next_button.clicked.connect(self.push_next_button)
 
+        self.setup_done = True
+
+    def load_setup(self, assignement):
+
+        for i, (server_id, role, bot) in enumerate(assignement):
+
+            self.parameters["assign"][i].append(IntParameter(parent=self, value=server_id, idx=i))
+
+            self.parameters["assign"][i].append(RadioParameter(checked=role))
+
+            self.parameters["assign"][i].append(CheckParameter(parent=self,
+                checked=bot, idx=i))
+
+    def new_setup(self, n_agents, roles):
+
+        for i in range(n_agents):
+
+            self.parameters["assign"][i].append(IntParameter(parent=self, value="Bot", idx=i))
+
+            self.parameters["assign"][i].append(RadioParameter(checked=roles[i]))
+
+            self.parameters["assign"][i].append(CheckParameter(parent=self,
+                checked=True, idx=i))
+
     def push_next_button(self):
 
         self.next_button.setEnabled(False)
@@ -83,8 +109,8 @@ class AssignementFrame(QWidget, Logger):
             self.parent().show_frame_parameters()
 
     def get_parameters(self):
-        return [(i.get_value(), j.get_value(), k.get_value()) for i, j, k in self.parameters["assign"]]
-
+        return [[i.get_value(), j.get_value(), k.get_value()] for i, j, k in self.parameters["assign"]]
+    
     def show_warning(self, **instructions):
 
         QMessageBox().warning(
@@ -92,13 +118,35 @@ class AssignementFrame(QWidget, Logger):
             QMessageBox.Ok
         )
 
-    def switch_line_state(self, idx):
+    def switch_check_box(self, idx):
 
-        if self.parameters["assign"][idx][0].edit.isEnabled():
-            self.parameters["assign"][idx][0].edit.setEnabled(False)
+        if self.setup_done:
 
-        else:
-            self.parameters["assign"][idx][0].edit.setEnabled(True)
+            line_edit = self.parameters["assign"][idx][0].edit
+
+            if line_edit.isEnabled():
+                line_edit.setText("Bot")
+                line_edit.setEnabled(False)
+                line_edit.setStyleSheet(line_edit.greyed_style)
+
+            elif not line_edit.isEnabled():
+                line_edit.setEnabled(True)
+                line_edit.setText("")
+                line_edit.setStyleSheet("")
+
+    def switch_line_edit(self, idx):
+
+        if self.setup_done:
+
+            line_edit = self.parameters["assign"][idx][0].edit
+            check_box = self.parameters["assign"][idx][2].check_box
+
+            if not line_edit.isEnabled():
+                line_edit.setEnabled(True)
+                line_edit.setText("")
+                line_edit.setStyleSheet("")
+                line_edit.setFocus(True)
+                check_box.setChecked(False)
 
     def prepare(self):
 
@@ -117,7 +165,7 @@ class RadioParameter(object):
 
         self.firm = QRadioButton()
         self.customer = QRadioButton()
-        
+
         if checked == "customer":
             self.customer.setChecked(True)
         else:
@@ -140,31 +188,28 @@ class RadioParameter(object):
 
 class IntParameter(object):
 
-    def __init__(self, text, initial_value, value_range):
+    def __init__(self, parent, value, idx):
 
-        self.initial_value = initial_value
-        self.value_range = value_range
+        self.idx = idx
+        self.edit = QLineEdit(str(value))
 
-        self.label = text
-        self.edit = QLineEdit(str(initial_value))
+        self.edit.greyed_style = '''color: #808080;
+                              background-color: #F0F0F0;
+                              border: 1px solid #B0B0B0;
+                              border-radius: 2px;'''
+
+        self.filter = MouseMoved(parent, idx)
+        self.edit.installEventFilter(self.filter)
+
+        if value == "Bot":
+            self.edit.setStyleSheet(self.edit.greyed_style)
+            self.edit.setEnabled(False)
+        else:
+            self.edit.setEnabled(True)
 
     def get_value(self):
 
-        try:
-            value = int(self.edit.text())
-
-            if self.value_range[0] <= value <= self.value_range[1]:
-                return value
-            else:
-                return "!Error: Value for '{}' should be an integer comprised in range {} - {}.".format(
-                    self.label, self.value_range[0], self.value_range[1]
-                )
-
-        except ValueError:
-
-            return "!Error: Value given for '{}' should be an integer.".format(
-                self.label
-            )
+        return self.edit.text()
 
     def add_to_grid_layout(self, layout, x, y):
 
@@ -179,7 +224,8 @@ class CheckParameter(object):
         self.idx = idx
         self.check_box = QCheckBox()
 
-        self.check_box.stateChanged.connect(lambda: self.parent.switch_line_state(self.idx))
+        self.check_box.stateChanged.connect(
+                lambda: self.parent.switch_check_box(self.idx))
 
         self.check_box.setChecked(checked)
 
@@ -191,3 +237,19 @@ class CheckParameter(object):
 
         layout.addWidget(self.check_box, x, y)
 
+
+class MouseMoved(QObject):
+
+    def __init__(self, parent, idx):
+        super().__init__()
+        self.idx = idx
+        self.parent = parent
+
+    def eventFilter(self, obj, event):
+
+        if event.type() == QEvent.MouseButtonPress:
+            self.parent.switch_line_edit(self.idx)
+            return True
+
+        return False
+      

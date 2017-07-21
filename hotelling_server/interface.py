@@ -101,12 +101,18 @@ class UI(QWidget, Logger):
 
         self.already_asked_for_saving_parameters = 1
 
-        if sorted(self.mod.controller.data.param["interface"].items()) != \
-                sorted(self.frames["parameters"].get_parameters().items()):
+        cond1 = sorted(self.mod.controller.data.param["interface"].items()) != \
+                sorted(self.frames["parameters"].get_parameters().items())
+        
+        cond2 = sorted(self.mod.controller.data.param["assignement"]) != \
+                sorted(self.frames["assign"].get_parameters())
 
-            if self.show_question("Do you want to save the change in parameters?"):
+        if cond1 or cond2:
 
-                self.save_parameters(self.frames["parameters"].get_parameters())
+            if self.show_question("Do you want to save the change in parameters and assignement?"):
+
+                self.save_parameters("interface", self.frames["parameters"].get_parameters())
+                self.save_parameters("assignement", self.frames["assign"].get_parameters())
 
             else:
                 self.log('Saving of parameters aborted.')
@@ -274,8 +280,8 @@ class UI(QWidget, Logger):
     def retry_server(self):
         self.controller_queue.put(("ui_retry_server", ))
 
-    def save_parameters(self, param):
-        self.controller_queue.put(("ui_save_game_parameters", param))
+    def save_parameters(self, key, data):
+        self.controller_queue.put(("ui_save_game_parameters", key, data))
 
     def send_go_signal(self):
         self.controller_queue.put(("ui_send_go_signal", ))

@@ -33,14 +33,16 @@ class Data(Logger):
 
         self.time_manager_state = "beginning_init"
         self.time_manager_t = 0
+        self.time_manager_ending_t = -1
+        self.continue_game = True
         
         self.assignement = {}
-        self.parametrization = {}
+        self.interface = {}
         self.roles = []
 
         # --- server parameters --- #
 
-        self.keys = ["network", "game", "folders", "map_android_id_server_id", "interface"]
+        self.keys = ["network", "game", "folders", "map_android_id_server_id", "interface", "assignement"]
         self.param = {}
         self.setup()
 
@@ -69,9 +71,11 @@ class Data(Logger):
                     "server_id_in_use": self.server_id_in_use,
                     "roles": self.roles,
                     "time_manager_t": self.controller.time_manager.t,
+                    "time_manager_ending_t": self.controller.time_manager.ending_t,
+                    "continue": self.controller.time_manager.continue_game,
                     "time_manager_state": self.controller.time_manager.state,
                     "assignement": self.assignement,
-                    "parametrization": self.parametrization
+                    "interface": self.interface
                 }
             )
 
@@ -94,8 +98,10 @@ class Data(Logger):
         self.roles = data["roles"]
         self.time_manager_state = data["time_manager_state"]
         self.time_manager_t = data["time_manager_t"]
+        self.time_manager_ending_t = data["time_manager_ending_t"]
+        self.continue_game = data["continue"]
         self.assignement = data["assignement"]
-        self.parametrization = data["parametrization"]
+        self.interface = data["interface"]
 
     def update_history(self):
 
