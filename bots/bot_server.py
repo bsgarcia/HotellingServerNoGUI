@@ -122,6 +122,21 @@ class BotGame(Logger):
         self.log("Reply '{}' to request '{}'.".format(to_client, request))
         return to_client
 
+    # ------------------------------ #
+
+    @staticmethod
+    def generate_fake_customer_choices():
+
+        n0 = np.random.randint(0, 12)
+        n1 = np.random.randint(0, n0)
+
+        n = [n0, n1]
+        np.random.shuffle(n)
+
+        return n
+
+    # ------------------------------ #
+
     def ask_init(self, android_id):
 
         self.log("Android id is: '{}'.".format(android_id))
@@ -151,25 +166,61 @@ class BotGame(Logger):
 
     # ---------------- Firm questions ----------------------------------------- #
 
-    def ask_firm_opponent_choice(self, game_id, t):
+    def ask_firm_passive_opponent_choice(self, game_id, t):
+
+        """
+        1rst method called by the firm when it is passive.
+        :param game_id:
+        :param t:
+        :return: a string which is the response of this question
+        """
 
         assert self.t == t
 
         self.log("Firm {} asks firm opponent choice for t {}.".format(game_id, t))
         position, price = np.random.randint(1, 12, 2)
-        n_clients = np.random.randint(0, 12)
-        n_opp = np.random.randint(0, 12)
+
+        # End of turn for passive firm
+        self.t += 1
+
+        return "reply/reply_firm_passive_opponent_choice/" + "/".join([str(i) for i in [
+            self.t - 1, position, price
+        ]])
+
+    def ask_firm_passive_n_clients(self, game_id, t):
+
+        """
+        2nd method called by the firm when it is passive.
+        :param game_id:
+        :param t:
+        :return: a string which is the response of this question
+        """
+
+        assert self.t == t
+
+        self.log("Firm {} which is passive asks for the number of clients for t {}.".format(game_id, t))
+
+        n_clients, n_opp = self.generate_fake_customer_choices()
 
         end = int(t == self.end)
 
         # End of turn for passive firm
         self.t += 1
 
-        return "reply/reply_firm_opponent_choice/" + "/".join([str(i) for i in [
-            self.t - 1, position, price, n_clients, n_opp, end
+        return "reply/reply_firm_passive_n_clients/" + "/".join([str(i) for i in [
+            self.t - 1, n_clients, n_opp, end
         ]])
 
-    def ask_firm_choice_recording(self, game_id, t, position, price):
+    def ask_firm_active_choice_recording(self, game_id, t, position, price):
+
+        """
+        1rst method called by the firm when it is active.
+        :param game_id:
+        :param t: int
+        :param position: int
+        :param price: int
+        :return: response of this question: string
+        """
 
         assert self.t == t
 
@@ -178,20 +229,27 @@ class BotGame(Logger):
             self.t
         ]])
 
-    def ask_firm_n_clients(self, game_id, t):
+    def ask_firm_active_n_clients(self, game_id, t):
+
+        """
+        Last request by the firm when it is active.
+        :param game_id:
+        :param t:
+        :return: response of this question: string
+        """
 
         assert self.t == t
 
-        self.log("Firm {} asks for number of clients as t {}.".format(game_id, t))
-        n_clients = np.random.randint(0, 12)
-        n_opp = np.random.randint(0, 12)
+        self.log("Firm {} which is active asks for number of clients as t {}.".format(game_id, t))
+
+        n_clients, n_opp = self.generate_fake_customer_choices()
 
         end = int(self.end == t)
 
         # End of turn for active firm
         self.t += 1
 
-        return "reply/reply_firm_n_clients/" + "/".join([str(i) for i in [
+        return "reply/reply_firm_active_n_clients/" + "/".join([str(i) for i in [
             self.t - 1, n_clients, n_opp, end
         ]])
 
