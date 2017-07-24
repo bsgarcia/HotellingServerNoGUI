@@ -151,7 +151,7 @@ class Game(Logger):
     # -------------------------------- one liner methods ------------------------------------------ #
 
     def check_end(self, client_t):
-        return int(client_t >= self.time_manage.ending_t) if self.time_manager.ending_t else 0
+        return int(client_t == self.time_manager.ending_t) if self.time_manager.ending_t else 0
 
     @staticmethod
     def reply(*args):
