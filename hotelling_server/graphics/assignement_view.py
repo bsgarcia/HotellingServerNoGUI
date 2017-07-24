@@ -19,8 +19,8 @@ class AssignementFrame(QWidget, Logger):
         self.parameters = dict()
 
         self.error = None
-        
-        self.setup_done = False 
+
+        self.setup_done = False
         self.setup()
 
     def setup(self):
@@ -35,7 +35,7 @@ class AssignementFrame(QWidget, Logger):
         labels = "Server id", "Firm " + " Customer", "Bot"
 
         self.parameters["assign"] = [[] for i in range(n_agents)]
-        
+
         # ----- check if an old config exists --------- #
 
         old_assign = self.parent().mod.controller.data.param["assignement"]
@@ -110,7 +110,7 @@ class AssignementFrame(QWidget, Logger):
 
     def get_parameters(self):
         return [[i.get_value(), j.get_value(), k.get_value()] for i, j, k in self.parameters["assign"]]
-    
+
     def show_warning(self, **instructions):
 
         QMessageBox().warning(
@@ -118,23 +118,7 @@ class AssignementFrame(QWidget, Logger):
             QMessageBox.Ok
         )
 
-    def switch_check_box(self, idx):
-
-        if self.setup_done:
-
-            line_edit = self.parameters["assign"][idx][0].edit
-
-            if line_edit.isEnabled():
-                line_edit.setText("Bot")
-                line_edit.setEnabled(False)
-                line_edit.setStyleSheet(line_edit.greyed_style)
-
-            elif not line_edit.isEnabled():
-                line_edit.setEnabled(True)
-                line_edit.setText("")
-                line_edit.setStyleSheet("")
-
-    def switch_line_edit(self, idx):
+    def switch_line_edit(self, idx, from_line):
 
         if self.setup_done:
 
@@ -142,11 +126,29 @@ class AssignementFrame(QWidget, Logger):
             check_box = self.parameters["assign"][idx][2].check_box
 
             if not line_edit.isEnabled():
-                line_edit.setEnabled(True)
-                line_edit.setText("")
-                line_edit.setStyleSheet("")
-                line_edit.setFocus(True)
-                check_box.setChecked(False)
+                self.enable_line_edit(line_edit, check_box)
+
+            elif line_edit.isEnabled() and not from_line:
+                self.disable_line_edit(line_edit, check_box)
+
+            else:
+                self.log("Error!")
+
+    @staticmethod
+    def disable_line_edit(line_edit, check_box):
+
+        line_edit.setText("Bot")
+        line_edit.setEnabled(False)
+        line_edit.setStyleSheet(line_edit.greyed_style)
+
+    @staticmethod
+    def enable_line_edit(line_edit, check_box):
+
+        check_box.setChecked(False)
+        line_edit.setEnabled(True)
+        line_edit.setText("")
+        line_edit.setStyleSheet("")
+        line_edit.setFocus(True)
 
     def prepare(self):
 
@@ -198,8 +200,8 @@ class IntParameter(object):
                               border: 1px solid #B0B0B0;
                               border-radius: 2px;'''
 
-        self.filter = MouseMoved(parent, idx)
-        self.edit.installEventFilter(self.filter)
+        event_filter = MouseClick(parent, idx)
+        self.edit.installEventFilter(event_filter)
 
         if value == "Bot":
             self.edit.setStyleSheet(self.edit.greyed_style)
@@ -225,7 +227,7 @@ class CheckParameter(object):
         self.check_box = QCheckBox()
 
         self.check_box.stateChanged.connect(
-                lambda: self.parent.switch_check_box(self.idx))
+                lambda: self.parent.switch_line_edit(idx=self.idx, from_line=False))
 
         self.check_box.setChecked(checked)
 
@@ -238,7 +240,10 @@ class CheckParameter(object):
         layout.addWidget(self.check_box, x, y)
 
 
-class MouseMoved(QObject):
+class MouseClick(QObject):
+    """class used in order
+    to detect if QLineEdit widget
+    has been clicked"""
 
     def __init__(self, parent, idx):
         super().__init__()
@@ -246,10 +251,9 @@ class MouseMoved(QObject):
         self.parent = parent
 
     def eventFilter(self, obj, event):
-
         if event.type() == QEvent.MouseButtonPress:
-            self.parent.switch_line_edit(self.idx)
+            self.parent.switch_line_edit(idx=self.idx, from_line=True)
             return True
 
         return False
-      
+

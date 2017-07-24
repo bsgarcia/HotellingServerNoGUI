@@ -10,7 +10,7 @@ class TimeManager(Logger):
         self.data = controller.data
         self.state = ""
         self.t = 0
-        self.ending_t = -1
+        self.ending_t = None
         self.continue_game = True
 
     def setup(self):
@@ -18,7 +18,7 @@ class TimeManager(Logger):
         self.log("NEW STATE: {}.".format(self.state))
 
         self.t = self.data.time_manager_t
-        self.ending_t = -1
+        self.ending_t = None
         self.continue_game = True
         self.beginning_time_step()
         self.log("Players already inititialized: {}".format(self.data.current_state["init_done"]))
@@ -70,6 +70,7 @@ class TimeManager(Logger):
             self.controller.queue.put(("game_stop_game", ))
 
         self.t += 1
+
         self.controller.queue.put(("update_data_viewer", ))
 
     def stop_as_soon_as_possible(self):

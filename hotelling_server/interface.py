@@ -286,3 +286,6 @@ class UI(QWidget, Logger):
     def send_go_signal(self):
         self.controller_queue.put(("ui_send_go_signal", ))
 
+    def send_reboot_signal(self):
+        self.controller_queue.put(("reboot", ))
+

@@ -27,6 +27,7 @@ class Game(Logger):
 
     # ----------------------------------- sides methods --------------------------------------#
     def new(self, parameters):
+        """called if new game is launched"""
 
         self.data.interface = parameters["parametrization"]
         self.data.assignement = parameters["assignement"]
@@ -35,6 +36,7 @@ class Game(Logger):
         self.assignement = self.data.assignement
 
         self.data.roles = ["" for i in range(self.n_agents)]
+        self.data.time_manager_t = 0
 
         self.data.current_state["firm_states"] = ["active", "passive"]
         self.data.current_state["n_client"] = [0, 0]
@@ -51,6 +53,7 @@ class Game(Logger):
         self.launch_bots()
 
     def load(self):
+        """called if a previous game is loaded"""
 
         self.interface_parameters = self.data.interface
         self.assignement = self.data.assignement
@@ -75,6 +78,8 @@ class Game(Logger):
             bots = HotellingLocalBots(self.controller, n_firms, n_customers, n_agents_to_wait)
             bots.start()
 
+    # ------------------------------- network related method ----------------------------------------- #
+
     def handle_request(self, request):
 
         self.log("Got request: '{}'.".format(request))
@@ -96,11 +101,6 @@ class Game(Logger):
         if not self.data.current_state["init_done"] and command != self.ask_init:
             to_client = "error/wait_init"
 
-        # save when game ends, tell clients that game is ending
-        elif self.time_manager.ending_t != -1:
-            self.data.save()
-            to_client = "reply/end_game"
-
         # regular launch method
         else:
             to_client = command(*args)
@@ -111,6 +111,8 @@ class Game(Logger):
         self.data.save()
 
         return to_client
+
+    # ----------------------- game sides methods ------------------------------------------- #
 
     def compute_utility(self):
 
@@ -127,9 +129,9 @@ class Game(Logger):
 
     def get_role(self, server_id):
 
-        for i in self.assignement:
-            if int(i[0]) == server_id:
-                return i[1]
+        for idx, role, bot in self.assignement:
+            if idx == str(server_id):
+                return role
 
     def get_opponent_choices(self, opponent_id):
 
@@ -137,7 +139,7 @@ class Game(Logger):
             opponent_choices = [
                 self.data.current_state[key][opponent_id]
                 for key in ["firm_positions", "firm_prices"]
-                ]
+            ]
         else:
             opponent_choices = [
                 self.data.history[key][self.time_manager.t - 1][opponent_id]
@@ -146,18 +148,22 @@ class Game(Logger):
 
         return opponent_choices[0], opponent_choices[1]
 
+    # -------------------------------- one liner methods ------------------------------------------ #
+
+    def check_end(self, client_t):
+        return int(client_t >= self.time_manage.ending_t) if self.time_manager.ending_t else 0
+
     @staticmethod
     def reply(*args):
         return "reply/{}".format("/".join(
             [str(a) if type(a) in (int, np.int64) else a.replace("ask", "reply") for a in args]
-            )
-        )
+        ))
 
     # ----------------------------------- all devices demands --------------------------------------#
 
     def ask_init(self, android_id):
 
-        server_id, game_id = self.controller.id_manager.get_game_id_from_android_id(android_id, max_n=len(self.data.roles))
+        server_id, game_id = self.controller.id_manager.get_ids_from_android_id(android_id, max_n=len(self.data.roles))
 
         if game_id != -1:
 
@@ -282,13 +288,13 @@ class Game(Logger):
                 self.log("Customer {} asks for recording his choice as t {} but already replied"
                          .format(game_id, t, extra_view, firm))
 
-            return self.reply(function_name(), self.time_manager.t, int(t == self.time_manager.ending_t))
+            return self.reply(function_name(), self.time_manager.t, self.check_end(t))
 
         elif t > self.time_manager.t:
             return "error/time_is_superior"
 
         else:
-            return self.reply(function_name(), t)
+            return self.reply(function_name(), t, self.check_end(t))
 
     # ----------------------------------- firm demands -------------------------------------- #
 
@@ -311,7 +317,7 @@ class Game(Logger):
                 firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
                 cond = firm_choices == firm_id
                 n = sum(cond)
-                
+
                 cond = firm_choices == opponent_id
                 n_opp = sum(cond)
 
@@ -329,7 +335,7 @@ class Game(Logger):
                     self.data.current_state["firm_prices"][opponent_id],
                     n,
                     n_opp,
-                    int(t == self.time_manager.ending_t)
+                    self.check_end(t)
                 )
 
                 self.time_manager.check_state()
@@ -340,7 +346,7 @@ class Game(Logger):
 
         elif t > self.time_manager.t:
             return "error/time_is_superior"
-            
+
         else:
 
             # Get number of clients of previous turn
@@ -358,7 +364,7 @@ class Game(Logger):
                     self.data.history["firm_prices"][t][opponent_id],
                     n,
                     n_opp,
-                    int(t == self.time_manager.ending_t)
+                    self.check_end(t)
                 )
 
     def ask_firm_choice_recording(self, game_id, t, position, price):
@@ -416,7 +422,7 @@ class Game(Logger):
                 cond = firm_choices == opponent_id
                 n_opp = sum(cond)
 
-                out = self.reply(function_name(), self.time_manager.t, n, n_opp, int(t == self.time_manager.ending_t))
+                out = self.reply(function_name(), self.time_manager.t, n, n_opp, self.check_end(t))
 
                 price = self.data.current_state["firm_prices"][firm_id]
 
@@ -440,4 +446,7 @@ class Game(Logger):
             cond = firm_choices == firm_id
             n = sum(cond)
 
-            return self.reply(function_name(), t, n, int(t == self.time_manager.ending_t))
+            cond = firm_choices == opponent_id
+            n_opp = sum(cond)
+
+            return self.reply(function_name(), t, n, n_opp, self.check_end(t))

@@ -1,9 +1,8 @@
 import json
 from threading import Thread, Event
-from multiprocessing import Queue
 import numpy as np
 
-from utils.utils import Logger, function_name
+from utils.utils import Logger
 
 
 class HotellingLocalBots(Logger, Thread):
@@ -21,7 +20,6 @@ class HotellingLocalBots(Logger, Thread):
         self.data = controller.data
 
         self.n_positions = self.game_parameters["n_positions"]
-
 
         self.n_customers = n_customers
         self.n_firms = n_firms
@@ -44,8 +42,13 @@ class HotellingLocalBots(Logger, Thread):
             if cond:
                 break
 
-        # start to init bots 
+            if not self.controller.server.is_alive():
+                return 0
+
+        # start to init bots
         self.init()
+
+        self.log("Local Bots: Game is starting.")
 
         while True:
 
@@ -67,8 +70,10 @@ class HotellingLocalBots(Logger, Thread):
 
             Event().wait(1)
 
-            if self.time_manager.ending_t or not self.controller.server.is_alive():
-                break
+            if self.time_manager.state == "beginning_time_step" and self.time_manager.ending_t \
+                or not self.controller.server.is_alive():
+                    self.log("Local Bots: Game ends! Bots shutdown!")
+                    break
 
     def get_non_bot_agents(self):
 
@@ -76,7 +81,7 @@ class HotellingLocalBots(Logger, Thread):
         bots = list(self.data.bot_firms_id.items()) + list(self.data.bot_customers_id.items())
 
         non_bots = [(i, j) for i, j in all_agents if (i, j) not in bots]
-        
+
         return non_bots
 
     def init(self):
@@ -119,8 +124,11 @@ class HotellingLocalBots(Logger, Thread):
         if not remaining:
             self.data.current_state["init_done"] = True
             self.time_manager.check_state()
+
         else:
-            raise Exception("Problem")
+            self.log("Error: "
+                    "Remaining agents to connect although all bots "
+                    "and all real players seem to be connected.")
 
     # -------------------------------- customer ------------------------------------------- #
     def play_customer(self, customer_id):
@@ -191,7 +199,6 @@ class HotellingLocalBots(Logger, Thread):
 
         if not self.data.current_state["active_replied"]:
             self.firm_active_choice_recording(firm_id)
-
         if self.time_manager.state == "active_has_played_and_all_customers_replied":
             self.firm_active_n_client(firm_id)
 

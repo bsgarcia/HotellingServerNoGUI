@@ -81,7 +81,6 @@ class Controller(Thread, Logger):
     def stop_game_second_phase(self):
 
         self.running_game.clear()
-        self.ask_interface("show_frame_load_game_new_game")
 
     def close_program(self):
 
@@ -184,13 +183,13 @@ class Controller(Thread, Logger):
         self.statistician.compute_profits()
         self.statistician.compute_mean_utility()
 
-        parameters = self.get_current_data()
-        self.ask_interface("update_data_viewer", parameters)
+        data = self.get_current_data()
+        self.ask_interface("update_data_viewer", data)
 
     # ---------------------- Parameters management -------------------------------------------- #
-    
+
     def get_current_data(self):
-        
+
         return {
                     "history": self.data.history,
                     "current_state": self.data.current_state,
@@ -204,9 +203,10 @@ class Controller(Thread, Logger):
                     "time_manager_state": self.data.controller.time_manager.state,
                     "statistics": self.statistician.data,
                     "map_server_id_game_id": self.data.map_server_id_game_id
-                    
+
                }
 
     def get_parameters(self, key):
 
         return self.data.param[key]
+

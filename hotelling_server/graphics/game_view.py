@@ -1,8 +1,8 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout
 import numpy as np
 
-from hotelling_server.graphics.widgets.plot_layouts import DonePlayingLayout, OneLinePlot, PlotLayout, TwoLinesPlot
+from hotelling_server.graphics.widgets.plot_layouts import OneLinePlot, PlotLayout, TwoLinesPlot
 from hotelling_server.graphics.widgets.trial_counter import TrialCounter
 from utils.utils import Logger
 
@@ -117,8 +117,11 @@ class GameFrame(QWidget, Logger):
 
     def push_stop_button(self):
 
-        self.stop_button.setEnabled(False)
-        self.parent().stop_game()
+        if self.stop_button.text() == "Stop task":
+            self.stop_button.setText("Go to home menu")
+            self.parent().stop_game()
+        else:
+            self.parent().show_frame_load_game_new_game()
 
     def set_trial_number(self, trial_n):
 
@@ -185,7 +188,7 @@ class GameFrame(QWidget, Logger):
         bot_customer_id = list(parameters["bot_customers_id"].items())
 
         add = bot_firm_id + bot_customer_id
-        
+
         bot_game_id = [("Bot", game_id) for game_id, i in add]
 
         server_id_game_id = server_id + bot_game_id
@@ -234,17 +237,6 @@ class GameFrame(QWidget, Logger):
         self.plot_layout["customer_mean_utility"].initialize_figure(
                 initial_data=np.arange(11), labels="mean customer utility"
         )
-        # self.plot_layout["exchanges"].initialize_figure(
-        #     initial_data=statistics["exchanges"], labels=sorted(list(it.combinations(range(3), r=2)))
-        # )
-        #
-        # self.plot_layout["consumption"].initialize_figure(
-        #     initial_data=statistics["consumption"], labels="Consumption"
-        # )
-        #
-        # self.done_playing_layout.initialize_figure(
-        #     initial_data=done_playing
-        # )
 
         self.log("Figure initialized.")
 
@@ -261,7 +253,3 @@ class GameFrame(QWidget, Logger):
 
         self.done_playing_layout.update_labels(done_playing_labels)
 
-    def update_stop_button(self):
-
-        self.stop_button.setText("Return to start menu")
-        self.stop_button.setEnabled(True)

@@ -3,7 +3,7 @@ from bots.bot_client import HotellingBot
 
 def main():
 
-    n = 1
+    n = 4
 
     for i in range(n):
 

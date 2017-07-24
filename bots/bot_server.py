@@ -51,6 +51,7 @@ class BotController(Logger):
                 self.game.end = self.game.t
 
                 while True:
+                    self.log("Game Over at t {}".format(self.game.end))
                     self.log("Waiting for a message.")
                     message = self.queue.get()
                     if message == "break":
@@ -159,11 +160,13 @@ class BotGame(Logger):
         n_clients = np.random.randint(0, 12)
         n_opp = np.random.randint(0, 12)
 
+        end = int(t == self.end)
+
         # End of turn for passive firm
         self.t += 1
 
         return "reply/reply_firm_opponent_choice/" + "/".join([str(i) for i in [
-            self.t - 1, position, price, n_clients, n_opp, int(t == self.end)
+            self.t - 1, position, price, n_clients, n_opp, end
         ]])
 
     def ask_firm_choice_recording(self, game_id, t, position, price):
@@ -183,11 +186,13 @@ class BotGame(Logger):
         n_clients = np.random.randint(0, 12)
         n_opp = np.random.randint(0, 12)
 
+        end = int(self.end == t)
+
         # End of turn for active firm
         self.t += 1
 
         return "reply/reply_firm_n_clients/" + "/".join([str(i) for i in [
-            self.t - 1, n_clients, n_opp, int(t == self.end)
+            self.t - 1, n_clients, n_opp, end
         ]])
 
     # --------------- Customer questions --------------------------------------- #
