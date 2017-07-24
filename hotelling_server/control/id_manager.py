@@ -12,7 +12,7 @@ class IDManager(Logger):
         self.data = controller.data
         self.parameters = None
 
-    def get__ids_from_android_id(self, android_id, max_n):
+    def get_ids_from_android_id(self, android_id, max_n):
 
         self.log("Client with android id {} ask for information.".format(android_id))
 

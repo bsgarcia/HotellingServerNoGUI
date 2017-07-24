@@ -3,7 +3,6 @@ from threading import Thread, Event
 from multiprocessing import Queue
 import numpy as np
 import requests
-
 from utils.utils import Logger, function_name
 
 
@@ -168,14 +167,14 @@ class HotellingBot(GenericBotClient):
 
     def firm_passive_beginning_of_turn(self):
 
-        self.ask_firm_opponent_choice()
+        self.ask_firm_passive_opponent_choice()
 
     def firm_active_beginning_of_turn(self, opp_position, opp_price):
 
         self.log("Active firm: opp position and price are {} and {}.".format(opp_position, opp_price))
         own_position = np.random.randint(1, self.n_positions)
         own_price = np.random.randint(1, self.firm_attributes["n_prices"])
-        self.ask_firm_choice_recording(own_position, own_price)
+        self.ask_firm_active_choice_recording(own_position, own_price)
 
     def firm_active_end_of_turn(self, n_clients, n_opp, end):
         self.log("I am active and I got {} clients.".format(n_clients))
@@ -184,12 +183,12 @@ class HotellingBot(GenericBotClient):
         self.t += 1
         self.firm_passive_beginning_of_turn()
 
-    def firm_passive_end_of_turn(self, opp_position, opp_price, n_clients, n_opp, end):
+    def firm_passive_end_of_turn(self, n_clients, n_opp, end):
         self.log("I am passive and I got {} clients.".format(n_clients))
         if end:
             self.end_game()
         self.t += 1
-        self.firm_active_beginning_of_turn(opp_position, opp_price)
+        self.firm_active_beginning_of_turn(self.opp_position, self.opp_price)
 
     # ------------------------- Init -------------------------------------------------- #
 
@@ -254,35 +253,46 @@ class HotellingBot(GenericBotClient):
 
     # ------------------------- Firm communication ------------------------------------ #
 
-    def ask_firm_opponent_choice(self):
+    def ask_firm_passive_opponent_choice(self):
         self.state = "firm_opponent_choice"
-        self.ask_server("ask_firm_opponent_choice/{}/{}".format(self.game_id, self.t))
+        self.ask_server("ask_firm_passive_opponent_choice/{}/{}".format(self.game_id, self.t))
 
-    def reply_firm_opponent_choice(self, t, position, price, n_clients, n_opp, end):
+    def reply_firm_passive_opponent_choice(self, t, position, price):
         if self.t == t and self.state == "firm_opponent_choice":
-            self.queue.put(("firm_passive_end_of_turn", position, price, n_clients, n_opp, end,))
+            self.opp_position = position
+            self.opp_price = price
+            self.queue.put(("ask_firm_passive_n_clients", ))
 
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 
-    def ask_firm_choice_recording(self, position, price):
+    def ask_firm_active_choice_recording(self, position, price):
         self.state = "firm_choice_recording"
-        self.ask_server("ask_firm_choice_recording/" + "/".join([str(i) for i in [self.game_id, self.t, position, price]]))
+        self.ask_server("ask_firm_active_choice_recording/" + "/".join([str(i) for i in [self.game_id, self.t, position, price]]))
 
-    def reply_firm_choice_recording(self, t):
+    def reply_firm_active_choice_recording(self, t):
         if self.t == t and self.state == "firm_choice_recording":
-            self.queue.put(("ask_firm_n_clients",))
+            self.queue.put(("ask_firm_active_n_clients",))
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 
-    def ask_firm_n_clients(self):
+    def ask_firm_active_n_clients(self):
         self.state = "firm_n_clients"
-        self.ask_server("ask_firm_n_clients/" + "/".join([str(i) for i in [self.game_id, self.t]]))
+        self.ask_server("ask_firm_active_n_clients/" + "/".join([str(i) for i in [self.game_id, self.t]]))
 
-    def reply_firm_n_clients(self, t, n, n_opp, end):
+    def ask_firm_passive_n_clients(self):
+        self.state = "firm_n_clients"
+        self.ask_server("ask_firm_passive_n_clients/" + "/".join([str(i) for i in [self.game_id, self.t]]))
+
+    def reply_firm_active_n_clients(self, t, n, n_opp, end):
         if self.t == t and self.state == "firm_n_clients":
             self.queue.put(("firm_active_end_of_turn", n, n_opp, end,))
-            self.state = ""
+        else:
+            raise Exception("Time problem or state problem with: {}".format(function_name()))
+
+    def reply_firm_passive_n_clients(self, t, n, n_opp, end):
+        if self.t == t and self.state == "firm_n_clients":
+            self.queue.put(("firm_passive_end_of_turn", n, n_opp, end,))
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 

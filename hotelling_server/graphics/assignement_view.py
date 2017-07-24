@@ -131,9 +131,6 @@ class AssignementFrame(QWidget, Logger):
             elif line_edit.isEnabled() and not from_line:
                 self.disable_line_edit(line_edit, check_box)
 
-            else:
-                self.log("Error!")
-
     @staticmethod
     def disable_line_edit(line_edit, check_box):
 
@@ -200,8 +197,8 @@ class IntParameter(object):
                               border: 1px solid #B0B0B0;
                               border-radius: 2px;'''
 
-        event_filter = MouseClick(parent, idx)
-        self.edit.installEventFilter(event_filter)
+        self.filter = MouseClick(parent, idx)
+        self.edit.installEventFilter(self.filter)
 
         if value == "Bot":
             self.edit.setStyleSheet(self.edit.greyed_style)

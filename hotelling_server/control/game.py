@@ -133,6 +133,9 @@ class Game(Logger):
             if idx == str(server_id):
                 return role
 
+        self.log("Error: no server_id found for asking client!")
+        self.log("Reason: Perhaps server ids set in assignement menu were not the right ones!")
+
     def get_opponent_choices(self, opponent_id):
 
         if self.time_manager.t == 0:
@@ -147,6 +150,22 @@ class Game(Logger):
             ]
 
         return opponent_choices[0], opponent_choices[1]
+
+    def get_nb_of_clients(self, firm_id, opponent_id, t):
+        """get own and opponent number of clients"""
+
+        if self.time_manager.t == t:
+            firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
+        else:
+            firm_choices = np.asarray(self.data.history["customer_firm_choices"][t])
+
+        cond = firm_choices == firm_id
+        n = sum(cond)
+
+        cond = firm_choices == opponent_id
+        n_opp = sum(cond)
+
+        return n, n_opp
 
     # -------------------------------- one liner methods ------------------------------------------ #
 
@@ -296,9 +315,9 @@ class Game(Logger):
         else:
             return self.reply(function_name(), t, self.check_end(t))
 
-    # ----------------------------------- firm demands -------------------------------------- #
-
-    def ask_firm_opponent_choice(self, game_id, t):
+    # ----------------------------------- passive firm demands -------------------------------------- #
+    
+    def ask_firm_passive_opponent_choice(self, game_id, t):
         """called by a passive firm"""
 
         firm_id = self.data.firms_id[game_id]
@@ -308,34 +327,14 @@ class Game(Logger):
 
         if t == self.time_manager.t:
 
-            if self.time_manager.state == "active_has_played_and_all_customers_replied":
-
-                # compute utility for all customers
-                self.compute_utility()
-
-                # Get number of clients
-                firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
-                cond = firm_choices == firm_id
-                n = sum(cond)
-
-                cond = firm_choices == opponent_id
-                n_opp = sum(cond)
-
-                price = self.data.current_state["firm_prices"][firm_id]
-
-                self.data.current_state["firm_cumulative_profits"][firm_id] += n * price
-                self.data.current_state["firm_profits"][firm_id] = n * price
-                self.data.current_state["n_client"][firm_id] = n
-                self.data.current_state["passive_gets_results"] = True
+            if self.time_manager.state == "active_has_played" or \
+            self.time_manager.state == "active_has_played_and_all_customers_replied":
 
                 out = self.reply(
                     function_name(),
                     self.time_manager.t,
                     self.data.current_state["firm_positions"][opponent_id],
                     self.data.current_state["firm_prices"][opponent_id],
-                    n,
-                    n_opp,
-                    self.check_end(t)
                 )
 
                 self.time_manager.check_state()
@@ -349,25 +348,52 @@ class Game(Logger):
 
         else:
 
-            # Get number of clients of previous turn
-            firm_choices = np.asarray(self.data.history["customer_firm_choices"][t])
-            cond = firm_choices == firm_id
-            n = sum(cond)
-
-            cond = firm_choices == opponent_id
-            n_opp = sum(cond)
-
             return self.reply(
                     function_name(),
                     t,
                     self.data.history["firm_positions"][t][opponent_id],
                     self.data.history["firm_prices"][t][opponent_id],
-                    n,
-                    n_opp,
-                    self.check_end(t)
                 )
 
-    def ask_firm_choice_recording(self, game_id, t, position, price):
+    def ask_firm_passive_n_clients(self, game_id, t):
+
+        firm_id = self.data.firms_id[game_id]
+        opponent_id = (firm_id + 1) % 2
+
+        self.log("Firm passive {} asks for its number of clients.".format(firm_id))
+        self.log("Client's time is {}, server's time is {}.".format(t, self.time_manager.t))
+
+        if t == self.time_manager.t:
+            if self.time_manager.state == "active_has_played_and_all_customers_replied":
+                if not self.data.current_state["passive_gets_results"]:
+
+                    price = self.data.current_state["firm_prices"][firm_id]
+
+                    n, n_opp = self.get_nb_of_clients(firm_id, opponent_id, t)
+
+                    out = self.reply(function_name(), self.time_manager.t, n, n_opp, self.check_end(t))
+
+                    self.data.current_state["firm_cumulative_profits"][firm_id] += n * price
+                    self.data.current_state["firm_profits"][firm_id] = n * price
+                    self.data.current_state["n_client"][firm_id] = n
+                    self.data.current_state["passive_gets_results"] = True
+
+                    self.time_manager.check_state()
+
+                    return out
+
+            else:
+                return "error/wait"
+
+        elif t > self.time_manager.t:
+            return "error/time_is_superior"
+        
+        else:
+            n, n_opp = self.get_nb_of_clients(firm_id, opponent_id, t)
+            return self.reply(function_name(), t, n, n_opp, self.check_end(t))
+
+    # ----------------------------------- active firm demands -------------------------------------- #
+    def ask_firm_active_choice_recording(self, game_id, t, position, price):
         """called by active firm"""
 
         firm_id = self.data.firms_id[game_id]
@@ -394,7 +420,7 @@ class Game(Logger):
                 self.data.current_state["active_replied"] = True
                 self.time_manager.check_state()
 
-            return out 
+            return out
 
         elif t > self.time_manager.t:
             return "error/time_is_superior"
@@ -402,7 +428,7 @@ class Game(Logger):
         else:
             return self.reply(function_name(), t)
 
-    def ask_firm_n_clients(self, game_id, t):
+    def ask_firm_active_n_clients(self, game_id, t):
         """called by active firm"""
 
         firm_id = self.data.firms_id[game_id]
@@ -415,12 +441,7 @@ class Game(Logger):
 
             if self.time_manager.state == "active_has_played_and_all_customers_replied":
 
-                firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
-                cond = firm_choices == firm_id
-                n = sum(cond)
-
-                cond = firm_choices == opponent_id
-                n_opp = sum(cond)
+                n, n_opp = self.get_nb_of_clients(firm_id, opponent_id, t)
 
                 out = self.reply(function_name(), self.time_manager.t, n, n_opp, self.check_end(t))
 
@@ -442,11 +463,5 @@ class Game(Logger):
             return "error/time_is_superior"
 
         else:
-            firm_choices = np.asarray(self.data.history["customer_firm_choices"][t])
-            cond = firm_choices == firm_id
-            n = sum(cond)
-
-            cond = firm_choices == opponent_id
-            n_opp = sum(cond)
-
+            n, n_opp = self.get_nb_of_clients(firm_id, opponent_id, t)
             return self.reply(function_name(), t, n, n_opp, self.check_end(t))

@@ -127,7 +127,7 @@ class BotGame(Logger):
     @staticmethod
     def generate_fake_customer_choices():
 
-        n0 = np.random.randint(0, 12)
+        n0 = np.random.randint(1, 12)
         n1 = np.random.randint(0, n0)
 
         n = [n0, n1]
@@ -180,11 +180,8 @@ class BotGame(Logger):
         self.log("Firm {} asks firm opponent choice for t {}.".format(game_id, t))
         position, price = np.random.randint(1, 12, 2)
 
-        # End of turn for passive firm
-        self.t += 1
-
         return "reply/reply_firm_passive_opponent_choice/" + "/".join([str(i) for i in [
-            self.t - 1, position, price
+            self.t, position, price
         ]])
 
     def ask_firm_passive_n_clients(self, game_id, t):
@@ -225,7 +222,7 @@ class BotGame(Logger):
         assert self.t == t
 
         self.log("Firm {} make choice for t {}: {} for position and {} for price.".format(game_id, t, position, price))
-        return "reply/reply_firm_choice_recording/" + "/".join([str(i) for i in [
+        return "reply/reply_firm_active_choice_recording/" + "/".join([str(i) for i in [
             self.t
         ]])
 

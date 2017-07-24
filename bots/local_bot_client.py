@@ -58,15 +58,13 @@ class HotellingLocalBots(Logger, Thread):
                     self.play_active_firm(firm_id)
 
                 else:
-                    self.play_passive_firm()
+                    self.play_passive_firm(firm_id)
 
                 self.data.save()
 
             for customer_id in self.data.bot_customers_id.values():
                 self.play_customer(customer_id)
                 self.data.save()
-
-            self.time_manager.check_state()
 
             Event().wait(1)
 
@@ -199,14 +197,18 @@ class HotellingLocalBots(Logger, Thread):
 
         if not self.data.current_state["active_replied"]:
             self.firm_active_choice_recording(firm_id)
-        if self.time_manager.state == "active_has_played_and_all_customers_replied":
-            self.firm_active_n_client(firm_id)
 
-    def play_passive_firm(self):
+        if not self.data.current_state["active_gets_results"]:
+            if self.time_manager.state == "active_has_played_and_all_customers_replied":
+                self.data.current_state["active_gets_results"] = True
+                self.firm_n_client(firm_id)
+
+    def play_passive_firm(self, firm_id):
 
         if self.time_manager.state == "active_has_played_and_all_customers_replied":
-            self.data.current_state["passive_gets_results"] = True
-            self.time_manager.check_state()
+            if not self.data.current_state["passive_gets_results"]:
+                self.data.current_state["passive_gets_results"] = True
+                self.firm_n_client(firm_id)
 
     def firm_active_choice_recording(self, firm_id):
 
@@ -219,7 +221,7 @@ class HotellingLocalBots(Logger, Thread):
 
         self.time_manager.check_state()
 
-    def firm_active_n_client(self, firm_id):
+    def firm_n_client(self, firm_id):
 
         firm_choices = np.asarray(self.data.current_state["customer_firm_choices"])
         cond = firm_choices == firm_id
@@ -230,7 +232,6 @@ class HotellingLocalBots(Logger, Thread):
         self.data.current_state["firm_cumulative_profits"][firm_id] += n * price
         self.data.current_state["firm_profits"][firm_id] = n * price
         self.data.current_state["n_client"][firm_id] = n
-        self.data.current_state["active_gets_results"] = True
 
         self.time_manager.check_state()
 
