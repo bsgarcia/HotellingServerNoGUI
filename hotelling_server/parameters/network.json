@@ -1,6 +1,6 @@
 {
-  "ip_address": "192.168.43.103",
+  "ip_address": "10.24.12.22",
   "ip_local": "localhost",
   "port": 8081,
-  "local": true 
+  "local": false
 }
