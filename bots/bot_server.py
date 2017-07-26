@@ -128,8 +128,7 @@ class BotGame(Logger):
     def generate_fake_customer_choices():
 
         n0 = np.random.randint(0, 12)
-
-        n1 = np.random.randint(0, 12-n0)
+        n1 = np.random.randint(0, 12 - n0)
 
         n = [n0, n1]
         np.random.shuffle(n)
