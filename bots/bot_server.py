@@ -26,7 +26,7 @@ class BotController(Logger):
 
     def setup(self):
 
-        for key in ["network", "game", "folders", "map_android_id_server_id", "interface"]:
+        for key in ["network", "game", "folders", "map_android_id_server_id", "parametrization"]:
             with open("hotelling_server/parameters/{}.json".format(key)) as file:
                 self.parameters[key] = json.load(file)
 
@@ -127,8 +127,8 @@ class BotGame(Logger):
     @staticmethod
     def generate_fake_customer_choices():
 
-        n0 = np.random.randint(1, 12)
-        n1 = np.random.randint(0, n0)
+        n0 = np.random.randint(0, 12)
+        n1 = np.random.randint(0, 12 - n0)
 
         n = [n0, n1]
         np.random.shuffle(n)

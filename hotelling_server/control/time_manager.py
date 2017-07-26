@@ -14,14 +14,18 @@ class TimeManager(Logger):
         self.continue_game = True
 
     def setup(self):
-        self.state = self.data.time_manager_state
+
+        if self.data.time_manager_state != "end_game":
+            self.state = self.data.time_manager_state
+        else:
+            self.state = "beginning_init"
+
         self.log("NEW STATE: {}.".format(self.state))
 
         self.t = self.data.time_manager_t
         self.ending_t = None
         self.continue_game = True
         self.beginning_time_step()
-        self.log("Players already inititialized: {}".format(self.data.current_state["init_done"]))
 
     def check_state(self):
 
@@ -46,8 +50,8 @@ class TimeManager(Logger):
                 self.state = "end_time_step"
                 self.log("NEW STATE: {}.".format(self.state))
                 self.end_time_step()
-
-                if self.continue_game:
+                
+                if self.state != "end_game":
                     self.beginning_time_step()
                     self.state = "beginning_time_step"
                     self.log("NEW STATE: {}.".format(self.state))
@@ -64,15 +68,17 @@ class TimeManager(Logger):
         self.log("Game server goes next step.")
         self.data.update_history()
         self.data.current_state["firm_states"] = self.data.current_state["firm_states"][::-1]
-
-        if not self.continue_game:
-            self.ending_t = self.t
-            self.state = "beginning_time_step"
-            self.controller.queue.put(("game_stop_game", ))
-
+        self.controller.queue.put(("update_data_viewer", ))
         self.t += 1
 
-        self.controller.queue.put(("update_data_viewer", ))
+        if not self.continue_game and not self.ending_t:
+            self.log("This turn is going to be the last one!")
+            self.ending_t = self.t
+            self.controller.queue.put(("game_stop_game", ))
+
+        elif not self.continue_game and self.ending_t:
+            self.log("GAME ENDS NOW.")
+            self.state = "end_game"
 
     def stop_as_soon_as_possible(self):
         self.continue_game = False
