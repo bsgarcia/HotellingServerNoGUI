@@ -24,6 +24,7 @@ class TimeManager(Logger):
         self.log("Players already inititialized: {}".format(self.data.current_state["init_done"]))
 
     def check_state(self):
+
         if self.state == "beginning_init":
             if self.data.current_state["init_done"]:
                 self.state = "beginning_time_step"

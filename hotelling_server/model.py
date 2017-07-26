@@ -1,5 +1,4 @@
 import sys
-from multiprocessing import Queue
 from PyQt5.QtWidgets import QApplication
 
 from hotelling_server.control import backup
@@ -9,7 +8,7 @@ from . import interface, controller
 class Model:
     """Model class.
 
-    Create the elements of the model, orchestrate their interaction.
+    Create the elements of the model, orchestrate their interactions.
     """
 
     def __init__(self):

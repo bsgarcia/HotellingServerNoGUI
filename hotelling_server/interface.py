@@ -1,4 +1,4 @@
-from os import system, getenv
+from os import getenv
 from multiprocessing import Queue, Event
 
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt
@@ -25,7 +25,7 @@ class UI(QWidget, Logger):
         QWidget.__init__(self)
 
         self.mod = model
-        
+
         self.occupied = Event()
 
         self.layout = QVBoxLayout()
@@ -101,7 +101,7 @@ class UI(QWidget, Logger):
 
         self.already_asked_for_saving_parameters = 1
 
-        cond1 = sorted(self.mod.controller.data.param["interface"].items()) != \
+        cond1 = sorted(self.mod.controller.data.param["parametrization"].items()) != \
                 sorted(self.frames["parameters"].get_parameters().items())
         
         cond2 = sorted(self.mod.controller.data.param["assignement"]) != \
@@ -111,7 +111,7 @@ class UI(QWidget, Logger):
 
             if self.show_question("Do you want to save the change in parameters and assignement?"):
 
-                self.save_parameters("interface", self.frames["parameters"].get_parameters())
+                self.save_parameters("parametrization", self.frames["parameters"].get_parameters())
                 self.save_parameters("assignement", self.frames["assign"].get_parameters())
 
             else:
@@ -255,10 +255,9 @@ class UI(QWidget, Logger):
             QTimer.singleShot(100, self.look_for_msg)
 
     def get_parameters(self):
+        return self.mod.controller.data.param["parametrization"]
 
-        return self.mod.controller.data.param["interface"]
-
-    def get_current_parameters(self):
+    def get_current_interface_parameters(self):
         return {"parametrization": self.frames["parameters"].get_parameters(),
                 "assignement": self.frames["assign"].get_parameters()}
     
@@ -266,7 +265,7 @@ class UI(QWidget, Logger):
         return self.mod.controller.data.param["game"]
 
     def run_game(self):
-        self.controller_queue.put(("ui_run_game", self.get_current_parameters()))
+        self.controller_queue.put(("ui_run_game", self.get_current_interface_parameters()))
 
     def load_game(self, file):
         self.controller_queue.put(("ui_load_game", file))

@@ -1,5 +1,6 @@
 import json
 from utils.utils import Logger
+from sys import getsizeof
 
 
 class Data(Logger):
@@ -33,16 +34,16 @@ class Data(Logger):
 
         self.time_manager_state = "beginning_init"
         self.time_manager_t = 0
-        self.time_manager_ending_t = -1
+        self.time_manager_ending_t = None
         self.continue_game = True
-        
+
         self.assignement = {}
         self.interface = {}
         self.roles = []
 
         # --- server parameters --- #
 
-        self.keys = ["network", "game", "folders", "map_android_id_server_id", "interface", "assignement"]
+        self.keys = ["network", "game", "folders", "map_android_id_server_id", "parametrization", "assignement"]
         self.param = {}
         self.setup()
 

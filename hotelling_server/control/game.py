@@ -11,31 +11,34 @@ class Game(Logger):
 
     def __init__(self, controller):
 
+        # get controller attributes
         self.controller = controller
         self.data = self.controller.data
         self.time_manager = self.controller.time_manager
 
+        # get parameters from interface and json files
         self.game_parameters = self.controller.data.param["game"]
-        self.interface_parameters = self.controller.data.param["interface"]
+        self.parametrization = self.controller.data.param["parametrization"]
         self.assignement = self.controller.data.param["assignement"]
 
+        # set number of type of players
         self.n_customers = self.game_parameters["n_customers"]
         self.n_firms = self.game_parameters["n_firms"]
         self.n_agents = self.n_firms + self.n_customers
-
-        self.save = None
 
     # ----------------------------------- sides methods --------------------------------------#
     def new(self, parameters):
         """called if new game is launched"""
 
-        self.data.interface = parameters["parametrization"]
+        # parameters coming from interface
+        self.data.parametrization = parameters["parametrization"]
         self.data.assignement = parameters["assignement"]
 
-        self.interface_parameters = self.data.interface
+        self.interface_parameters = self.data.parametrization
         self.assignement = self.data.assignement
 
         self.data.roles = ["" for i in range(self.n_agents)]
+
         self.data.time_manager_t = 0
 
         self.data.current_state["firm_states"] = ["active", "passive"]
@@ -49,8 +52,9 @@ class Game(Logger):
         self.data.current_state["customer_extra_view_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
         self.data.current_state["customer_firm_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
         self.data.current_state["customer_utility"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
-
+        
         self.launch_bots()
+
 
     def load(self):
         """called if a previous game is loaded"""
@@ -61,6 +65,7 @@ class Game(Logger):
         self.launch_bots()
 
     def launch_bots(self):
+        """launch bots based on assignement settings"""
 
         n_firms = 0
         n_customers = 0
@@ -70,7 +75,6 @@ class Game(Logger):
             if bot:
                 n_firms += role == "firm"
                 n_customers += role == "customer"
-
             else:
                 n_agents_to_wait += 1
 
@@ -97,7 +101,7 @@ class Game(Logger):
         # retrieve method arguments
         args = [int(a) if a.isdigit() else a for a in whole[1:]]
 
-        # don't launch methods if init is not done 
+        # don't launch methods if init is not done
         if not self.data.current_state["init_done"] and command != self.ask_init:
             to_client = "error/wait_init"
 
@@ -245,7 +249,7 @@ class Game(Logger):
 
     def check_remaining_agents(self):
 
-        remaining = len(self.data.roles) - (len(self.data.firms_id) + len(self.data.customers_id))
+        remaining = self.n_agents - (len(self.data.firms_id) + len(self.data.customers_id))
 
         self.log("Number of missing agents: {}".format(remaining))
 
@@ -264,6 +268,7 @@ class Game(Logger):
 
         if t == self.time_manager.t:
             if self.time_manager.state == "active_has_played":
+
                 x = self.data.current_state["firm_positions"]
                 prices = self.data.current_state["firm_prices"]
 

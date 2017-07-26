@@ -1,14 +1,14 @@
 from multiprocessing import Queue, Event
 from threading import Thread
 
-from utils.utils import Logger 
+from utils.utils import Logger
 from hotelling_server.control import backup, data, game, server, statistician, id_manager, time_manager
 
 
 class Controller(Thread, Logger):
 
     name = "Controller"
-
+    
     def __init__(self, model):
 
         super().__init__()
@@ -37,7 +37,7 @@ class Controller(Thread, Logger):
         self.shutdown = Event()
         self.fatal_error = Event()
         self.continue_game = Event()
-
+    
     def run(self):
 
         self.log("Waiting for a message.")
@@ -56,7 +56,7 @@ class Controller(Thread, Logger):
             self.handle_message(message)
 
         self.close_program()
-
+    
     def launch_game(self):
 
         self.ask_interface("show_frame_setting_up")
@@ -137,7 +137,7 @@ class Controller(Thread, Logger):
         self.server_queue.put(("reply", response))
 
     # ------------------------------ UI interface (!!!) ----------------------#
-
+    
     def ui_run_game(self, interface_parameters):
         self.log("UI ask 'run game'.")
         self.time_manager.setup()
@@ -191,16 +191,13 @@ class Controller(Thread, Logger):
     def get_current_data(self):
 
         return {
-                    "history": self.data.history,
                     "current_state": self.data.current_state,
                     "bot_firms_id": self.data.bot_firms_id,
                     "firms_id": self.data.firms_id,
                     "bot_customers_id": self.data.bot_customers_id,
                     "customers_id": self.data.customers_id,
-                    "server_id_in_use": self.data.server_id_in_use,
                     "roles": self.data.roles,
                     "time_manager_t": self.data.controller.time_manager.t,
-                    "time_manager_state": self.data.controller.time_manager.state,
                     "statistics": self.statistician.data,
                     "map_server_id_game_id": self.data.map_server_id_game_id
 

@@ -2,6 +2,7 @@ import socketserver
 import http.server
 from multiprocessing import Queue, Event
 from threading import Thread
+from sys import getsizeof
 
 from utils.utils import Logger
 
@@ -94,6 +95,7 @@ class Server(Thread, Logger):
                         server_queue=self.queue
                     )
                     self.controller_queue.put(("server_running", ))
+
                     self.tcp_server.serve_forever()
 
                 except Exception as e:
