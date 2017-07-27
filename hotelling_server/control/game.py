@@ -58,7 +58,8 @@ class Game(Logger):
     def load(self):
         """called if a previous game is loaded"""
 
-        self.interface_parameters = self.data.interface
+        self.data.setup()
+        self.interface_parameters = self.data.parametrization
         self.assignement = self.data.assignement
 
         self.launch_bots()

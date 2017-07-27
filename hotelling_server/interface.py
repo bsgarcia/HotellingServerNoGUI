@@ -118,7 +118,7 @@ class UI(QWidget, Logger):
                 self.log('Saving of parameters aborted.')
 
     def update_figures(self, data):
-        self.frames["game"].update_statistics(data["statistics"])
+        self.frames["game"].update_statistics(data)
 
     def update_tables(self, data):
         self.frames["game"].update_state_table(data)

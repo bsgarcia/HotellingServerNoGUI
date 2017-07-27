@@ -38,7 +38,7 @@ class Data(Logger):
         self.continue_game = True
 
         self.assignement = {}
-        self.interface = {}
+        self.parametrization = {}
         self.roles = []
 
         # --- server parameters --- #
@@ -76,7 +76,7 @@ class Data(Logger):
                     "continue": self.controller.time_manager.continue_game,
                     "time_manager_state": self.controller.time_manager.state,
                     "assignement": self.assignement,
-                    "interface": self.interface
+                    "parametrization": self.parametrization
                 }
             )
 
@@ -102,7 +102,7 @@ class Data(Logger):
         self.time_manager_ending_t = data["time_manager_ending_t"]
         self.continue_game = data["continue"]
         self.assignement = data["assignement"]
-        self.interface = data["interface"]
+        self.parametrization = data["parametrization"]
 
     def update_history(self):
 
