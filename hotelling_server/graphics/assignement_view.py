@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt, QObject, QEvent
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QPushButton,
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QPushButton,
         QLabel, QCheckBox, QLineEdit, QMessageBox, QGridLayout, QRadioButton, QButtonGroup, QHBoxLayout)
 
 from utils.utils import Logger
@@ -201,8 +201,8 @@ class IntParameter(object):
         self.edit.installEventFilter(self.filter)
 
         if value == "Bot":
-            self.edit.setStyleSheet(self.edit.greyed_style)
             self.edit.setEnabled(False)
+            self.edit.setStyleSheet(self.edit.greyed_style)
         else:
             self.edit.setEnabled(True)
 
@@ -212,7 +212,7 @@ class IntParameter(object):
 
     def add_to_grid_layout(self, layout, x, y):
 
-        layout.addWidget(self.edit, x, y)
+        layout.addWidget(self.edit, x, y, alignment=Qt.AlignCenter)
 
 
 class CheckParameter(object):
