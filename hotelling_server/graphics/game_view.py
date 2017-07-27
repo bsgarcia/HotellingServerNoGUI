@@ -162,7 +162,10 @@ class GameFrame(QWidget, Logger):
 
             # set row names (server ids, game ids)
             for i, idx in enumerate(rows):
-                self.table[role].setVerticalHeaderItem(i, QTableWidgetItem("{}: {}".format(*idx)))
+                self.table[role].setVerticalHeaderItem(
+                    i, QTableWidgetItem("Server id: {} | Game id: {}".format(*idx)
+                        )
+                    )
 
             self.fill_state_table(role, rows, columns, parameters)
 

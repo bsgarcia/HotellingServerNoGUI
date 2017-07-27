@@ -55,7 +55,6 @@ class Game(Logger):
         
         self.launch_bots()
 
-
     def load(self):
         """called if a previous game is loaded"""
 
@@ -182,6 +181,9 @@ class Game(Logger):
             [str(a) if type(a) in (int, np.int64) else a.replace("ask", "reply") for a in args]
         ))
 
+    def update_tables(self):
+        self.controller.queue.put(("update_tables_interface", ))
+
     # ----------------------------------- all devices demands --------------------------------------#
 
     def ask_init(self, android_id):
@@ -192,8 +194,11 @@ class Game(Logger):
 
             role = self.get_role(server_id)
 
-            self.data.roles[game_id] = role
+            if not role:
+                return "Unknown server id: {}".format(server_id)
 
+            self.data.roles[game_id] = role
+            
             if role == "firm":
                 return self.init_firms(function_name(), game_id, role)
 
@@ -219,6 +224,8 @@ class Game(Logger):
 
         self.check_remaining_agents()
 
+        self.update_tables()
+
         return self.reply(func_name, game_id, self.time_manager.t, role, position, exploration_cost,
                 utility_consumption, utility)
 
@@ -243,6 +250,8 @@ class Game(Logger):
         profits = self.data.current_state["firm_cumulative_profits"][firm_id]
 
         self.check_remaining_agents()
+        
+        self.update_tables()
 
         return self.reply(func_name, game_id, self.time_manager.t, role, position, state, price,
                           opp_position, opp_price, profits)
@@ -305,6 +314,8 @@ class Game(Logger):
                     self.data.current_state["customer_firm_choices"][customer_id] = firm
                 else:
                     self.data.current_state["customer_firm_choices"][customer_id] = -1
+
+                self.compute_utility()
 
                 self.time_manager.check_state()
 

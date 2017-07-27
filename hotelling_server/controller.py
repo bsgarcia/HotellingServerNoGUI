@@ -171,11 +171,17 @@ class Controller(Thread, Logger):
     # ------------------------------ Game interface (!!!) -------------------------------------- #
 
     def game_stop_game(self):
-        self.log("'Game' ask 'stop game'.")
+        self.log("'Game' asks 'stop game'.")
         self.stop_game_second_phase()
 
-    def update_data_viewer(self):
-        self.log("'Game' ask 'update_data_viewer'.")
+    def update_tables_interface(self):
+        self.log("'Game' asks 'update_tables_interface")
+        
+        data = self.get_current_data()
+        self.ask_interface("update_tables", data)
+
+    def update_figures_interface(self):
+        self.log("'Game' asks 'update_figures_interface'")
 
         # needs to be moved elsewhere?
         self.statistician.compute_distance()
@@ -183,8 +189,8 @@ class Controller(Thread, Logger):
         self.statistician.compute_profits()
         self.statistician.compute_mean_utility()
 
-        data = self.get_current_data()
-        self.ask_interface("update_data_viewer", data)
+        data = self.get_current_data()["statistics"]
+        self.ask_interface("update_figures", data)
 
     # ---------------------- Parameters management -------------------------------------------- #
 
