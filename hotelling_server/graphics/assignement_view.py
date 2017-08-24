@@ -166,7 +166,7 @@ class RadioParameter(object):
         self.customer = QRadioButton()
 
         self.setup(checked)
-    
+
     def setup(self, checked):
 
         if checked == "customer":
@@ -206,6 +206,9 @@ class IntParameter(object):
         self.filter = MouseClick(parent, idx)
         self.edit.installEventFilter(self.filter)
 
+        self.setup(value)
+
+    def setup(self, value):
         if value == "Bot":
             self.edit.setEnabled(False)
             self.edit.setStyleSheet(self.edit.greyed_style)
@@ -228,7 +231,9 @@ class CheckParameter(object):
         self.parent = parent
         self.idx = idx
         self.check_box = QCheckBox()
+        self.setup(checked)
 
+    def setup(self, checked):
         self.check_box.stateChanged.connect(
                 lambda: self.parent.switch_line_edit(idx=self.idx, from_line=False))
 
