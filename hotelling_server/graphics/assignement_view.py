@@ -167,8 +167,10 @@ class RadioParameter(object):
 
         if checked == "customer":
             self.customer.setChecked(True)
+            self.customer.setEnabled(False)
         else:
             self.firm.setChecked(True)
+            self.customer.setEnabled(False)
 
         self.group.addButton(self.firm)
         self.group.addButton(self.customer)

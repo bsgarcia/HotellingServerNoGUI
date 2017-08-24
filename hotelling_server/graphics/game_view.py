@@ -102,11 +102,11 @@ class GameFrame(QWidget, Logger):
 
         switch = self.switch_button.text() == "View figures"
         self.switch_button.setText(("View figures", "View tables")[switch])
+        
+        tohide = (self.plot_layout, self.table)[switch]
+        toshow = (self.table, self.plot_layout)[switch]
 
-        if switch:
-            self.hide_and_show(tohide=self.table, toshow=self.plot_layout)
-        else:
-            self.hide_and_show(tohide=self.plot_layout, toshow=self.table)
+        self.hide_and_show(tohide=tohide, toshow=toshow)
 
     def hide_and_show(self, tohide, toshow):
 
@@ -130,23 +130,30 @@ class GameFrame(QWidget, Logger):
     def prepare_state_table(self, parameters):
 
         ids, labels, fancy_labels = self.get_state_table_data(parameters)
+        ids = self.parent().mod.controller.data.assignement
 
         for role in ["firm", "customer"]:
 
-            rows = ids[role]
-            columns = labels[role]
+            rows = [server_id for server_id, j, k in ids if j == role]
+            columns = fancy_labels[role]
 
             # set height and width
             self.table[role].setColumnCount(len(columns))
             self.table[role].setRowCount(len(rows))
 
-            # set column names (parameters to print)
-            for i, param in enumerate(fancy_labels[role]):
-                self.table[role].setHorizontalHeaderItem(i, QTableWidgetItem(param))
-
             # fit the widget
             self.table[role].horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
             self.table[role].verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+            # set column names (parameters to print)
+            for i, param in enumerate(columns):
+                self.table[role].setHorizontalHeaderItem(i, QTableWidgetItem(param))
+
+            for i, idx in enumerate(rows):
+                self.table[role].setVerticalHeaderItem(
+                    i, QTableWidgetItem("Server id: {}".format(idx)
+                    )
+                )
 
     def update_state_table(self, parameters):
 
@@ -157,34 +164,43 @@ class GameFrame(QWidget, Logger):
             rows = ids[role]
             columns = labels[role]
 
-            self.table[role].setColumnCount(len(columns))
-            self.table[role].setRowCount(len(rows))
-
             # set row names (server ids, game ids)
             for i, idx in enumerate(rows):
-                self.table[role].setVerticalHeaderItem(
-                    i, QTableWidgetItem("Server id: {} | Game id: {}".format(*idx)
-                        )
-                    )
+                    self.table[role].setVerticalHeaderItem(
+                            i, QTableWidgetItem("Server id: {} | Game id: {}".format(*idx)
+                                    )
+                            )
 
             self.fill_state_table(role, rows, columns, parameters)
 
     def fill_state_table(self, role, rows, columns, parameters):
 
-        # for each game_id
-        for x, (server_id, game_id) in enumerate(rows):
+        try:
+            # for each game_id
+            for x, (server_id, game_id) in enumerate(rows):
 
-            # for each label
-            for y, label in enumerate(columns):
-                data = parameters["current_state"][label]
-                role_id = parameters["{}s_id".format(role)][game_id]
+                # for each label
+                for y, label in enumerate(columns):
+                    data = parameters["current_state"][label]
+                    role_id = parameters["{}s_id".format(role)][game_id]
 
-                # if data is available
-                if len(data) > int(role_id):
-                    string = str(data[role_id])
-                    self.table[role].setItem(x, y, QTableWidgetItem(string))
+                    # if data is available
+                    if len(data) > int(role_id):
+                        string = str(data[role_id])
+                        self.table[role].setItem(x, y, QTableWidgetItem(string))
+
+        except Exception as msg:
+            self.log("Error filling tables: {}".format(str(msg)))
 
     def get_state_table_data(self, parameters):
+        
+        ids = self.get_ids(parameters)
+        labels, fancy_labels = self.get_labels()
+        
+        return ids, labels, fancy_labels
+    
+    @staticmethod
+    def get_ids(parameters):
 
         server_id = list(parameters["map_server_id_game_id"].items())
         bot_firm_id = list(parameters["bot_firms_id"].items())
@@ -203,20 +219,35 @@ class GameFrame(QWidget, Logger):
         for role in ["firm", "customer"]:
             ids[role] = [(server_id, game_id) for server_id, game_id in server_id_game_id
                     if parameters["roles"][game_id] == role]
+        return ids
+
+    @staticmethod
+    def get_labels():
 
         # pick wanted labels
-        firm_labels = ("firm_profits", "firm_prices", "firm_positions", "firm_states", "n_client",
-        "firm_cumulative_profits")
-        customer_labels = ("customer_firm_choices", "customer_extra_view_choices", "customer_utility")
+        firm_labels = ("firm_profits",
+                       "firm_prices",
+                       "firm_positions",
+                       "firm_states",
+                       "n_client",
+                       "firm_cumulative_profits",
+                       "connected_firms",)
+
+        customer_labels = ("customer_firm_choices", 
+                           "customer_extra_view_choices",
+                           "customer_utility",
+                           "connected_customers")
 
         labels = {"firm": firm_labels,
                    "customer": customer_labels}
 
         # transform into nicer labels
-        fancy_labels = {"firm": [name.replace("_", " ").capitalize() for name in firm_labels],
-                        "customer": [name.replace("_", " ").capitalize() for name in customer_labels]}
+        fancy_labels = {"firm": [name.replace("_", " ").capitalize()
+                                for name in firm_labels],
+                        "customer": [name.replace("_", " ").capitalize()
+                                    for name in customer_labels]}
 
-        return ids, labels, fancy_labels
+        return labels, fancy_labels
 
     def initialize_figures(self):
 

@@ -176,9 +176,7 @@ class Controller(Thread, Logger):
 
     def update_tables_interface(self):
         self.log("'Game' asks 'update_tables_interface")
-        
-        data = self.get_current_data()
-        self.ask_interface("update_tables", data)
+        self.ask_interface("update_tables")
 
     def update_figures_interface(self):
         self.log("'Game' asks 'update_figures_interface'")
@@ -188,9 +186,7 @@ class Controller(Thread, Logger):
         self.statistician.compute_mean_extra_view_choices()
         self.statistician.compute_profits()
         self.statistician.compute_mean_utility()
-
-        data = self.get_current_data()["statistics"]
-        self.ask_interface("update_figures", data)
+        self.ask_interface("update_figures")
 
     # ---------------------- Parameters management -------------------------------------------- #
 

@@ -97,6 +97,7 @@ class HotellingLocalBots(Logger, Thread):
                 self.data.bot_customers_id[game_id] = customer_id
 
                 self.data.roles[game_id] = "customer"
+                self.data.current_state["connected_customers"][customer_id] = " ✔ "
 
         for i in range(self.n_firms):
 
@@ -111,6 +112,7 @@ class HotellingLocalBots(Logger, Thread):
                 self.data.bot_firms_id[game_id] = firm_id
 
                 self.data.roles[game_id] = "firm"
+                self.data.current_state["connected_firms"][firm_id] = " ✔ "
 
         self.check_remaining_agents()
 

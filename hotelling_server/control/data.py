@@ -13,9 +13,9 @@ class Data(Logger):
 
         self.entries = [
             "firm_positions", "firm_prices", "firm_profits", "firm_cumulative_profits",
-            "customer_firm_choices", "customer_extra_view_choices", "customer_utility", "n_client", 
+            "customer_firm_choices", "customer_extra_view_choices", "customer_utility", "n_client",
             "customer_replies", "active_replied", "passive_gets_results", "active_gets_results",
-            "firm_states", "init_done"
+            "firm_states", "connected_firms", "connected_customers", "init_done"
         ]
 
         self.history = {s: [] for s in self.entries}
@@ -36,7 +36,7 @@ class Data(Logger):
         self.time_manager_t = 0
         self.time_manager_ending_t = None
         self.continue_game = True
-
+        
         self.assignement = {}
         self.parametrization = {}
         self.roles = []

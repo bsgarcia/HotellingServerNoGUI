@@ -31,10 +31,17 @@ class UI(QWidget, Logger):
         self.layout = QVBoxLayout()
 
         self.frames = dict()
+        
+        # refresh interface and update data 
+        self.timer = QTimer(self)
+        self.timer.setInterval(700)
+        self.timer.timeout.connect(self.update_tables)
+        self.timer.start()
 
         self.already_asked_for_saving_parameters = 0
 
         self.queue = Queue()
+
         self.communicate = Communicate()
 
         self.controller_queue = None
@@ -117,12 +124,17 @@ class UI(QWidget, Logger):
             else:
                 self.log('Saving of parameters aborted.')
 
-    def update_figures(self, data):
+    def update_figures(self, *args):
+        data = self.mod.controller.get_current_data()["statistics"]
         self.frames["game"].update_statistics(data)
 
-    def update_tables(self, data):
-        self.frames["game"].update_state_table(data)
-        self.frames["game"].set_trial_number(data["time_manager_t"])
+    def update_tables(self, *args):
+
+        if self.mod.controller.running_game.is_set():
+
+            data = self.mod.controller.get_current_data()
+            self.frames["game"].update_state_table(data)
+            self.frames["game"].set_trial_number(data["time_manager_t"])
 
     def show_frame_load_game_new_game(self, *args):
 

@@ -3,14 +3,21 @@ from threading import Thread, Event
 from multiprocessing import Queue
 import numpy as np
 import requests
-from utils.utils import Logger, function_name
+from utils.utils import Logger, function_name, get_local_ip
 
 
 class GenericBotClient(Thread, Logger):
 
     with open("hotelling_server/parameters/network.json") as file:
         network_parameters = json.load(file)
-    ip_address = network_parameters["ip_address"] if not network_parameters["local"] else "localhost"
+
+    if network_parameters["ip_autodetect"] and not network_parameters["local"]:
+        ip_address = get_local_ip()
+    elif network_parameters["local"]:
+        ip_adress = "localhost"
+    else:
+        ip_adress = network_parameters["ip_adress"]
+
     port = network_parameters["port"]
     delay_retry = 1
 

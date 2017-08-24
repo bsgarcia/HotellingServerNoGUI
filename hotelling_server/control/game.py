@@ -33,13 +33,18 @@ class Game(Logger):
         # parameters coming from interface
         self.data.parametrization = parameters["parametrization"]
         self.data.assignement = parameters["assignement"]
-
+        
         self.interface_parameters = self.data.parametrization
         self.assignement = self.data.assignement
 
         self.data.roles = ["" for i in range(self.n_agents)]
-
         self.data.time_manager_t = 0
+        
+        # reset data in case a game was previously launched during the same session
+        self.data.current_state = {s: [] for s in self.data.entries}
+
+        self.data.current_state["connected_firms"] = ["" for i in range(self.n_firms)]
+        self.data.current_state["connected_customers"] = ["" for i in range(self.n_customers)]
 
         self.data.current_state["firm_states"] = ["active", "passive"]
         self.data.current_state["n_client"] = [0, 0]
@@ -52,7 +57,8 @@ class Game(Logger):
         self.data.current_state["customer_extra_view_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
         self.data.current_state["customer_firm_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
         self.data.current_state["customer_utility"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
-        
+        self.data.current_state["customer_replies"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
+
         self.launch_bots()
 
     def load(self):
@@ -172,7 +178,6 @@ class Game(Logger):
         return n, n_opp
 
     # -------------------------------- one liner methods ------------------------------------------ #
-
     def check_end(self, client_t):
         return int(client_t == self.time_manager.ending_t) if self.time_manager.ending_t else 0
 
@@ -181,9 +186,6 @@ class Game(Logger):
         return "reply/{}".format("/".join(
             [str(a) if type(a) in (int, np.int64) else a.replace("ask", "reply") for a in args]
         ))
-
-    def update_tables(self):
-        self.controller.queue.put(("update_tables_interface", ))
 
     # ----------------------------------- all devices demands --------------------------------------#
 
@@ -223,9 +225,9 @@ class Game(Logger):
         utility_consumption = self.interface_parameters["utility_consumption"]
         utility = self.data.current_state["customer_utility"][customer_id]
 
-        self.check_remaining_agents()
+        # self.data.current_state["connected_customers"][customer_id] = " ✔ "
 
-        self.update_tables()
+        self.check_remaining_agents()
 
         return self.reply(func_name, game_id, self.time_manager.t, role, position, exploration_cost,
                 utility_consumption, utility)
@@ -250,9 +252,9 @@ class Game(Logger):
         opp_price = self.data.current_state["firm_prices"][opponent_id]
         profits = self.data.current_state["firm_cumulative_profits"][firm_id]
 
+        # self.data.current_state["connected_firms"][firm_id] = " ✔ "
+
         self.check_remaining_agents()
-        
-        self.update_tables()
 
         return self.reply(func_name, game_id, self.time_manager.t, role, position, state, price,
                           opp_position, opp_price, profits)
