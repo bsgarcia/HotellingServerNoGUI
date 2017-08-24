@@ -175,30 +175,26 @@ class GameFrame(QWidget, Logger):
 
     def fill_state_table(self, role, rows, columns, parameters):
 
-        try:
-            # for each game_id
-            for x, (server_id, game_id) in enumerate(rows):
-
-                # for each label
-                for y, label in enumerate(columns):
-                    data = parameters["current_state"][label]
+        # for each game_id
+        for x, (server_id, game_id) in enumerate(rows):
+            # for each label
+            for y, label in enumerate(columns):
+                data = parameters["current_state"][label]
+                cond = game_id in parameters["{}s_id".format(role)].keys()
+                if cond:
                     role_id = parameters["{}s_id".format(role)][game_id]
-
                     # if data is available
                     if len(data) > int(role_id):
                         string = str(data[role_id])
                         self.table[role].setItem(x, y, QTableWidgetItem(string))
 
-        except Exception as msg:
-            self.log("Error filling tables: {}".format(str(msg)))
-
     def get_state_table_data(self, parameters):
-        
+
         ids = self.get_ids(parameters)
         labels, fancy_labels = self.get_labels()
-        
+
         return ids, labels, fancy_labels
-    
+
     @staticmethod
     def get_ids(parameters):
 
