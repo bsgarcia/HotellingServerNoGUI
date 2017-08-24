@@ -170,7 +170,7 @@ class RadioParameter(object):
             self.customer.setEnabled(False)
         else:
             self.firm.setChecked(True)
-            self.customer.setEnabled(False)
+            self.firm.setEnabled(False)
 
         self.group.addButton(self.firm)
         self.group.addButton(self.customer)
