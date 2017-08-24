@@ -165,6 +165,10 @@ class RadioParameter(object):
         self.firm = QRadioButton()
         self.customer = QRadioButton()
 
+        self.setup(checked)
+    
+    def setup(self, checked):
+
         if checked == "customer":
             self.customer.setChecked(True)
             self.customer.setEnabled(False)
