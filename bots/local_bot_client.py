@@ -71,7 +71,7 @@ class HotellingLocalBots(Logger, Thread):
             Event().wait(1)
 
             if self.time_manager.state == "end_game" or not self.controller.server.is_alive() \
-                    or self.stopped():
+                    or self.stopped() or not self.controller.running_game.is_set():
                     self.log("Local Bots: Game ends, bots are going to shutdown!")
                     break
     def stop(self):

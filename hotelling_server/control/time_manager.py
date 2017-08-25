@@ -74,11 +74,11 @@ class TimeManager(Logger):
         if not self.continue_game and not self.ending_t:
             self.log("This turn is going to be the last one!")
             self.ending_t = self.t
-            self.controller.queue.put(("game_stop_game", ))
 
         elif not self.continue_game and self.ending_t:
             self.log("GAME ENDS NOW.")
             self.state = "end_game"
+            self.controller.queue.put(("game_stop_game", ))
 
     def stop_as_soon_as_possible(self):
         self.continue_game = False

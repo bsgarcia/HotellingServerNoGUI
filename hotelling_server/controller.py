@@ -18,6 +18,12 @@ class Controller(Thread, Logger):
         # For receiving inputs
         self.queue = Queue()
 
+        self.running_game = Event()
+
+        self.shutdown = Event()
+        self.fatal_error = Event()
+        self.continue_game = Event()
+
         self.data = data.Data(controller=self)
         self.time_manager = time_manager.TimeManager(controller=self)
         self.id_manager = id_manager.IDManager(controller=self)
@@ -32,12 +38,7 @@ class Controller(Thread, Logger):
 
         # For giving go signal to server
         self.server_queue = self.server.queue
-        self.running_game = Event()
 
-        self.shutdown = Event()
-        self.fatal_error = Event()
-        self.continue_game = Event()
-    
     def run(self):
 
         self.log("Waiting for a message.")

@@ -16,6 +16,13 @@ class AssignementFrame(QWidget, Logger):
 
         self.layout = QVBoxLayout()
         self.next_button = QPushButton("Next")
+        self.previous_button = QPushButton("Previous")
+
+        self.group = QButtonGroup()
+
+        self.group.addButton(self.previous_button)
+        self.group.addButton(self.next_button)
+
         self.parameters = dict()
 
         self.error = None
@@ -32,7 +39,7 @@ class AssignementFrame(QWidget, Logger):
 
         n_agents = len(roles)
 
-        labels = "Server id", "Firm " + " Customer", "Bot"
+        labels = ("Server id", "Firm " + " Customer", "Bot")
 
         self.parameters["assign"] = [[] for i in range(n_agents)]
 
@@ -48,7 +55,16 @@ class AssignementFrame(QWidget, Logger):
 
         # --------- fill layout ----------------------------------- #
 
-         # prepare layout
+        self.fill_layout(labels, n_agents)
+
+        self.next_button.clicked.connect(self.push_next_button)
+        self.previous_button.clicked.connect(self.push_previous_button)
+
+        self.setup_done = True
+
+    def fill_layout(self, labels, n_agents):
+
+        # prepare layout
         grid_layout = QGridLayout()
 
         # add labels
@@ -64,14 +80,15 @@ class AssignementFrame(QWidget, Logger):
         for (i, j), (x, y) in zip(index, coordinates):
             self.parameters["assign"][i][j].add_to_grid_layout(grid_layout, x, y)
 
+        horizontal_layout = QHBoxLayout()
+
+        horizontal_layout.addWidget(self.previous_button, alignment=Qt.AlignCenter)
+        horizontal_layout.addWidget(self.next_button, alignment=Qt.AlignCenter)
+
         self.layout.addLayout(grid_layout)
-        self.layout.addWidget(self.next_button, alignment=Qt.AlignCenter)
+        self.layout.addLayout(horizontal_layout)
 
         self.setLayout(self.layout)
-
-        self.next_button.clicked.connect(self.push_next_button)
-
-        self.setup_done = True
 
     def load_setup(self, assignement):
 
@@ -97,8 +114,6 @@ class AssignementFrame(QWidget, Logger):
 
     def push_next_button(self):
 
-        self.next_button.setEnabled(False)
-
         if self.error:
 
             self.show_warning(msg=self.error)
@@ -107,6 +122,16 @@ class AssignementFrame(QWidget, Logger):
             self.log("Push 'next' button.")
 
             self.parent().show_frame_parameters()
+
+    def push_previous_button(self):
+
+        if self.error:
+
+            self.show_warning(msg=self.error)
+
+        else:
+            self.log("Push 'previous' button.")
+            self.parent().show_frame_load_game_new_game()
 
     def get_parameters(self):
         return [[i.get_value(), j.get_value(), k.get_value()] for i, j, k in self.parameters["assign"]]

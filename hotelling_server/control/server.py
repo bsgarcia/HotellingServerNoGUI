@@ -2,7 +2,7 @@ import socketserver
 import http.server
 from multiprocessing import Queue, Event
 from threading import Thread
-import time 
+import time
 
 from utils.utils import Logger, get_local_ip
 
@@ -12,7 +12,7 @@ class HttpHandler(http.server.SimpleHTTPRequestHandler, Logger):
     def do_GET(self):
 
         data = self.path
-        
+
         if data:
 
             try:
@@ -47,8 +47,8 @@ class HttpHandler(http.server.SimpleHTTPRequestHandler, Logger):
 
         self.wfile.write(response.encode())
 
-        def log_message(self, *args):
-            return
+    def log_message(self, *args):
+        return
 
 
 class TCPGamingServer(Logger, socketserver.TCPServer):
@@ -82,7 +82,7 @@ class Server(Thread, Logger):
         self.shutdown_event = Event()
         self.tcp_server = None
 
-        self.timer = Timer(1, self.check_all_client_time_since_last_request)
+        self.timer = Timer(self, 1, self.check_all_client_time_since_last_request)
         self.timer.start()
 
     def run(self):
@@ -133,7 +133,6 @@ class Server(Thread, Logger):
             self.tcp_server.server_close()
 
     def end(self):
-        self.timer.stop()
         self.shutdown_event.set()
         self.queue.put("break")
 
@@ -160,7 +159,7 @@ class Server(Thread, Logger):
 
         game_id = self.clients[ip]["game_id"]
         role = self.cont.data.roles[game_id]
-        
+
         if role:
             if role == "customer":
                 if game_id in self.cont.data.customers_id.keys():
@@ -176,21 +175,15 @@ class Server(Thread, Logger):
 
 
 class Timer(Thread):
-    def __init__(self, wait, func):
+    def __init__(self, parent, wait, func):
         super().__init__()
+        self.parent = parent
         self.func = func
         self.wait = wait
-        self._stop_event = False
 
     def run(self):
 
-        while not self.stopped():
+        while not self.parent.shutdown_event.is_set():
             self.func()
             Event().wait(self.wait)
-
-    def stop(self):
-        self._stop_event = True
-
-    def stopped(self):
-        return self._stop_event
 

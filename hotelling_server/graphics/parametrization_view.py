@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QPushButton, QLabel, QCheckBox, QLineEdit, QMessageBox
-
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QPushButton,
+        QLabel, QCheckBox, QLineEdit, QMessageBox, QHBoxLayout)
 from utils.utils import Logger
 
 
@@ -15,6 +15,7 @@ class ParametersFrame(QWidget, Logger):
 
         self.layout = QVBoxLayout()
         self.run_button = QPushButton("Run!")
+        self.previous_button = QPushButton("Previous")
         self.parameters = dict()
 
         self.error = None
@@ -43,12 +44,19 @@ class ParametersFrame(QWidget, Logger):
             self.parameters[p].add_to_layout(form_layout)
 
         self.layout.addLayout(form_layout)
-        self.layout.addWidget(self.run_button, alignment=Qt.AlignCenter)
 
+        # add buttons 'next' and 'previous'
+        horizontal_layout = QHBoxLayout()
+
+        horizontal_layout.addWidget(self.previous_button, alignment=Qt.AlignCenter)
+        horizontal_layout.addWidget(self.run_button, alignment=Qt.AlignCenter)
+
+        self.layout.addLayout(horizontal_layout)
         self.setLayout(self.layout)
 
         # noinspection PyUnresolvedReferences
         self.run_button.clicked.connect(self.push_run_button)
+        self.previous_button.clicked.connect(self.push_previous_button)
 
     def push_run_button(self):
 
@@ -62,6 +70,16 @@ class ParametersFrame(QWidget, Logger):
             self.log("Push 'run' button.")
 
             self.parent().run_game()
+
+    def push_previous_button(self):
+
+        if self.error:
+
+            self.show_warning(msg=self.error)
+
+        else:
+            self.log("Push 'previous' button.")
+            self.parent().show_frame_assignement()
 
     def get_parameters(self):
 
