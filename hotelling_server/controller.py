@@ -8,7 +8,7 @@ from hotelling_server.control import backup, data, game, server, statistician, i
 class Controller(Thread, Logger):
 
     name = "Controller"
-    
+
     def __init__(self, model):
 
         super().__init__()
@@ -56,7 +56,7 @@ class Controller(Thread, Logger):
             self.handle_message(message)
 
         self.close_program()
-    
+
     def launch_game(self):
 
         self.ask_interface("show_frame_setting_up")
@@ -114,12 +114,16 @@ class Controller(Thread, Logger):
 
     def handle_message(self, message):
 
-        command = message[0]
-        args = message[1:]
-        if len(args):
-            eval("self.{}(*args)".format(command))
-        else:
-            eval("self.{}()".format(command))
+        try:
+            command = message[0]
+            args = message[1:]
+            if len(args):
+                eval("self.{}(*args)".format(command))
+            else:
+                eval("self.{}()".format(command))
+
+        except Exception as err:
+            self.ask_interface("show_warning", str(err))
 
     # ------------------------------ Server interface -----------------------#
 
@@ -167,6 +171,10 @@ class Controller(Thread, Logger):
         self.log("UI ask 'save game parameters'.")
         self.data.save_param(key, data)
         self.log("Save interface parameters.")
+
+    def ui_stop_bots(self):
+        self.log("UI asks to stop bots")
+        self.game.stop_bots()
 
     # ------------------------------ Game interface (!!!) -------------------------------------- #
 

@@ -122,6 +122,7 @@ class GameFrame(QWidget, Logger):
             self.parent().stop_game()
         else:
             self.parent().show_frame_load_game_new_game()
+            self.parent().stop_bots()
 
     def set_trial_number(self, trial_n):
 

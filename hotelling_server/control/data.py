@@ -19,6 +19,21 @@ class Data(Logger):
         ]
 
         self.history = {s: [] for s in self.entries}
+
+        self.new()
+
+        self.assignement = {}
+        self.parametrization = {}
+        self.roles = []
+
+        # --- server parameters --- #
+
+        self.keys = ["network", "game", "folders", "map_android_id_server_id", "parametrization", "assignement"]
+        self.param = {}
+        self.setup()
+
+    def new(self):
+
         self.current_state = {s: [] for s in self.entries}
 
         self.firms_id = {}  # key: game_id, value: firm_id
@@ -36,16 +51,6 @@ class Data(Logger):
         self.time_manager_t = 0
         self.time_manager_ending_t = None
         self.continue_game = True
-        
-        self.assignement = {}
-        self.parametrization = {}
-        self.roles = []
-
-        # --- server parameters --- #
-
-        self.keys = ["network", "game", "folders", "map_android_id_server_id", "parametrization", "assignement"]
-        self.param = {}
-        self.setup()
 
     def setup(self):
 

@@ -31,10 +31,10 @@ class UI(QWidget, Logger):
         self.layout = QVBoxLayout()
 
         self.frames = dict()
-        
-        # refresh interface and update data 
+
+        # refresh interface and update data
         self.timer = QTimer(self)
-        self.timer.setInterval(700)
+        self.timer.setInterval(500)
         self.timer.timeout.connect(self.update_tables)
         self.timer.start()
 
@@ -49,7 +49,7 @@ class UI(QWidget, Logger):
     def setup(self):
 
         self.controller_queue = self.mod.controller.queue
-        
+
         self.frames["assign"] = \
                 assignement_view.AssignementFrame(parent=self)
 
@@ -187,10 +187,10 @@ class UI(QWidget, Logger):
 
         return button_reply == QMessageBox.Yes
 
-    def show_warning(self, **instructions):
+    def show_warning(self, msg):
 
         button_reply = QMessageBox().warning(
-            self, "", instructions["msg"],
+            self, "", msg,
             QMessageBox.Ok
         )
         return button_reply == QMessageBox.Yes
@@ -300,4 +300,7 @@ class UI(QWidget, Logger):
 
     def send_reboot_signal(self):
         self.controller_queue.put(("reboot", ))
+
+    def stop_bots(self):
+        self.controller_queue.put(("ui_stop_bots", ))
 

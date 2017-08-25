@@ -28,6 +28,8 @@ class HotellingLocalBots(Logger, Thread):
         self.customer_attributes = {}
         self.firm_attributes = {}
 
+        self._stop_event = Event()
+
         self.customer_attributes["extra_view_possibilities"] = np.arange(0, self.n_positions - 1)
         self.firm_attributes["n_prices"] = self.game_parameters["n_prices"]
 
@@ -42,7 +44,7 @@ class HotellingLocalBots(Logger, Thread):
             if cond:
                 break
 
-            if not self.controller.server.is_alive():
+            if not self.controller.server.is_alive() or self.stopped():
                 return 0
 
         # start to init bots
@@ -68,9 +70,15 @@ class HotellingLocalBots(Logger, Thread):
 
             Event().wait(1)
 
-            if self.time_manager.state == "end_game" or not self.controller.server.is_alive():
-                    self.log("Local Bots: Game ends! Bots shutdown!")
+            if self.time_manager.state == "end_game" or not self.controller.server.is_alive() \
+                    or self.stopped():
+                    self.log("Local Bots: Game ends, bots are going to shutdown!")
                     break
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()
 
     def get_non_bot_agents(self):
 

@@ -33,16 +33,14 @@ class Game(Logger):
         # parameters coming from interface
         self.data.parametrization = parameters["parametrization"]
         self.data.assignement = parameters["assignement"]
-        
+
         self.interface_parameters = self.data.parametrization
         self.assignement = self.data.assignement
 
-        self.data.roles = ["" for i in range(self.n_agents)]
-        self.data.time_manager_t = 0
-        
         # reset data in case a game was previously launched during the same session
-        self.data.current_state = {s: [] for s in self.data.entries}
+        self.data.new()
 
+        self.data.roles = ["" for i in range(self.n_agents)]
         self.data.current_state["connected_firms"] = ["" for i in range(self.n_firms)]
         self.data.current_state["connected_customers"] = ["" for i in range(self.n_customers)]
 
@@ -51,7 +49,8 @@ class Game(Logger):
         self.data.current_state["firm_profits"] = [0, 0]
         self.data.current_state["firm_cumulative_profits"] = [0, 0]
 
-        self.data.current_state["firm_positions"] = np.random.randint(1, self.game_parameters["n_positions"], size=2)
+        self.data.current_state["firm_positions"] = np.random.choice(range(1, self.game_parameters["n_positions"]),
+                size=2, replace=False)
         self.data.current_state["firm_prices"] = np.random.randint(1, self.game_parameters["n_prices"], size=2)
 
         self.data.current_state["customer_extra_view_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
@@ -85,9 +84,11 @@ class Game(Logger):
                 n_agents_to_wait += 1
 
         if n_firms > 0 or n_customers > 0:
-            bots = HotellingLocalBots(self.controller, n_firms, n_customers, n_agents_to_wait)
-            bots.start()
+            self.bots = HotellingLocalBots(self.controller, n_firms, n_customers, n_agents_to_wait)
+            self.bots.start()
 
+    def stop_bots(self):
+        self.bots.stop()
     # ------------------------------- network related method ----------------------------------------- #
 
     def handle_request(self, request):
