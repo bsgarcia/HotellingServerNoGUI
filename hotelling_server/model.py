@@ -18,8 +18,11 @@ class Model:
         self.controller = controller.Controller(model=self)
 
     def run(self):
+        try:
+            self.controller.start()
+            self.ui.setup()
+            self.ui.show()
+            sys.exit(self.app.exec_())
 
-        self.controller.start()
-        self.ui.setup()
-        self.ui.show()
-        sys.exit(self.app.exec_())
+        except Exception as e:
+            self.ui.show_critical_and_ok(msg=str(e))

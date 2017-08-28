@@ -58,6 +58,7 @@ class TCPGamingServer(Logger, socketserver.TCPServer):
         self.server_queue = server_queue
         self.cont = cont
         self.controller_queue = controller_queue
+        self.ip = server_address[0]
         self.parent = parent
 
         super().__init__(server_address, HttpHandler)  # TCPHandler)
@@ -103,7 +104,6 @@ class Server(Thread, Logger):
                     else:
                         ip_address = self.param["ip_address"]
 
-                    self.param["ip_address"] = ip_address
                     self.log("Try to connect using ip {}...".format(ip_address))
                     self.tcp_server = TCPGamingServer(
                         parent=self,
