@@ -1,5 +1,6 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QWidget, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout, QLabel
 import numpy as np
 
 from hotelling_server.graphics.widgets.plot_layouts import OneLinePlot, PlotLayout, TwoLinesPlot
@@ -25,6 +26,8 @@ class GameFrame(QWidget, Logger):
                       "customer": QTableWidget()}
 
         self.trial_counter = TrialCounter()
+
+        self.ip_address = QLabel()
 
         self.plot_layout = dict()
 
@@ -75,6 +78,16 @@ class GameFrame(QWidget, Logger):
         # self.layout.addLayout(self.done_playing_layout, stretch=0)
         self.layout.addWidget(self.stop_button, stretch=0, alignment=Qt.AlignBottom)
 
+        # set ip address
+        text = self.parent().mod.controller.server.param["ip_address"]
+        font = QFont()
+        font.setPointSize(20)
+        self.ip_address.setFont(font)
+        self.ip_address.setText("IP: {}".format(text))
+
+        # add to layout
+        self.layout.addWidget(self.ip_address, alignment=Qt.AlignCenter)
+
         # noinspection PyUnresolvedReferences
         self.stop_button.clicked.connect(self.push_stop_button)
         self.switch_button.clicked.connect(self.push_switch_button)
@@ -102,7 +115,7 @@ class GameFrame(QWidget, Logger):
 
         switch = self.switch_button.text() == "View figures"
         self.switch_button.setText(("View figures", "View tables")[switch])
-        
+
         tohide = (self.plot_layout, self.table)[switch]
         toshow = (self.table, self.plot_layout)[switch]
 
@@ -225,15 +238,17 @@ class GameFrame(QWidget, Logger):
         firm_labels = ("firm_profits",
                        "firm_prices",
                        "firm_positions",
-                       "firm_states",
+                       "firm_status",
                        "n_client",
                        "firm_cumulative_profits",
-                       "connected_firms",)
+                       "firm_states",
+                       "time_since_last_request_firms",)
 
-        customer_labels = ("customer_firm_choices", 
+        customer_labels = ("customer_firm_choices",
                            "customer_extra_view_choices",
                            "customer_utility",
-                           "connected_customers")
+                           "customer_states",
+                           "time_since_last_request_customers")
 
         labels = {"firm": firm_labels,
                    "customer": customer_labels}

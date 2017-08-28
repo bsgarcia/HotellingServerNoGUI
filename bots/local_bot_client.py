@@ -56,7 +56,7 @@ class HotellingLocalBots(Logger, Thread):
 
             for firm_id in self.data.bot_firms_id.values():
 
-                if self.data.current_state["firm_states"][firm_id] == "active":
+                if self.data.current_state["firm_status"][firm_id] == "active":
                     self.play_active_firm(firm_id)
 
                 else:
@@ -105,7 +105,7 @@ class HotellingLocalBots(Logger, Thread):
                 self.data.bot_customers_id[game_id] = customer_id
 
                 self.data.roles[game_id] = "customer"
-                self.data.current_state["connected_customers"][customer_id] = " ✔ "
+                self.data.current_state["time_since_last_request_customers"][customer_id] = " ✔ "
 
         for i in range(self.n_firms):
 
@@ -120,7 +120,7 @@ class HotellingLocalBots(Logger, Thread):
                 self.data.bot_firms_id[game_id] = firm_id
 
                 self.data.roles[game_id] = "firm"
-                self.data.current_state["connected_firms"][firm_id] = " ✔ "
+                self.data.current_state["time_since_last_request_firms"][firm_id] = " ✔ "
 
         self.check_remaining_agents()
 

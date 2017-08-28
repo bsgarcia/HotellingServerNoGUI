@@ -15,7 +15,8 @@ class Data(Logger):
             "firm_positions", "firm_prices", "firm_profits", "firm_cumulative_profits",
             "customer_firm_choices", "customer_extra_view_choices", "customer_utility", "n_client",
             "customer_replies", "active_replied", "passive_gets_results", "active_gets_results",
-            "firm_states", "connected_firms", "connected_customers", "init_done"
+            "firm_status", "time_since_last_request_firms", "time_since_last_request_customers", "init_done",
+            "firm_states", "customer_states"
         ]
 
         self.history = {s: [] for s in self.entries}

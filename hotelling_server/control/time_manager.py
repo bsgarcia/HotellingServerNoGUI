@@ -67,7 +67,7 @@ class TimeManager(Logger):
 
         self.log("Game server goes next step.")
         self.data.update_history()
-        self.data.current_state["firm_states"] = self.data.current_state["firm_states"][::-1]
+        self.data.current_state["firm_status"] = self.data.current_state["firm_status"][::-1]
         self.controller.queue.put(("update_figures_interface", ))
         self.t += 1
 

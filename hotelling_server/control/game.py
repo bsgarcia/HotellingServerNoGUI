@@ -1,7 +1,6 @@
 import numpy as np
 from bots.local_bot_client import HotellingLocalBots
 
-
 from utils.utils import Logger, function_name
 
 
@@ -27,6 +26,7 @@ class Game(Logger):
         self.n_agents = self.n_firms + self.n_customers
 
     # ----------------------------------- sides methods --------------------------------------#
+
     def new(self, parameters):
         """called if new game is launched"""
 
@@ -41,10 +41,12 @@ class Game(Logger):
         self.data.new()
 
         self.data.roles = ["" for i in range(self.n_agents)]
-        self.data.current_state["connected_firms"] = ["" for i in range(self.n_firms)]
-        self.data.current_state["connected_customers"] = ["" for i in range(self.n_customers)]
+        self.data.current_state["time_since_last_request_firms"] = ["" for i in range(self.n_firms)]
+        self.data.current_state["time_since_last_request_customers"] = ["" for i in range(self.n_customers)]
+        self.data.current_state["firm_states"] = ["" for i in range(self.n_firms)]
+        self.data.current_state["customer_states"] = ["" for i in range(self.n_customers)]
 
-        self.data.current_state["firm_states"] = ["active", "passive"]
+        self.data.current_state["firm_status"] = ["active", "passive"]
         self.data.current_state["n_client"] = [0, 0]
         self.data.current_state["firm_profits"] = [0, 0]
         self.data.current_state["firm_cumulative_profits"] = [0, 0]
@@ -69,6 +71,7 @@ class Game(Logger):
 
         self.launch_bots()
 
+    # ------------------------------- bots ------------------------------------------------------------ #
     def launch_bots(self):
         """launch bots based on assignement settings"""
 
@@ -89,7 +92,8 @@ class Game(Logger):
 
     def stop_bots(self):
         self.bots.stop()
-    # ------------------------------- network related method ----------------------------------------- #
+
+    # -------------------------------| network related method |----------------------------------------- #
 
     def handle_request(self, request):
 
@@ -123,7 +127,7 @@ class Game(Logger):
 
         return to_client
 
-    # ----------------------- game sides methods ------------------------------------------- #
+    # -----------------------| game sides methods |------------------------------------------- #
 
     def compute_utility(self):
 
@@ -178,7 +182,7 @@ class Game(Logger):
 
         return n, n_opp
 
-    # -------------------------------- one liner methods ------------------------------------------ #
+    # --------------------------------| one liner methods |------------------------------------------ #
     def check_end(self, client_t):
         return int(client_t == self.time_manager.ending_t) if self.time_manager.ending_t else 0
 
@@ -188,7 +192,7 @@ class Game(Logger):
             [str(a) if type(a) in (int, np.int64) else a.replace("ask", "reply") for a in args]
         ))
 
-    # ----------------------------------- all devices demands --------------------------------------#
+    # -----------------------------------| all devices demands |--------------------------------------#
 
     def ask_init(self, android_id):
 
@@ -226,9 +230,8 @@ class Game(Logger):
         utility_consumption = self.interface_parameters["utility_consumption"]
         utility = self.data.current_state["customer_utility"][customer_id]
 
-        # self.data.current_state["connected_customers"][customer_id] = " ✔ "
-
         self.check_remaining_agents()
+        self.data.current_state["customer_states"][game_id] = function_name()
 
         return self.reply(func_name, game_id, self.time_manager.t, role, position, exploration_cost,
                 utility_consumption, utility)
@@ -245,7 +248,7 @@ class Game(Logger):
 
         opponent_id = (firm_id + 1) % 2
 
-        state = self.data.current_state["firm_states"][firm_id]
+        state = self.data.current_state["firm_status"][firm_id]
 
         position = self.data.current_state["firm_positions"][firm_id]
         price = self.data.current_state["firm_prices"][firm_id]
@@ -253,9 +256,8 @@ class Game(Logger):
         opp_price = self.data.current_state["firm_prices"][opponent_id]
         profits = self.data.current_state["firm_cumulative_profits"][firm_id]
 
-        # self.data.current_state["connected_firms"][firm_id] = " ✔ "
-
         self.check_remaining_agents()
+        self.data.current_state["firm_states"][game_id] = function_name()
 
         return self.reply(func_name, game_id, self.time_manager.t, role, position, state, price,
                           opp_position, opp_price, profits)
@@ -270,7 +272,7 @@ class Game(Logger):
             self.data.current_state["init_done"] = True
             self.time_manager.check_state()
 
-    # ----------------------------------- customer demands --------------------------------------#
+    # -----------------------------------| customer demands |--------------------------------------#
 
     def ask_customer_firm_choices(self, game_id, t):
 
@@ -284,6 +286,7 @@ class Game(Logger):
 
                 x = self.data.current_state["firm_positions"]
                 prices = self.data.current_state["firm_prices"]
+                self.data.current_state["customer_states"][game_id] = function_name()
 
                 return self.reply(function_name(), self.time_manager.t, x[0], x[1], prices[0], prices[1])
             else:
@@ -327,6 +330,8 @@ class Game(Logger):
                 self.log("Customer {} asks for recording his choice as t {} but already replied"
                          .format(game_id, t, extra_view, firm))
 
+            self.data.current_state["customer_states"][game_id] = function_name()
+
             return self.reply(function_name(), self.time_manager.t, self.check_end(t))
 
         elif t > self.time_manager.t:
@@ -335,8 +340,8 @@ class Game(Logger):
         else:
             return self.reply(function_name(), t, self.check_end(t))
 
-    # ----------------------------------- passive firm demands -------------------------------------- #
-    
+    # ----------------------------------| passive firm demands |-------------------------------------- #
+
     def ask_firm_passive_opponent_choice(self, game_id, t):
         """called by a passive firm"""
 
@@ -358,6 +363,8 @@ class Game(Logger):
                 )
 
                 self.time_manager.check_state()
+                self.data.current_state["firm_states"][game_id] = function_name()
+
                 return out
 
             else:
@@ -397,6 +404,7 @@ class Game(Logger):
                     self.data.current_state["firm_profits"][firm_id] = n * price
                     self.data.current_state["n_client"][firm_id] = n
                     self.data.current_state["passive_gets_results"] = True
+                    self.data.current_state["firm_states"][game_id] = function_name()
 
                     self.time_manager.check_state()
 
@@ -407,7 +415,7 @@ class Game(Logger):
 
         elif t > self.time_manager.t:
             return "error/time_is_superior"
-        
+
         else:
             n, n_opp = self.get_nb_of_clients(firm_id, opponent_id, t)
             return self.reply(function_name(), t, n, n_opp, self.check_end(t))
@@ -430,7 +438,6 @@ class Game(Logger):
                 # Register choice
                 opponent_id = (firm_id + 1) % 2
                 opponent_pos, opponent_price = self.get_opponent_choices(opponent_id)
-                
 
                 for ids, pos, px in [(firm_id, position, price), (opponent_id, opponent_pos, opponent_price)]:
                     self.data.current_state["firm_positions"][int(ids)] = pos
@@ -438,6 +445,8 @@ class Game(Logger):
 
                 # check state
                 self.data.current_state["active_replied"] = True
+                self.data.current_state["firm_states"][game_id] = function_name()
+                
                 self.time_manager.check_state()
 
             return out
@@ -471,6 +480,7 @@ class Game(Logger):
                 self.data.current_state["firm_profits"][firm_id] = n * price
                 self.data.current_state["n_client"][firm_id] = n
                 self.data.current_state["active_gets_results"] = True
+                self.data.current_state["firm_states"][game_id] = function_name()
 
                 self.time_manager.check_state()
 

@@ -103,6 +103,7 @@ class Server(Thread, Logger):
                     else:
                         ip_address = self.param["ip_address"]
 
+                    self.param["ip_address"] = ip_address
                     self.log("Try to connect using ip {}...".format(ip_address))
                     self.tcp_server = TCPGamingServer(
                         parent=self,
@@ -160,18 +161,18 @@ class Server(Thread, Logger):
         game_id = self.clients[ip]["game_id"]
         role = self.cont.data.roles[game_id]
 
-        if role:
-            if role == "customer":
-                if game_id in self.cont.data.customers_id.keys():
-                    role_id = self.cont.data.customers_id[game_id]
-                    self.update_time(role, role_id, time)
-            else:
-                if game_id in self.cont.data.firms_id.keys():
-                    role_id = self.cont.data.firms_id[game_id]
-                    self.update_time(role, role_id, time)
+        if role == "customer":
+            if game_id in self.cont.data.customers_id.keys():
+                role_id = self.cont.data.customers_id[game_id]
+                self.update_time(role, role_id, time)
+
+        elif role == "firm":
+            if game_id in self.cont.data.firms_id.keys():
+                role_id = self.cont.data.firms_id[game_id]
+                self.update_time(role, role_id, time)
 
     def update_time(self, role, role_id, time):
-        self.cont.data.current_state["connected_{}s".format(role)][role_id] = str(time)
+        self.cont.data.current_state["time_since_last_request_{}s".format(role)][role_id] = str(time)
 
 
 class Timer(Thread):

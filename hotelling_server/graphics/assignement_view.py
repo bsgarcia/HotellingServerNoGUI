@@ -291,4 +291,3 @@ class MouseClick(QObject):
             return True
 
         return False
-
