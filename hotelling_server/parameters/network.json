@@ -2,6 +2,6 @@
   "ip_address": "10.24.12.42",
   "ip_local": "localhost",
   "port": 8081,
-  "local": false,
-  "ip_autodetect": true
+  "local": true,
+  "ip_autodetect": false
 }
