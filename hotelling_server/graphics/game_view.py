@@ -78,13 +78,6 @@ class GameFrame(QWidget, Logger):
         # self.layout.addLayout(self.done_playing_layout, stretch=0)
         self.layout.addWidget(self.stop_button, stretch=0, alignment=Qt.AlignBottom)
 
-        # set ip address
-        text = self.parent().mod.controller.server.param["ip_address"]
-        font = QFont()
-        font.setPointSize(20)
-        self.ip_address.setFont(font)
-        self.ip_address.setText("IP: {}".format(text))
-
         # add to layout
         self.layout.addWidget(self.ip_address, alignment=Qt.AlignCenter)
 
@@ -98,7 +91,16 @@ class GameFrame(QWidget, Logger):
         self.prepare_figures()
         self.prepare_buttons()
         self.prepare_state_table(parameters)
+        self.prepare_ip_label()
         self.log("Preparation done!")
+
+    def prepare_ip_label(self):
+        # set ip address
+        text = self.parent().mod.controller.server.tcp_server.ip
+        font = QFont()
+        font.setPointSize(20)
+        self.ip_address.setFont(font)
+        self.ip_address.setText("IP: {}".format(text))
 
     def prepare_figures(self):
 
@@ -145,11 +147,13 @@ class GameFrame(QWidget, Logger):
 
         ids, labels, fancy_labels = self.get_state_table_data(parameters)
         ids = self.parent().mod.controller.data.assignement
-
+        
         for role in ["firm", "customer"]:
 
             rows = [server_id for server_id, j, k in ids if j == role]
             columns = fancy_labels[role]
+            
+            self.table[role].clear()
 
             # set height and width
             self.table[role].setColumnCount(len(columns))

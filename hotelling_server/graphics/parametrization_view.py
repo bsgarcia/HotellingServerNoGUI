@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QPushButton,
-        QLabel, QCheckBox, QLineEdit, QMessageBox, QHBoxLayout)
+        QLabel, QCheckBox, QLineEdit, QMessageBox, QHBoxLayout, QButtonGroup)
 from utils.utils import Logger
 
 
@@ -17,6 +17,7 @@ class ParametersFrame(QWidget, Logger):
         self.run_button = QPushButton("Run!")
         self.previous_button = QPushButton("Previous")
         self.parameters = dict()
+        self.group = QButtonGroup()
 
         self.error = None
 
@@ -48,10 +49,14 @@ class ParametersFrame(QWidget, Logger):
         # add buttons 'next' and 'previous'
         horizontal_layout = QHBoxLayout()
 
+        self.group.addButton(self.previous_button)
+        self.group.addButton(self.run_button)
+
         horizontal_layout.addWidget(self.previous_button, alignment=Qt.AlignCenter)
         horizontal_layout.addWidget(self.run_button, alignment=Qt.AlignCenter)
 
         self.layout.addLayout(horizontal_layout)
+
         self.setLayout(self.layout)
 
         # noinspection PyUnresolvedReferences
