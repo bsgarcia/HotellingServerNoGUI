@@ -147,12 +147,13 @@ class GameFrame(QWidget, Logger):
 
         ids, labels, fancy_labels = self.get_state_table_data(parameters)
         ids = self.parent().mod.controller.data.assignement
-        
+
         for role in ["firm", "customer"]:
 
             rows = [server_id for server_id, j, k in ids if j == role]
             columns = fancy_labels[role]
-            
+
+            # empty tables
             self.table[role].clear()
 
             # set height and width
@@ -238,7 +239,7 @@ class GameFrame(QWidget, Logger):
     @staticmethod
     def get_labels():
 
-        # pick wanted labels
+        # pick desired labels
         firm_labels = ("firm_profits",
                        "firm_prices",
                        "firm_positions",

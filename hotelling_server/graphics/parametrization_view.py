@@ -16,8 +16,11 @@ class ParametersFrame(QWidget, Logger):
         self.layout = QVBoxLayout()
         self.run_button = QPushButton("Run!")
         self.previous_button = QPushButton("Previous")
-        self.parameters = dict()
         self.group = QButtonGroup()
+        self.group.addButton(self.previous_button)
+        self.group.addButton(self.run_button)
+
+        self.parameters = dict()
 
         self.error = None
 
@@ -49,11 +52,8 @@ class ParametersFrame(QWidget, Logger):
         # add buttons 'next' and 'previous'
         horizontal_layout = QHBoxLayout()
 
-        self.group.addButton(self.previous_button)
-        self.group.addButton(self.run_button)
-
-        horizontal_layout.addWidget(self.previous_button, alignment=Qt.AlignCenter)
-        horizontal_layout.addWidget(self.run_button, alignment=Qt.AlignCenter)
+        horizontal_layout.addWidget(self.previous_button, stretch=0, alignment=Qt.AlignCenter)
+        horizontal_layout.addWidget(self.run_button, stretch=0, alignment=Qt.AlignCenter)
 
         self.layout.addLayout(horizontal_layout)
 

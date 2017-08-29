@@ -124,7 +124,7 @@ class Controller(Thread, Logger):
                 eval("self.{}()".format(command))
 
         except Exception as err:
-            self.ask_interface("show_warning", str(err))
+            self.ask_interface("server_error", str(err))
 
     # ------------------------------ Server interface -----------------------#
 
@@ -142,7 +142,7 @@ class Controller(Thread, Logger):
         self.server_queue.put(("reply", response))
 
     # ------------------------------ UI interface (!!!) ----------------------#
-    
+
     def ui_run_game(self, interface_parameters):
         self.log("UI ask 'run game'.")
         self.time_manager.setup()

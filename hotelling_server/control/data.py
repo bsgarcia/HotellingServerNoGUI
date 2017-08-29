@@ -22,7 +22,6 @@ class Data(Logger):
         self.history = {s: [] for s in self.entries}
 
         self.new()
-
         self.assignement = {}
         self.parametrization = {}
         self.roles = []
@@ -34,6 +33,7 @@ class Data(Logger):
         self.setup()
 
     def new(self):
+        """when a new game is launched"""
 
         self.current_state = {s: [] for s in self.entries}
 

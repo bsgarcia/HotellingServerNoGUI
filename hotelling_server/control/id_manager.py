@@ -15,7 +15,6 @@ class IDManager(Logger):
     def get_ids_from_android_id(self, android_id, max_n):
 
         self.log("Client with android id {} ask for information.".format(android_id))
-
         server_id = self.get_server_id(android_id)
         self.log("I associate server id '{}' to android id '{}'.".format(server_id, android_id))
         game_id = self.get_game_id(server_id, max_n)

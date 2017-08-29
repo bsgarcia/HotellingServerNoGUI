@@ -224,23 +224,23 @@ class IntParameter(object):
 
         self.idx = idx
         self.edit = QLineEdit(str(value))
-
         self.edit.greyed_style = '''color: #808080;
                               background-color: #F0F0F0;
                               border: 1px solid #B0B0B0;
                               border-radius: 2px;'''
 
         self.filter = MouseClick(parent, idx)
-        self.edit.installEventFilter(self.filter)
-
         self.setup(value)
 
     def setup(self, value):
+
         if value == "Bot":
             self.edit.setEnabled(False)
             self.edit.setStyleSheet(self.edit.greyed_style)
         else:
             self.edit.setEnabled(True)
+
+        self.edit.installEventFilter(self.filter)
 
     def get_value(self):
 

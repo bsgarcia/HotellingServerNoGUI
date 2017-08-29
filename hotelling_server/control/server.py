@@ -164,12 +164,14 @@ class Server(Thread, Logger):
         if role == "customer":
             if game_id in self.cont.data.customers_id.keys():
                 role_id = self.cont.data.customers_id[game_id]
-                self.update_time(role, role_id, time)
 
         elif role == "firm":
             if game_id in self.cont.data.firms_id.keys():
                 role_id = self.cont.data.firms_id[game_id]
-                self.update_time(role, role_id, time)
+        else:
+            return 0
+
+        self.update_time(role, role_id, time)
 
     def update_time(self, role, role_id, time):
         self.cont.data.current_state["time_since_last_request_{}s".format(role)][role_id] = str(time)
