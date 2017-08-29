@@ -25,4 +25,4 @@ class Model:
             sys.exit(self.app.exec_())
 
         except Exception as e:
-            self.ui.show_critical_and_ok(msg=str(e))
+            self.ui.server_error(msg=str(e))

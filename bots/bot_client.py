@@ -183,15 +183,17 @@ class HotellingBot(GenericBotClient):
         own_price = np.random.randint(1, self.firm_attributes["n_prices"])
         self.ask_firm_active_choice_recording(own_position, own_price)
 
-    def firm_active_end_of_turn(self, n_clients, n_opp, end):
-        self.log("I am active and I got {} clients.".format(n_clients))
+    def firm_active_end_of_turn(self, choices, end):
+        n_client = len([int(c) for c in choices if c])
+        self.log("I am active and I got {} clients.".format(n_client))
         if end:
             self.end_game()
         self.t += 1
         self.firm_passive_beginning_of_turn()
 
-    def firm_passive_end_of_turn(self, n_clients, n_opp, end):
-        self.log("I am passive and I got {} clients.".format(n_clients))
+    def firm_passive_end_of_turn(self, choices, end):
+        n_client = len([int(c) for c in choices if c])
+        self.log("I am passive and I got {} clients.".format(n_client))
         if end:
             self.end_game()
         self.t += 1
@@ -200,7 +202,6 @@ class HotellingBot(GenericBotClient):
     # ------------------------- Init -------------------------------------------------- #
 
     def ask_init(self):
-
         fake_android_id = self.name
         self.state = "init"
         self.ask_server("ask_init/{}".format(fake_android_id))
@@ -268,7 +269,7 @@ class HotellingBot(GenericBotClient):
         if self.t == t and self.state == "firm_opponent_choice":
             self.opp_position = position
             self.opp_price = price
-            self.queue.put(("ask_firm_passive_n_clients", ))
+            self.queue.put(("ask_firm_passive_customer_choices", ))
 
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
@@ -279,27 +280,33 @@ class HotellingBot(GenericBotClient):
 
     def reply_firm_active_choice_recording(self, t):
         if self.t == t and self.state == "firm_choice_recording":
-            self.queue.put(("ask_firm_active_n_clients",))
+            self.queue.put(("ask_firm_active_customer_choices",))
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 
-    def ask_firm_active_n_clients(self):
-        self.state = "firm_n_clients"
-        self.ask_server("ask_firm_active_n_clients/" + "/".join([str(i) for i in [self.game_id, self.t]]))
+    def ask_firm_active_customer_choices(self):
+        self.state = "firm_customer_choices"
+        self.ask_server("ask_firm_active_customer_choices/" + "/".join([str(i) for i in [self.game_id, self.t]]))
 
-    def ask_firm_passive_n_clients(self):
-        self.state = "firm_n_clients"
-        self.ask_server("ask_firm_passive_n_clients/" + "/".join([str(i) for i in [self.game_id, self.t]]))
+    def ask_firm_passive_customer_choices(self):
+        self.state = "firm_customer_choices"
+        self.ask_server("ask_firm_passive_customer_choices/" + "/".join([str(i) for i in [self.game_id, self.t]]))
 
-    def reply_firm_active_n_clients(self, t, n, n_opp, end):
-        if self.t == t and self.state == "firm_n_clients":
-            self.queue.put(("firm_active_end_of_turn", n, n_opp, end,))
+    def reply_firm_active_customer_choices(self, *args):
+        t = args[0]
+        choices = args[1:-1]
+        end = args[-1]
+        if self.t == t and self.state == "firm_customer_choices":
+            self.queue.put(("firm_active_end_of_turn", choices, end,))
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 
-    def reply_firm_passive_n_clients(self, t, n, n_opp, end):
-        if self.t == t and self.state == "firm_n_clients":
-            self.queue.put(("firm_passive_end_of_turn", n, n_opp, end,))
+    def reply_firm_passive_customer_choices(self, *args):
+        t = args[0]
+        choices = args[1:-1]
+        end = args[-1]
+        if self.t == t and self.state == "firm_customer_choices":
+            self.queue.put(("firm_passive_end_of_turn", choices, end,))
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 

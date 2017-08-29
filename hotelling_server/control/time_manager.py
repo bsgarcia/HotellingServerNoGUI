@@ -14,7 +14,7 @@ class TimeManager(Logger):
         self.continue_game = True
 
     def setup(self):
-
+        
         if self.data.time_manager_state != "end_game":
             self.state = self.data.time_manager_state
         else:
