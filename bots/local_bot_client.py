@@ -192,7 +192,7 @@ class HotellingLocalBots(Logger, Thread):
             )
 
         elif len(available_prices) == 2:
-            distance = [abs(own_position - pos) for pos in available_prices]
+            distance = [abs(own_position - pos) for pos in positions[cond0 * cond1]]
             firm_choice = np.argmin([i + j for i, j in zip(available_prices, distance)])
 
         else:
