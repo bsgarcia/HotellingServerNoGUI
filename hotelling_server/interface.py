@@ -110,7 +110,7 @@ class UI(QWidget, Logger):
 
         cond1 = sorted(self.mod.controller.data.param["parametrization"].items()) != \
                 sorted(self.frames["parameters"].get_parameters().items())
-        
+
         cond2 = sorted(self.mod.controller.data.param["assignement"]) != \
                 sorted(self.frames["assign"].get_parameters())
 
@@ -125,16 +125,15 @@ class UI(QWidget, Logger):
                 self.log('Saving of parameters aborted.')
 
     def update_figures(self, *args):
+
         data = self.mod.controller.get_current_data()["statistics"]
         self.frames["game"].update_statistics(data)
 
     def update_tables(self, *args):
 
-        if self.mod.controller.running_game.is_set():
-
-            data = self.mod.controller.get_current_data()
-            self.frames["game"].update_state_table(data)
-            self.frames["game"].set_trial_number(data["time_manager_t"])
+        data = self.mod.controller.get_current_data()
+        self.frames["game"].update_state_table(data)
+        self.frames["game"].set_trial_number(data["time_manager_t"])
 
     def show_frame_load_game_new_game(self, *args):
 
@@ -193,6 +192,7 @@ class UI(QWidget, Logger):
             self, "", msg,
             QMessageBox.Ok
         )
+
         return button_reply == QMessageBox.Yes
 
     def show_critical_and_retry(self, msg):
@@ -303,4 +303,7 @@ class UI(QWidget, Logger):
 
     def stop_bots(self):
         self.controller_queue.put(("ui_stop_bots", ))
+
+    def look_for_alive_players(self):
+        self.controller_queue.put(("ui_look_for_alive_players", ))
 

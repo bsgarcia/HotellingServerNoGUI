@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QWidget, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QWidget, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout, QLabel, QAbstractItemView
 import numpy as np
 
 from hotelling_server.graphics.widgets.plot_layouts import OneLinePlot, PlotLayout, TwoLinesPlot
@@ -135,6 +135,11 @@ class GameFrame(QWidget, Logger):
         if self.stop_button.text() == "Stop task":
             self.stop_button.setText("Go to home menu")
             self.parent().stop_game()
+
+        elif self.stop_button.text() == "Go to home menu":
+            self.parent().look_for_alive_players()
+            self.stop_button.setText("Quit game anyway...")
+
         else:
             self.parent().show_frame_load_game_new_game()
             self.parent().stop_bots()
@@ -155,6 +160,9 @@ class GameFrame(QWidget, Logger):
 
             # empty tables
             self.table[role].clear()
+
+            # set non editable
+            self.table[role].setEditTriggers(QAbstractItemView.NoEditTriggers)
 
             # set height and width
             self.table[role].setColumnCount(len(columns))
