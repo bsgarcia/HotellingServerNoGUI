@@ -15,6 +15,7 @@ class AssignementFrame(QWidget, Logger):
         QWidget.__init__(self, parent=parent)
 
         self.layout = QVBoxLayout()
+
         self.next_button = QPushButton("Next")
         self.previous_button = QPushButton("Previous")
 
@@ -81,7 +82,6 @@ class AssignementFrame(QWidget, Logger):
             self.parameters["assign"][i][j].add_to_grid_layout(grid_layout, x, y)
 
         horizontal_layout = QHBoxLayout()
-
         horizontal_layout.addWidget(self.previous_button, alignment=Qt.AlignCenter)
         horizontal_layout.addWidget(self.next_button, alignment=Qt.AlignCenter)
 

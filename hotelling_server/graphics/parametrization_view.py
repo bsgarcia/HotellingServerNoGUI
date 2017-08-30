@@ -1,5 +1,5 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QFormLayout, QPushButton,
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QGridLayout, QPushButton,
         QLabel, QCheckBox, QLineEdit, QMessageBox, QHBoxLayout, QButtonGroup)
 from utils.utils import Logger
 
@@ -14,8 +14,14 @@ class ParametersFrame(QWidget, Logger):
         QWidget.__init__(self, parent=parent)
 
         self.layout = QVBoxLayout()
+
         self.run_button = QPushButton("Run!")
         self.previous_button = QPushButton("Previous")
+
+        self.group = QButtonGroup()
+
+        self.group.addButton(self.previous_button)
+        self.group.addButton(self.run_button)
 
         self.parameters = dict()
 
@@ -38,27 +44,31 @@ class ParametersFrame(QWidget, Logger):
             IntParameter(text="Utility consumption",
                          initial_value=param["utility_consumption"], value_range=[0, 100])
 
-        form_layout = QFormLayout()
-
-        for p in sorted(self.parameters.keys()):
-
-            self.parameters[p].add_to_layout(form_layout)
-
-        self.layout.addLayout(form_layout)
-
-        # add buttons 'next' and 'previous'
-        horizontal_layout = QHBoxLayout()
-
-        horizontal_layout.addWidget(self.previous_button, stretch=0, alignment=Qt.AlignCenter)
-        horizontal_layout.addWidget(self.run_button, stretch=0, alignment=Qt.AlignCenter)
-
-        self.layout.addLayout(horizontal_layout)
-
-        self.setLayout(self.layout)
+        self.fill_layout()
 
         # noinspection PyUnresolvedReferences
         self.run_button.clicked.connect(self.push_run_button)
         self.previous_button.clicked.connect(self.push_previous_button)
+
+    def fill_layout(self):
+
+        # form_layout = QFormLayout()
+
+        # prepare layout
+        grid_layout = QGridLayout()
+
+        for i, p in enumerate(sorted(self.parameters.keys())):
+
+            self.parameters[p].add_to_grid_layout(grid_layout, i, 0)
+
+        horizontal_layout = QHBoxLayout()
+        horizontal_layout.addWidget(self.previous_button, alignment=Qt.AlignCenter)
+        horizontal_layout.addWidget(self.run_button, alignment=Qt.AlignCenter)
+
+        self.layout.addLayout(grid_layout)
+        self.layout.addLayout(horizontal_layout)
+
+        self.setLayout(self.layout)
 
     def push_run_button(self):
 
@@ -142,9 +152,14 @@ class IntParameter(object):
                 self.label.text()
             )
 
-    def add_to_layout(self, layout):
+    def add_to_form_layout(self, layout):
 
         layout.addRow(self.label, self.edit)
+
+    def add_to_grid_layout(self, layout, x, y):
+
+        layout.addWidget(self.label, x, y, alignment=Qt.AlignCenter)
+        layout.addWidget(self.edit, x, y + 1, alignment=Qt.AlignCenter)
 
 
 class CheckParameter(object):
@@ -160,6 +175,12 @@ class CheckParameter(object):
 
         return self.check_box.isChecked()
 
-    def add_to_layout(self, layout):
+    def add_to_form_layout(self, layout):
 
         layout.addRow(self.label, self.check_box)
+
+    def add_to_grid_layout(self, layout, x, y):
+
+        layout.addWidget(self.label, x, y, alignment=Qt.AlignCenter)
+        layout.addWidget(self.check_box, x, y + 1, alignment=Qt.AlignLeft)
+

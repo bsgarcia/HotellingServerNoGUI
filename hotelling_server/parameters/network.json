@@ -3,5 +3,5 @@
   "ip_local": "localhost",
   "port": 8081,
   "local": true,
-  "ip_autodetect": false
+  "ip_autodetect": true
 }
