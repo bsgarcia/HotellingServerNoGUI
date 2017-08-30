@@ -10,7 +10,6 @@ class ParametersFrame(QWidget, Logger):
 
     def __init__(self, parent):
 
-        # noinspection PyArgumentList
         QWidget.__init__(self, parent=parent)
 
         self.layout = QVBoxLayout()
@@ -49,14 +48,13 @@ class ParametersFrame(QWidget, Logger):
         # add buttons 'next' and 'previous'
         horizontal_layout = QHBoxLayout()
 
-        horizontal_layout.addWidget(self.previous_button, stretch=0, alignment=Qt.AlignCenter)
-        horizontal_layout.addWidget(self.run_button, stretch=0, alignment=Qt.AlignCenter)
+        horizontal_layout.addWidget(self.previous_button, alignment=Qt.AlignCenter)
+        horizontal_layout.addWidget(self.run_button, alignment=Qt.AlignCenter)
 
         self.layout.addLayout(horizontal_layout)
 
         self.setLayout(self.layout)
 
-        # noinspection PyUnresolvedReferences
         self.run_button.clicked.connect(self.push_run_button)
         self.previous_button.clicked.connect(self.push_previous_button)
 

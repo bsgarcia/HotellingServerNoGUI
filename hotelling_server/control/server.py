@@ -48,7 +48,7 @@ class HttpHandler(http.server.SimpleHTTPRequestHandler, Logger):
         self.wfile.write(response.encode())
 
     def log_message(self, *args):
-        return
+            return
 
 
 class TCPGamingServer(Logger, socketserver.TCPServer):
@@ -81,6 +81,8 @@ class Server(Thread, Logger):
         self.clients = {}
 
         self.shutdown_event = Event()
+        self.waiting_event = Event()
+
         self.tcp_server = None
 
         self.timer = Timer(self, 1, self.check_all_client_time_since_last_request)
@@ -89,7 +91,6 @@ class Server(Thread, Logger):
     def run(self):
 
         while not self.shutdown_event.is_set():
-
             self.log("Waiting for a message...")
             msg = self.queue.get()
             self.log("I received msg '{}'.".format(msg))
@@ -139,7 +140,7 @@ class Server(Thread, Logger):
 
     def check_client_connection(self, ip, response):
 
-        if ip not in self.clients.keys():
+        if ip not in self.clients.keys() and "reply_init" in response:
             self.clients[ip] = {}
             self.clients[ip]["time"] = time.time()
             self.clients[ip]["game_id"] = int(response.split("/")[2])
@@ -154,9 +155,9 @@ class Server(Thread, Logger):
             time_now = time.time()
             time_since_last_request = int(time_now - client_time)
 
-            self.update_client_time_on_interface(ip=client_ip, time=time_since_last_request)
+            self.update_client_time_on_interface(ip=client_ip, time_diff=time_since_last_request)
 
-    def update_client_time_on_interface(self, ip, time):
+    def update_client_time_on_interface(self, ip, time_diff):
 
         game_id = self.clients[ip]["game_id"]
         role = self.cont.data.roles[game_id]
@@ -171,10 +172,10 @@ class Server(Thread, Logger):
         else:
             return 0
 
-        self.update_time(role, role_id, time)
+        self.update_time(role=role, role_id=role_id, time_diff=time_diff)
 
-    def update_time(self, role, role_id, time):
-        self.cont.data.current_state["time_since_last_request_{}s".format(role)][role_id] = str(time)
+    def update_time(self, role, role_id, time_diff):
+        self.cont.data.current_state["time_since_last_request_{}s".format(role)][role_id] = str(time_diff)
 
 
 class Timer(Thread):

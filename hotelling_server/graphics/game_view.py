@@ -138,11 +138,6 @@ class GameFrame(QWidget, Logger):
 
         elif self.stop_button.text() == "Go to home menu":
             self.parent().look_for_alive_players()
-            self.stop_button.setText("Quit game anyway...")
-
-        else:
-            self.parent().show_frame_load_game_new_game()
-            self.parent().stop_bots()
 
     def set_trial_number(self, trial_n):
 

@@ -71,7 +71,7 @@ class Game(Logger):
 
         self.launch_bots()
 
-    # ------------------------------- bots ------------------------------------------------------------ #
+    # -------------------------------| bots |------------------------------------------------------------ #
     def launch_bots(self):
         """launch bots based on assignement settings"""
 
@@ -148,8 +148,18 @@ class Game(Logger):
             if idx == str(server_id):
                 return role
 
-        self.log("Error: no server_id found for asking client!")
-        self.log("Reason: Perhaps server ids set in assignement menu were not the right ones!")
+        # in case of no matching id
+        self.stop_game_and_get_back_to_assignement(server_id)
+
+    def stop_game_and_get_back_to_assignement(self, server_id):
+
+        msg = ("Error: unexpected server id detected: '{}'\n"
+               "Going back to assignement menu.".format(server_id))
+
+        self.controller.ask_interface("show_warning", msg)
+        self.controller.queue.put(("stop_server",))
+        self.controller.ask_interface("show_frame_assignement")
+        self.bots.stop()
 
     # ---------------------------| firms sides methods |----------------------------------------- # 
     def get_opponent_choices(self, opponent_id):

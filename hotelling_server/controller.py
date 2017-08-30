@@ -46,10 +46,7 @@ class Controller(Thread, Logger):
         self.log("Got go signal from UI: '{}'.".format(go_signal_from_ui))
 
         self.ask_interface("show_frame_setting_up")
-
-        # Launch server manager
-        self.server.start()
-        self.server_queue.put(("Go", ))
+        self.ask_interface("show_frame_load_game_new_game")
 
         while not self.shutdown.is_set():
             self.log("Waiting for a message.")
@@ -62,11 +59,15 @@ class Controller(Thread, Logger):
 
         self.ask_interface("show_frame_setting_up")
 
-        # Go signal for launching the (properly speaking) server
-
         self.fatal_error.clear()
         self.continue_game.set()
         self.running_game.set()
+
+        # Launch server manager
+        self.server_queue.put(("Go", ))
+
+        if not self.server.waiting_event.is_set():
+            self.server.start()
 
         self.ask_interface("show_frame_game", self.get_current_data())
 
@@ -111,6 +112,10 @@ class Controller(Thread, Logger):
         self.graphic_queue.put((instruction, arg))
         self.communicate.signal.emit()
 
+    def stop_server(self):
+        self.server.shutdown()
+        self.server.waiting_event.set()
+
     # ------------------------------- Message handling ----------------------------------------------- #
 
     def handle_message(self, message):
@@ -130,7 +135,6 @@ class Controller(Thread, Logger):
 
     def server_running(self):
         self.log("Server running.")
-        self.ask_interface("show_frame_load_game_new_game")
         # self.server_queue.put(("reply", response))
 
     def server_error(self, error_message):
@@ -145,9 +149,9 @@ class Controller(Thread, Logger):
 
     def ui_run_game(self, interface_parameters):
         self.log("UI ask 'run game'.")
+        self.launch_game()
         self.time_manager.setup()
         self.game.new(interface_parameters)
-        self.launch_game()
 
     def ui_load_game(self, file):
         self.log("UI ask 'load game'.")
@@ -183,7 +187,7 @@ class Controller(Thread, Logger):
             self.game.stop_bots()
         else:
             text = "Some players did not end their last turn!"
-            self.ask_interface("show_warning", text)
+            self.ask_interface("force_to_quit_game", text)
 
     # ------------------------------ Game interface (!!!) -------------------------------------- #
 

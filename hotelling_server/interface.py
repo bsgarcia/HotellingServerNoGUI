@@ -191,6 +191,19 @@ class UI(QWidget, Logger):
 
         return button_reply == QMessageBox.Yes
 
+    def show_question_and_quit_game(self, instructions):
+
+        msgbox = QMessageBox()
+        msgbox.setText(instructions)
+        msgbox.setText("Do you want to quit game?")
+        msgbox.setIcon(QMessageBox.Question)
+        quit = msgbox.addButton("Force to quit", QMessageBox.ActionRole)
+        msgbox.addButton("Do not quit", QMessageBox.ActionRole)
+
+        msgbox.exec_()
+
+        return msgbox.clickedButton() == quit
+
     def show_warning(self, msg):
 
         button_reply = QMessageBox().warning(
@@ -250,6 +263,15 @@ class UI(QWidget, Logger):
         self.show_critical(msg="Server error.\nError message: '{}'.".format(error_message))
         self.close_window()
         self.close()
+
+    def force_to_quit_game(self, msg):
+
+        quit = self.show_question_and_quit_game(instructions=msg)
+
+        if quit:
+            self.show_frame_load_game_new_game()
+            self.controller_queue.put(("stop_server", ))
+            self.stop_bots()
 
     def fatal_error_of_communication(self):
 
