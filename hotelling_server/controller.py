@@ -124,7 +124,7 @@ class Controller(Thread, Logger):
                 eval("self.{}()".format(command))
 
         except Exception as err:
-            self.ask_interface("server_error", str(err))
+            self.ask_interface("fatal_error", str(err))
 
     # ------------------------------ Server interface -----------------------#
 
