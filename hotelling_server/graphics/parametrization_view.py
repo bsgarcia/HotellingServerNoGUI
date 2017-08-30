@@ -16,9 +16,6 @@ class ParametersFrame(QWidget, Logger):
         self.layout = QVBoxLayout()
         self.run_button = QPushButton("Run!")
         self.previous_button = QPushButton("Previous")
-        self.group = QButtonGroup()
-        self.group.addButton(self.previous_button)
-        self.group.addButton(self.run_button)
 
         self.parameters = dict()
 

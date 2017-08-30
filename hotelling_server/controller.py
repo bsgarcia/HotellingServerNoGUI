@@ -124,7 +124,7 @@ class Controller(Thread, Logger):
                 eval("self.{}()".format(command))
 
         except Exception as err:
-            self.ask_interface("server_error", str(err))
+            self.ask_interface("fatal_error", str(err))
 
     # ------------------------------ Server interface -----------------------#
 
@@ -174,8 +174,16 @@ class Controller(Thread, Logger):
         self.log("Save interface parameters.")
 
     def ui_stop_bots(self):
-        self.log("UI asks to stop bots")
+        self.log("UI ask 'stop bots'.")
         self.game.stop_bots()
+
+    def ui_look_for_alive_players(self):
+        if self.game.game_ended():
+            self.ask_interface("show_frame_load_game_new_game")
+            self.game.stop_bots()
+        else:
+            text = "Some players did not end their last turn!"
+            self.ask_interface("show_warning", text)
 
     # ------------------------------ Game interface (!!!) -------------------------------------- #
 

@@ -2,7 +2,7 @@ from os import getenv
 from multiprocessing import Queue, Event
 
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QMessageBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QMessageBox, QDesktopWidget
 
 from .graphics import game_view, loading_view, parametrization_view, setting_up_view, assignement_view
 from utils.utils import Logger
@@ -15,8 +15,6 @@ class Communicate(QObject):
 class UI(QWidget, Logger):
 
     name = "Interface"
-
-    dimensions = 300, 100, 2000, 1000
     app_name = "Android Experiment"
 
     def __init__(self, model):
@@ -46,6 +44,16 @@ class UI(QWidget, Logger):
 
         self.controller_queue = None
 
+    @property
+    def dimensions(self):
+
+        desktop = QDesktopWidget()
+        dimensions = desktop.screenGeometry()
+        w = dimensions.width() * 0.9
+        h = dimensions.height() * 0.8
+
+        return 300, 100, w, h
+
     def setup(self):
 
         self.controller_queue = self.mod.controller.queue
@@ -68,9 +76,6 @@ class UI(QWidget, Logger):
         self.setWindowTitle(self.app_name)
 
         self.communicate.signal.connect(self.look_for_msg)
-        
-        if getenv("USER") == "getz":
-            self.dimensions = 300, 100, 900, 450
 
         self.setGeometry(*self.dimensions)
 
@@ -110,7 +115,7 @@ class UI(QWidget, Logger):
 
         cond1 = sorted(self.mod.controller.data.param["parametrization"].items()) != \
                 sorted(self.frames["parameters"].get_parameters().items())
-        
+
         cond2 = sorted(self.mod.controller.data.param["assignement"]) != \
                 sorted(self.frames["assign"].get_parameters())
 
@@ -125,16 +130,15 @@ class UI(QWidget, Logger):
                 self.log('Saving of parameters aborted.')
 
     def update_figures(self, *args):
+
         data = self.mod.controller.get_current_data()["statistics"]
         self.frames["game"].update_statistics(data)
 
     def update_tables(self, *args):
 
-        if self.mod.controller.running_game.is_set():
-
-            data = self.mod.controller.get_current_data()
-            self.frames["game"].update_state_table(data)
-            self.frames["game"].set_trial_number(data["time_manager_t"])
+        data = self.mod.controller.get_current_data()
+        self.frames["game"].update_state_table(data)
+        self.frames["game"].set_trial_number(data["time_manager_t"])
 
     def show_frame_load_game_new_game(self, *args):
 
@@ -193,6 +197,7 @@ class UI(QWidget, Logger):
             self, "", msg,
             QMessageBox.Ok
         )
+
         return button_reply == QMessageBox.Yes
 
     def show_critical_and_retry(self, msg):
@@ -215,6 +220,13 @@ class UI(QWidget, Logger):
 
         return button_reply == QMessageBox.Ok
 
+    def show_critical(self, msg):
+
+        QMessageBox().critical(
+            self, "", msg,  # Parent, title, message
+            QMessageBox.Close
+        )
+
     def error_loading_session(self):
 
         self.show_warning(msg="Error in loading the selected file. Please select another one!")
@@ -232,6 +244,12 @@ class UI(QWidget, Logger):
         else:
             if not self.close():
                 self.manage_server_error()
+
+    def fatal_error(self, error_message):
+
+        self.show_critical(msg="Server error.\nError message: '{}'.".format(error_message))
+        self.close_window()
+        self.close()
 
     def fatal_error_of_communication(self):
 
@@ -259,7 +277,7 @@ class UI(QWidget, Logger):
                 command(*args)
             else:
                 command()
-            
+
             # Able now to handle a new display instruction
             self.occupied.clear()
 
@@ -273,7 +291,7 @@ class UI(QWidget, Logger):
     def get_current_interface_parameters(self):
         return {"parametrization": self.frames["parameters"].get_parameters(),
                 "assignement": self.frames["assign"].get_parameters()}
-    
+
     def get_game_parameters(self):
         return self.mod.controller.data.param["game"]
 
@@ -303,4 +321,7 @@ class UI(QWidget, Logger):
 
     def stop_bots(self):
         self.controller_queue.put(("ui_stop_bots", ))
+
+    def look_for_alive_players(self):
+        self.controller_queue.put(("ui_look_for_alive_players", ))
 

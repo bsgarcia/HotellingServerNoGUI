@@ -72,8 +72,20 @@ class HotellingLocalBots(Logger, Thread):
 
             if self.time_manager.state == "end_game" or not self.controller.server.is_alive() \
                     or self.stopped() or not self.controller.running_game.is_set():
+
+                    self.set_bots_to_end_state()
                     self.log("Local Bots: Game ends, bots are going to shutdown!")
+
                     break
+
+    def set_bots_to_end_state(self):
+
+        for firm_id in self.data.bot_firms_id.values():
+            self.data.current_state["firm_states"][firm_id] = "end_game"
+
+        for customer_id in self.data.bot_customers_id.values():
+            self.data.current_state["customer_states"][customer_id] = "end_game"
+
     def stop(self):
         self._stop_event.set()
 
@@ -148,6 +160,8 @@ class HotellingLocalBots(Logger, Thread):
 
             self.data.current_state["customer_replies"][customer_id] = 1
 
+            self.data.current_state["customer_states"][customer_id] = "ask_customer_choice_recording"
+
             self.time_manager.check_state()
 
     def customer_choice(self, customer_id):
@@ -211,6 +225,7 @@ class HotellingLocalBots(Logger, Thread):
             if self.time_manager.state == "active_has_played_and_all_customers_replied":
                 self.data.current_state["active_gets_results"] = True
                 self.firm_n_client(firm_id)
+                self.data.current_state["firm_states"][firm_id] = "ask_firm_active_customer_choices"
 
     def play_passive_firm(self, firm_id):
 
@@ -218,6 +233,7 @@ class HotellingLocalBots(Logger, Thread):
             if not self.data.current_state["passive_gets_results"]:
                 self.data.current_state["passive_gets_results"] = True
                 self.firm_n_client(firm_id)
+                self.data.current_state["firm_states"][firm_id] = "ask_firm_passive_customer_choices"
 
     def firm_active_choice_recording(self, firm_id):
 

@@ -113,10 +113,11 @@ class AssignementFrame(QWidget, Logger):
                 checked=True, idx=i))
 
     def push_next_button(self):
+        
+        not_safe = self.check_assignement_validity()
 
-        if self.error:
-
-            self.show_warning(msg=self.error)
+        if not_safe:
+            self.show_warning(msg="Wrong inputs for server id: {}".format(not_safe))
 
         else:
             self.log("Push 'next' button.")
@@ -132,6 +133,11 @@ class AssignementFrame(QWidget, Logger):
         else:
             self.log("Push 'previous' button.")
             self.parent().show_frame_load_game_new_game()
+
+    def check_assignement_validity(self):
+        for (server_id, role, bot) in self.get_parameters():
+            if server_id != "Bot" and not server_id.isdigit():
+                return server_id
 
     def get_parameters(self):
         return [[i.get_value(), j.get_value(), k.get_value()] for i, j, k in self.parameters["assign"]]
