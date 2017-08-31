@@ -25,4 +25,4 @@ class Model:
             sys.exit(self.app.exec_())
 
         except Exception as e:
-            self.ui.fatal_error(msg=str(e))
+            self.ui.fatal_error(error_message=str(e))

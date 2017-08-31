@@ -195,10 +195,11 @@ class UI(QWidget, Logger):
 
         msgbox = QMessageBox()
         msgbox.setText(instructions)
-        msgbox.setText("Do you want to quit game?")
+        msgbox.setInformativeText("Do you want to quit game?")
         msgbox.setIcon(QMessageBox.Question)
         quit = msgbox.addButton("Force to quit", QMessageBox.ActionRole)
-        msgbox.addButton("Do not quit", QMessageBox.ActionRole)
+        dont = msgbox.addButton("Do not quit", QMessageBox.ActionRole)
+        msgbox.setDefaultButton(dont)
 
         msgbox.exec_()
 

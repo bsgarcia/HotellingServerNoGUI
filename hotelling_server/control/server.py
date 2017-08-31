@@ -99,9 +99,6 @@ class Server(Thread, Logger):
 
                     if self.param["local"]:
                         ip_address = "localhost"
-
-                    elif self.param["ip_autodetect"]:
-                        ip_address = get_local_ip()
                     else:
                         ip_address = self.param["ip_address"]
 
