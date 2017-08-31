@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QStyleFactory
 
 from hotelling_server.control import backup
 from . import interface, controller
@@ -7,17 +7,20 @@ from . import interface, controller
 
 class Model:
     """Model class.
-
     Create the elements of the model, orchestrate their interactions.
     """
 
     def __init__(self):
 
-        self.app = QApplication(sys.argv)
+        sys_argv = sys.argv
+        sys_argv += ['--style', 'material']
+
+        self.app = QApplication(sys_argv)
         self.ui = interface.UI(model=self)
         self.controller = controller.Controller(model=self)
 
     def run(self):
+
         try:
             self.controller.start()
             self.ui.setup()
