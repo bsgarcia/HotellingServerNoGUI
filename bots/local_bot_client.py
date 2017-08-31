@@ -185,7 +185,7 @@ class HotellingLocalBots(Logger, Thread):
     def customer_extra_view_choice(self):
 
         self.customer_attributes["extra_view_choice"] = \
-            np.max(self.customer_attributes["extra_view_possibilities"])
+            np.random.choice(self.customer_attributes["extra_view_possibilities"])
 
         return self.customer_attributes["extra_view_choice"]
 
@@ -204,16 +204,15 @@ class HotellingLocalBots(Logger, Thread):
 
         if len(available_prices) == 1:
             self.customer_attributes["min_price"] = min(available_prices)
-            firm_choice = np.random.choice(
-                available_positions[np.where(available_prices == self.customer_attributes["min_price"])[0]]
-            )
+            cond0 = np.where(available_prices == prices)
+            cond1 = np.where(available_positions == positions)
+            firm_choice = np.intersect1d(cond0, cond1)
 
         elif len(available_prices) == 2:
             distance = [abs(own_position - pos) for pos in available_positions]
             firm_choice = np.argmin([i + j for i, j in zip(available_prices, distance)])
 
         else:
-            self.customer_attributes["min_price"] = min(available_prices)
             self.customer_attributes["min_price"] = 0
             firm_choice = -1
 

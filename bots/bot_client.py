@@ -14,9 +14,9 @@ class GenericBotClient(Thread, Logger):
     if network_parameters["ip_autodetect"] and not network_parameters["local"]:
         ip_address = get_local_ip()
     elif network_parameters["local"]:
-        ip_adress = "localhost"
+        ip_address = "localhost"
     else:
-        ip_adress = network_parameters["ip_adress"]
+        ip_address = network_parameters["ip_adress"]
 
     port = network_parameters["port"]
     delay_retry = 1

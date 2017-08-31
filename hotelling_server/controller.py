@@ -183,10 +183,12 @@ class Controller(Thread, Logger):
         self.game.stop_bots()
 
     def ui_look_for_alive_players(self):
+
         if self.game.game_ended():
-            self.ask_interface("show_frame_load_game_new_game")
             self.stop_server()
             self.game.stop_bots()
+            self.ask_interface("show_frame_load_game_new_game")
+
         else:
             self.ask_interface("force_to_quit_game")
 
@@ -215,16 +217,15 @@ class Controller(Thread, Logger):
     def get_current_data(self):
 
         return {
-                    "current_state": self.data.current_state,
-                    "bot_firms_id": self.data.bot_firms_id,
-                    "firms_id": self.data.firms_id,
-                    "bot_customers_id": self.data.bot_customers_id,
-                    "customers_id": self.data.customers_id,
-                    "roles": self.data.roles,
-                    "time_manager_t": self.data.controller.time_manager.t,
-                    "statistics": self.statistician.data,
-                    "map_server_id_game_id": self.data.map_server_id_game_id
-
+                "current_state": self.data.current_state,
+                "bot_firms_id": self.data.bot_firms_id,
+                "firms_id": self.data.firms_id,
+                "bot_customers_id": self.data.bot_customers_id,
+                "customers_id": self.data.customers_id,
+                "roles": self.data.roles,
+                "time_manager_t": self.data.controller.time_manager.t,
+                "statistics": self.statistician.data,
+                "map_server_id_game_id": self.data.map_server_id_game_id
                }
 
     def get_parameters(self, key):
