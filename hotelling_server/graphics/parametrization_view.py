@@ -73,8 +73,6 @@ class ParametersFrame(QWidget, Logger):
 
     def push_run_button(self):
 
-        self.run_button.setEnabled(False)
-
         if self.error:
 
             self.show_warning(msg=self.error)

@@ -131,18 +131,17 @@ class Game(Logger):
 
     # -----------------------| game sides methods |------------------------------------------- #
 
-    def compute_utility(self):
+    def compute_utility(self, customer_id):
 
         uc = self.interface_parameters["utility_consumption"]
         ec = self.interface_parameters["exploration_cost"]
-        firm_choices = self.data.current_state["customer_firm_choices"]
-        view_choices = self.data.current_state["customer_extra_view_choices"]
-        prices = self.data.current_state["firm_prices"]
+        firm_choice = self.data.current_state["customer_firm_choices"][customer_id]
+        view_choice = self.data.current_state["customer_extra_view_choices"][customer_id]
+        price = self.data.current_state["firm_prices"][firm_choice]
 
-        utility = [int(firm_choices[i] >= 0) * uc - ((ec * view_choices[i]) + prices[firm_choices[i]])
-                  for i in self.data.customers_id.values()]
+        utility = int(firm_choice >= 0) * uc - ((ec * view_choice) + price)
 
-        self.data.current_state["customer_utility"] = utility
+        self.data.current_state["customer_utility"][customer_id] = utility
 
     def get_role(self, server_id):
 
@@ -201,11 +200,8 @@ class Game(Logger):
 
         return "/".join([str(int(c == firm_id)) if c != -1 else str(-1) for c in firm_choices])
 
-    def firm_active_first_step(self, game_id, firm_id, state):
+    def firm_active_first_step(self, firm_id, price, position, state):
         """firm active first call of a turn"""
-
-        position = self.data.current_state["firm_positions"][firm_id]
-        price = self.data.current_state["firm_prices"][firm_id]
 
         # Register choice
         opponent_id = (firm_id + 1) % 2
@@ -378,7 +374,7 @@ class Game(Logger):
                 else:
                     self.data.current_state["customer_firm_choices"][customer_id] = -1
 
-                self.compute_utility()
+                self.compute_utility(customer_id)
 
                 self.time_manager.check_state()
 
@@ -453,7 +449,6 @@ class Game(Logger):
             if self.time_manager.state == "active_has_played_and_all_customers_replied":
                 if not self.data.current_state["passive_gets_results"]:
 
-
                     if self.check_end(t):
                         self.data.current_state["firm_states"][firm_id] = "end_game"
                     else:
@@ -501,7 +496,7 @@ class Game(Logger):
 
             if not self.data.current_state["active_replied"]:
 
-                self.firm_active_first_step(game_id, firm_id, function_name())
+                self.firm_active_first_step(firm_id, price, position, function_name())
                 self.time_manager.check_state()
 
             return out

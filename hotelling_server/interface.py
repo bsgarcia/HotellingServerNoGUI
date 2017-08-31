@@ -255,6 +255,9 @@ class UI(QWidget, Logger):
         if retry:
             self.show_frame_setting_up()
             self.retry_server()
+        else:
+            self.close_window()
+            self.close()
 
     def fatal_error(self, error_message):
 
