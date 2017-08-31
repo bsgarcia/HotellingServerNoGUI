@@ -24,6 +24,13 @@ class LoadGameNewGameFrame(QWidget, Logger):
         self.setup()
 
     def setup(self):
+        
+        self.fill_layout()
+
+        self.buttons["new"].clicked.connect(self.click_new_game)
+        self.buttons["load"].clicked.connect(self.click_load_game)
+
+    def fill_layout(self):
 
         grid_layout = QGridLayout()
 
@@ -40,7 +47,7 @@ class LoadGameNewGameFrame(QWidget, Logger):
                 grid_layout.addWidget(widget, i, 1, alignment=Qt.AlignCenter)
 
         self.layout.addLayout(grid_layout)
-        
+
         horizontal_layout = QHBoxLayout()
 
         self.buttons["new"] = QPushButton("New game")
@@ -51,9 +58,6 @@ class LoadGameNewGameFrame(QWidget, Logger):
 
         self.layout.addLayout(horizontal_layout)
         self.setLayout(self.layout)
-
-        self.buttons["new"].clicked.connect(self.click_new_game)
-        self.buttons["load"].clicked.connect(self.click_load_game)
 
     def prepare(self):
 
@@ -84,6 +88,7 @@ class LoadGameNewGameFrame(QWidget, Logger):
 
     def click_load_game(self):
 
+        self.write_network_parameters()
         self.set_buttons_activation(False)
         self.open_file_dialog()
 

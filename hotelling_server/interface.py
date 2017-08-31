@@ -180,25 +180,26 @@ class UI(QWidget, Logger):
         self.frames["assign"].prepare()
         self.frames["assign"].show()
 
-    def show_question(self, instructions):
+    # def show_question(self, instructions):
 
-        # noinspection PyCallByClass, PyTypeChecker
-        button_reply = \
-            QMessageBox.question(
-                self, '', instructions,  # parent, title, msg
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No  # buttons, default button
-            )
+        # # noinspection PyCallByClass, PyTypeChecker
+        # button_reply = \
+            # QMessageBox.question(
+                # self, '', instructions,  # parent, title, msg
+                # QMessageBox.Yes | QMessageBox.No, QMessageBox.No  # buttons, default button
+            # )
 
-        return button_reply == QMessageBox.Yes
+        # return button_reply == QMessageBox.Yes
 
-    def show_question_and_quit_game(self, instructions):
+    def show_question(self, msg, question="", yes="Yes", no="No"):
+        """question with customs buttons"""
 
         msgbox = QMessageBox()
-        msgbox.setText(instructions)
-        msgbox.setInformativeText("Do you want to quit game?")
+        msgbox.setText(msg)
+        msgbox.setInformativeText(question)
         msgbox.setIcon(QMessageBox.Question)
-        quit = msgbox.addButton("Force to quit", QMessageBox.ActionRole)
-        dont = msgbox.addButton("Do not quit", QMessageBox.ActionRole)
+        quit = msgbox.addButton(yes, QMessageBox.ActionRole)
+        dont = msgbox.addButton(no, QMessageBox.ActionRole)
         msgbox.setDefaultButton(dont)
 
         msgbox.exec_()
@@ -255,23 +256,38 @@ class UI(QWidget, Logger):
             self.show_frame_setting_up()
             self.retry_server()
 
-        else:
-            if not self.close():
-                self.manage_server_error()
-
     def fatal_error(self, error_message):
 
         self.show_critical(msg="Server error.\nError message: '{}'.".format(error_message))
         self.close_window()
         self.close()
 
-    def force_to_quit_game(self, msg):
+    def force_to_quit_game(self, *args):
 
-        quit = self.show_question_and_quit_game(instructions=msg)
+        msg = "Some players did not end their last turn!"
+        question = "Do you want to quit anyway?"
+        yes = "Quit game"
+        no = "Do not quit"
+
+        quit = self.show_question(msg=msg, question=question, yes=yes, no=no)
 
         if quit:
             self.show_frame_load_game_new_game()
-            self.controller_queue.put(("stop_server", ))
+            self.stop_server()
+            self.stop_bots()
+
+    def unexpected_client_id(self, client_id):
+
+        msg = "Unexpected id: '{}'.".format(client_id)
+        question = "Do you want to go back to assignement menu?"
+        yes = "Quit game and go back to assignement"
+        no = "Do not quit"
+
+        go_back = self.show_question(msg=msg, question=question, yes=yes, no=no)
+
+        if go_back:
+            self.show_frame_assignement()
+            self.stop_server()
             self.stop_bots()
 
     def fatal_error_of_communication(self):
@@ -344,6 +360,9 @@ class UI(QWidget, Logger):
 
     def stop_bots(self):
         self.controller_queue.put(("ui_stop_bots", ))
+
+    def stop_server(self):
+        self.controller_queue.put(("stop_server",))
 
     def look_for_alive_players(self):
         self.controller_queue.put(("ui_look_for_alive_players", ))

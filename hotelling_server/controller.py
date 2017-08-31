@@ -19,6 +19,7 @@ class Controller(Thread, Logger):
         self.queue = Queue()
 
         self.running_game = Event()
+        self.running_server = Event()
 
         self.shutdown = Event()
         self.fatal_error = Event()
@@ -115,6 +116,7 @@ class Controller(Thread, Logger):
     def stop_server(self):
         self.server.shutdown()
         self.server.waiting_event.set()
+        self.running_server.clear()
 
     # ------------------------------- Message handling ----------------------------------------------- #
 
@@ -132,10 +134,9 @@ class Controller(Thread, Logger):
             self.ask_interface("fatal_error", str(err))
 
     # ------------------------------ Server interface -----------------------#
-
     def server_running(self):
         self.log("Server running.")
-        # self.server_queue.put(("reply", response))
+        self.running_server.set()
 
     def server_error(self, error_message):
         self.log("Server error.")
@@ -184,10 +185,10 @@ class Controller(Thread, Logger):
     def ui_look_for_alive_players(self):
         if self.game.game_ended():
             self.ask_interface("show_frame_load_game_new_game")
+            self.stop_server()
             self.game.stop_bots()
         else:
-            text = "Some players did not end their last turn!"
-            self.ask_interface("force_to_quit_game", text)
+            self.ask_interface("force_to_quit_game")
 
     # ------------------------------ Game interface (!!!) -------------------------------------- #
 

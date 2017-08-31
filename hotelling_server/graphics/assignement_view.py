@@ -117,7 +117,7 @@ class AssignementFrame(QWidget, Logger):
         not_safe = self.check_assignement_validity()
 
         if not_safe:
-            self.show_warning(msg="Wrong inputs for server id: {}".format(not_safe))
+            self.show_warning(msg="Wrong input for server id: '{}'".format(not_safe))
 
         else:
             self.log("Push 'next' button.")

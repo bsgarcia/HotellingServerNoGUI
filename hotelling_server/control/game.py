@@ -37,6 +37,8 @@ class Game(Logger):
         self.interface_parameters = self.data.parametrization
         self.assignement = self.data.assignement
 
+        self.unexpected_id_list = []
+
         # reset data in case a game was previously launched during the same session
         self.data.new()
 
@@ -149,19 +151,14 @@ class Game(Logger):
                 return role
 
         # in case of no matching id
-        self.stop_game_and_get_back_to_assignement(server_id)
+        if server_id not in self.unexpected_id_list:
+            self.unexpected_client_id(server_id)
 
-    def stop_game_and_get_back_to_assignement(self, server_id):
+    def unexpected_client_id(self, server_id):
+        self.controller.ask_interface("unexpected_client_id", server_id)
+        self.unexpected_id_list.append(server_id)
 
-        msg = ("Error: unexpected server id detected: '{}'\n"
-               "Going back to assignement menu.".format(server_id))
-
-        self.controller.ask_interface("show_warning", msg)
-        self.controller.queue.put(("stop_server",))
-        self.controller.ask_interface("show_frame_assignement")
-        self.bots.stop()
-
-    # ---------------------------| firms sides methods |----------------------------------------- # 
+    # ---------------------------| firms sides methods |----------------------------------------- #
     def get_opponent_choices(self, opponent_id):
 
         if self.time_manager.t == 0:

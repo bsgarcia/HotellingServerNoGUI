@@ -44,6 +44,10 @@ class ParametersFrame(QWidget, Logger):
             IntParameter(text="Utility consumption",
                          initial_value=param["utility_consumption"], value_range=[0, 100])
 
+        self.order = ["save",
+                      "exploration_cost",
+                      "utility_consumption"]
+
         self.fill_layout()
 
         # noinspection PyUnresolvedReferences
@@ -52,14 +56,11 @@ class ParametersFrame(QWidget, Logger):
 
     def fill_layout(self):
 
-        # form_layout = QFormLayout()
-
         # prepare layout
         grid_layout = QGridLayout()
 
-        for i, p in enumerate(sorted(self.parameters.keys())):
-
-            self.parameters[p].add_to_grid_layout(grid_layout, i, 0)
+        for i, key in enumerate(self.order):
+            self.parameters[key].add_to_grid_layout(grid_layout, i, 0)
 
         horizontal_layout = QHBoxLayout()
         horizontal_layout.addWidget(self.previous_button, alignment=Qt.AlignCenter)

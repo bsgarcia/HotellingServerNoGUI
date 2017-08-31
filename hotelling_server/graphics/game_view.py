@@ -95,12 +95,14 @@ class GameFrame(QWidget, Logger):
         self.log("Preparation done!")
 
     def prepare_ip_label(self):
-        # set ip address
-        text = self.parent().mod.controller.server.tcp_server.ip
-        font = QFont()
-        font.setPointSize(20)
-        self.ip_address.setFont(font)
-        self.ip_address.setText("IP: {}".format(text))
+
+        if self.parent().mod.controller.running_server.is_set():
+            # set ip address
+            text = self.parent().mod.controller.server.tcp_server.ip
+            font = QFont()
+            font.setPointSize(20)
+            self.ip_address.setFont(font)
+            self.ip_address.setText("IP: {}".format(text))
 
     def prepare_figures(self):
 
