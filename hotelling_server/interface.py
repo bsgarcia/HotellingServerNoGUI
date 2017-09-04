@@ -179,17 +179,6 @@ class UI(QWidget, Logger):
         self.frames["assign"].prepare()
         self.frames["assign"].show()
 
-    # def show_question(self, instructions):
-
-        # # noinspection PyCallByClass, PyTypeChecker
-        # button_reply = \
-            # QMessageBox.question(
-                # self, '', instructions,  # parent, title, msg
-                # QMessageBox.Yes | QMessageBox.No, QMessageBox.No  # buttons, default button
-            # )
-
-        # return button_reply == QMessageBox.Yes
-
     def show_question(self, msg, question="", yes="Yes", no="No"):
         """question with customs buttons"""
 
@@ -275,8 +264,8 @@ class UI(QWidget, Logger):
 
         if quit:
             self.show_frame_load_game_new_game()
-            self.stop_server()
             self.stop_bots()
+            self.stop_server()
 
     def unexpected_client_id(self, client_id):
 
@@ -368,4 +357,4 @@ class UI(QWidget, Logger):
 
     def look_for_alive_players(self):
         self.controller_queue.put(("ui_look_for_alive_players", ))
-
+    

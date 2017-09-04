@@ -53,6 +53,7 @@ class Controller(Thread, Logger):
         self.ask_interface("show_frame_load_game_new_game")
 
         while not self.shutdown.is_set():
+
             self.log("Waiting for a message.")
             message = self.queue.get()
             self.handle_message(message)
@@ -68,11 +69,11 @@ class Controller(Thread, Logger):
         self.continue_game.set()
         self.running_game.set()
 
+        if not self.running_server.is_set():
+            self.server.start()
+
         # Launch server manager
         self.server_queue.put(("Go", ))
-
-        if not self.server.waiting_event.is_set():
-            self.server.start()
 
         self.ask_interface("show_frame_game", self.get_current_data())
 
@@ -118,9 +119,8 @@ class Controller(Thread, Logger):
         self.communicate.signal.emit()
 
     def stop_server(self):
+        self.log("Stop server.")
         self.server.shutdown()
-        self.server.waiting_event.set()
-        self.running_server.clear()
 
     # ------------------------------- Message handling ----------------------------------------------- #
 

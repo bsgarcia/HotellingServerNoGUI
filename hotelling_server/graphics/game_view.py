@@ -118,11 +118,13 @@ class GameFrame(QWidget, Logger):
 
         switch = self.switch_button.text() == "View figures"
         self.switch_button.setText(("View figures", "View tables")[switch])
+        self.switch_button.setEnabled(False)
 
         tohide = (self.plot_layout, self.table)[switch]
         toshow = (self.table, self.plot_layout)[switch]
 
         self.hide_and_show(tohide=tohide, toshow=toshow)
+        self.switch_button.setEnabled(True)
 
     def hide_and_show(self, tohide, toshow):
 
