@@ -290,6 +290,9 @@ class Game(Logger):
         else:
             customer_id = self.data.customers_id[game_id]
 
+        if self.game_ended():
+            return "error/game_ended"
+
         position = customer_id + 1
         exploration_cost = self.interface_parameters["exploration_cost"]
         utility_consumption = self.interface_parameters["utility_consumption"]
@@ -310,6 +313,9 @@ class Game(Logger):
         # if device already asked for init, get id
         else:
             firm_id = self.data.firms_id[game_id]
+
+        if self.game_ended():
+            return "error/game_ended"
 
         opponent_id = (firm_id + 1) % 2
 
