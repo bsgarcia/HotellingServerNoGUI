@@ -12,10 +12,7 @@ class Model:
 
     def __init__(self):
 
-        sys_argv = sys.argv
-        sys_argv += ['--style', 'material']
-
-        self.app = QApplication(sys_argv)
+        self.app = QApplication(sys.argv)
         self.ui = interface.UI(model=self)
         self.controller = controller.Controller(model=self)
 
