@@ -116,15 +116,16 @@ class GameFrame(QWidget, Logger):
 
     def push_switch_button(self):
 
+        self.switch_button.setEnabled(False)
+
         switch = self.switch_button.text() == "View figures"
         self.switch_button.setText(("View figures", "View tables")[switch])
-        self.switch_button.setEnabled(False)
 
         tohide = (self.plot_layout, self.table)[switch]
         toshow = (self.table, self.plot_layout)[switch]
 
         self.hide_and_show(tohide=tohide, toshow=toshow)
-        self.switch_button.setEnabled(True)
+        # self.switch_button.setEnabled(True)
 
     def hide_and_show(self, tohide, toshow):
 
@@ -144,7 +145,7 @@ class GameFrame(QWidget, Logger):
         elif self.stop_button.text() == "Go to home menu":
             self.parent().look_for_alive_players()
 
-        self.stop_button.setEnabled(True)
+        # self.stop_button.setEnabled(True)
 
     def set_trial_number(self, trial_n):
 
