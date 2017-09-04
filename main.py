@@ -1,5 +1,4 @@
 from hotelling_server import model
-from memory_profiler import profile
 
 
 def main():
