@@ -134,6 +134,8 @@ class GameFrame(QWidget, Logger):
             widget.show()
 
     def push_stop_button(self):
+        
+        self.stop_button.setEnabled(False)
 
         if self.stop_button.text() == "Stop task":
             self.stop_button.setText("Go to home menu")
@@ -141,6 +143,8 @@ class GameFrame(QWidget, Logger):
 
         elif self.stop_button.text() == "Go to home menu":
             self.parent().look_for_alive_players()
+
+        self.stop_button.setEnabled(True)
 
     def set_trial_number(self, trial_n):
 
