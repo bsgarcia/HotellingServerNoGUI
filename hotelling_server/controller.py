@@ -36,6 +36,9 @@ class Controller(Thread, Logger):
         # For giving instructions to graphic process
         self.graphic_queue = self.mod.ui.queue
         self.communicate = self.mod.ui.communicate
+       
+        # Last command received
+        self.last_request = None
 
         # For giving go signal to server
         self.server_queue = self.server.queue
@@ -53,6 +56,7 @@ class Controller(Thread, Logger):
             self.log("Waiting for a message.")
             message = self.queue.get()
             self.handle_message(message)
+            self.last_request = message[0]
 
         self.close_program()
 
@@ -190,7 +194,8 @@ class Controller(Thread, Logger):
             self.ask_interface("show_frame_load_game_new_game")
 
         else:
-            self.ask_interface("force_to_quit_game")
+            if self.last_request != "ui_look_for_alive_players":
+                self.ask_interface("force_to_quit_game")
 
     # ------------------------------ Game interface (!!!) -------------------------------------- #
 

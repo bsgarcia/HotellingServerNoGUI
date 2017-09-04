@@ -14,8 +14,7 @@ class GameFrame(QWidget, Logger):
 
     def __init__(self, parent):
 
-        # noinspection PyArgumentList
-        QWidget.__init__(self, parent=parent)
+        super().__init__(parent=parent)
 
         self.layout = QVBoxLayout()
 
@@ -158,8 +157,10 @@ class GameFrame(QWidget, Logger):
             # empty tables
             self.table[role].clear()
 
-            # set non editable
+            # set non editable and disable selection
             self.table[role].setEditTriggers(QAbstractItemView.NoEditTriggers)
+            self.table[role].setSelectionMode(QAbstractItemView.NoSelection)
+            self.table[role].setFocusPolicy(Qt.NoFocus)
 
             # set height and width
             self.table[role].setColumnCount(len(columns))
@@ -257,6 +258,7 @@ class GameFrame(QWidget, Logger):
         customer_labels = ("customer_firm_choices",
                            "customer_extra_view_choices",
                            "customer_utility",
+                           "customer_cumulative_utility",
                            "customer_states",
                            "time_since_last_request_customers")
 

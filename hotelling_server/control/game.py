@@ -61,6 +61,7 @@ class Game(Logger):
         self.data.current_state["customer_firm_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
         self.data.current_state["customer_utility"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
         self.data.current_state["customer_replies"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
+        self.data.current_state["customer_cumulative_utility"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
 
         self.launch_bots()
 
@@ -70,6 +71,7 @@ class Game(Logger):
         self.data.setup()
         self.interface_parameters = self.data.parametrization
         self.assignement = self.data.assignement
+        self.unexpected_id_list = []
 
         self.launch_bots()
 
@@ -142,6 +144,7 @@ class Game(Logger):
         utility = int(firm_choice >= 0) * uc - ((ec * view_choice) + price)
 
         self.data.current_state["customer_utility"][customer_id] = utility
+        self.data.current_state["customer_cumulative_utility"][customer_id] += utility
 
     def get_role(self, server_id):
 
@@ -156,6 +159,16 @@ class Game(Logger):
     def unexpected_client_id(self, server_id):
         self.controller.ask_interface("unexpected_client_id", server_id)
         self.unexpected_id_list.append(server_id)
+
+    def check_remaining_agents(self):
+
+        remaining = self.n_agents - (len(self.data.firms_id) + len(self.data.customers_id))
+
+        self.log("Number of missing agents: {}".format(remaining))
+
+        if not remaining:
+            self.data.current_state["init_done"] = True
+            self.time_manager.check_state()
 
     # ---------------------------| firms sides methods |----------------------------------------- #
     def get_opponent_choices(self, opponent_id):
@@ -313,16 +326,6 @@ class Game(Logger):
 
         return self.reply(func_name, game_id, self.time_manager.t, role, position, state, price,
                           opp_position, opp_price, profits)
-
-    def check_remaining_agents(self):
-
-        remaining = self.n_agents - (len(self.data.firms_id) + len(self.data.customers_id))
-
-        self.log("Number of missing agents: {}".format(remaining))
-
-        if not remaining:
-            self.data.current_state["init_done"] = True
-            self.time_manager.check_state()
 
     # -----------------------------------| customer demands |--------------------------------------#
 

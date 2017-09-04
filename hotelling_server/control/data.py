@@ -14,7 +14,7 @@ class Data(Logger):
         self.entries = [
             "firm_positions", "firm_prices", "firm_profits", "firm_cumulative_profits",
             "customer_firm_choices", "customer_extra_view_choices", "customer_utility", "n_client",
-            "customer_replies", "active_replied", "passive_gets_results", "active_gets_results",
+            "customer_cumulative_utility", "customer_replies", "active_replied", "passive_gets_results", "active_gets_results",
             "firm_status", "time_since_last_request_firms", "time_since_last_request_customers", "init_done",
             "firm_states", "customer_states"
         ]

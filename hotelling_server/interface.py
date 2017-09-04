@@ -19,8 +19,7 @@ class UI(QWidget, Logger):
 
     def __init__(self, model):
 
-        # noinspection PyArgumentList
-        QWidget.__init__(self)
+        super().__init__()
 
         self.mod = model
 
@@ -30,7 +29,7 @@ class UI(QWidget, Logger):
 
         self.frames = dict()
 
-        # refresh interface and update data
+        # refresh interface and update tables
         self.timer = QTimer(self)
         self.timer.setInterval(500)
         self.timer.timeout.connect(self.update_tables)

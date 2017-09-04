@@ -12,8 +12,7 @@ class LoadGameNewGameFrame(QWidget, Logger):
 
     def __init__(self, parent):
 
-        # noinspection PyArgumentList
-        QWidget.__init__(self, parent=parent)
+        super().__init__(parent=parent)
 
         self.layout = QVBoxLayout()
         self.buttons = dict()
@@ -24,7 +23,7 @@ class LoadGameNewGameFrame(QWidget, Logger):
         self.setup()
 
     def setup(self):
-        
+
         self.fill_layout()
 
         self.buttons["new"].clicked.connect(self.click_new_game)

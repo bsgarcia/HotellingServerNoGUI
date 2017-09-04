@@ -185,7 +185,7 @@ class HotellingLocalBots(Logger, Thread):
     def customer_extra_view_choice(self):
 
         self.customer_attributes["extra_view_choice"] = \
-            np.random.choice(self.customer_attributes["extra_view_possibilities"])
+            np.max(self.customer_attributes["extra_view_possibilities"])
 
         return self.customer_attributes["extra_view_choice"]
 
