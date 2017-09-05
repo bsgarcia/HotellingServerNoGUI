@@ -69,10 +69,10 @@ class Controller(Thread, Logger):
         self.continue_game.set()
         self.running_game.set()
 
+        # Launch server manager
         if not self.running_server.is_set():
             self.server.start()
 
-        # Launch server manager
         self.server_queue.put(("Go", ))
 
         self.ask_interface("show_frame_game", self.get_current_data())
@@ -84,7 +84,6 @@ class Controller(Thread, Logger):
         self.log("Received stop task")
         self.continue_game.clear()
         self.time_manager.stop_as_soon_as_possible()
-        # Wait then for a signal of the request manager for allowing interface to show a button to starting menu
 
     def stop_game_second_phase(self):
 
@@ -93,16 +92,13 @@ class Controller(Thread, Logger):
     def close_program(self):
 
         self.log("Close program.")
-        self.shutdown.set()
         self.running_game.set()
 
         # For aborting launching of the (properly speaking) server if it was not launched
         self.server_queue.put(("Abort",))
-
-        # Stop server if it was running
-        self.server.end()
         self.server.shutdown()
-        self.log("Program closed.")
+        self.server.end()
+        self.shutdown.set()
 
     def fatal_error_of_communication(self):
 
@@ -119,8 +115,9 @@ class Controller(Thread, Logger):
         self.communicate.signal.emit()
 
     def stop_server(self):
-        self.log("Stop server.")
+        self.server.wait_event.set()
         self.server.shutdown()
+        self.log("Stop server.")
 
     # ------------------------------- Message handling ----------------------------------------------- #
 
@@ -194,8 +191,7 @@ class Controller(Thread, Logger):
             self.ask_interface("show_frame_load_game_new_game")
 
         else:
-            if self.last_request != "ui_look_for_alive_players":
-                self.ask_interface("force_to_quit_game")
+            self.ask_interface("force_to_quit_game")
 
     # ------------------------------ Game interface (!!!) -------------------------------------- #
 
@@ -203,19 +199,18 @@ class Controller(Thread, Logger):
         self.log("'Game' asks 'stop game'.")
         self.stop_game_second_phase()
 
-    def update_tables_interface(self):
-        self.log("'Game' asks 'update_tables_interface")
-        self.ask_interface("update_tables")
+    # def update_tables_interface(self):
+        # self.log("'Game' asks 'update_tables_interface")
+        # self.ask_interface("update_tables")
 
-    def update_figures_interface(self):
-        self.log("'Game' asks 'update_figures_interface'")
+    def compute_figures(self):
+        self.log("'Game' asks 'compute_figures'")
 
         # needs to be moved elsewhere?
         self.statistician.compute_distance()
         self.statistician.compute_mean_extra_view_choices()
         self.statistician.compute_profits()
         self.statistician.compute_mean_utility()
-        self.ask_interface("update_figures")
 
     # ---------------------- Parameters management -------------------------------------------- #
 

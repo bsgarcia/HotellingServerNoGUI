@@ -31,8 +31,8 @@ class UI(QWidget, Logger):
 
         # refresh interface and update tables
         self.timer = QTimer(self)
-        self.timer.setInterval(500)
-        self.timer.timeout.connect(self.update_tables)
+        self.timer.setInterval(2000)
+        self.timer.timeout.connect(self.update_data)
         self.timer.start()
 
         self.already_asked_for_saving_parameters = 0
@@ -127,6 +127,11 @@ class UI(QWidget, Logger):
 
             else:
                 self.log('Saving of parameters aborted.')
+    
+    def update_data(self):
+
+        self.update_tables()
+        self.update_figures()
 
     def update_figures(self, *args):
 
@@ -266,6 +271,8 @@ class UI(QWidget, Logger):
             self.show_frame_load_game_new_game()
             self.stop_bots()
             self.stop_server()
+        else:
+            self.frames["game"].stop_button.setEnabled(True)
 
     def unexpected_client_id(self, client_id):
 
@@ -278,8 +285,10 @@ class UI(QWidget, Logger):
 
         if go_back:
             self.show_frame_assignement()
-            self.stop_server()
             self.stop_bots()
+            self.stop_server()
+        else:
+            self.frames["game"].stop_button.setEnabled(True)
 
     def fatal_error_of_communication(self):
 
