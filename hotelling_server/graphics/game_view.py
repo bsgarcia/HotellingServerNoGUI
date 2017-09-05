@@ -95,7 +95,7 @@ class GameFrame(QWidget, Logger):
 
     def prepare_ip_label(self):
 
-        if self.parent().mod.controller.running_server.is_set():
+        if not self.parent().mod.controller.server.wait_event.is_set():
             # set ip address
             text = self.parent().mod.controller.server.tcp_server.ip
             font = QFont()
@@ -106,7 +106,6 @@ class GameFrame(QWidget, Logger):
     def prepare_figures(self):
 
         self.initialize_figures()
-        # self.update_done_playing_labels(data["done_playing_labels"])
 
     def prepare_buttons(self):
 
@@ -125,7 +124,8 @@ class GameFrame(QWidget, Logger):
         toshow = (self.table, self.plot_layout)[switch]
 
         self.hide_and_show(tohide=tohide, toshow=toshow)
-        # self.switch_button.setEnabled(True)
+
+        self.switch_button.setEnabled(True)
 
     def hide_and_show(self, tohide, toshow):
 
@@ -135,17 +135,18 @@ class GameFrame(QWidget, Logger):
             widget.show()
 
     def push_stop_button(self):
-        
+
         self.stop_button.setEnabled(False)
 
         if self.stop_button.text() == "Stop task":
+
             self.stop_button.setText("Go to home menu")
             self.parent().stop_game()
+            self.stop_button.setEnabled(True)
 
         elif self.stop_button.text() == "Go to home menu":
-            self.parent().look_for_alive_players()
 
-        # self.stop_button.setEnabled(True)
+            self.parent().look_for_alive_players()
 
     def set_trial_number(self, trial_n):
 
@@ -181,6 +182,7 @@ class GameFrame(QWidget, Logger):
             for i, param in enumerate(columns):
                 self.table[role].setHorizontalHeaderItem(i, QTableWidgetItem(param))
 
+            # set rows names (server ids, then game ids)
             for i, idx in enumerate(rows):
                 self.table[role].setVerticalHeaderItem(
                     i, QTableWidgetItem("Server id: {}".format(idx)
@@ -308,7 +310,8 @@ class GameFrame(QWidget, Logger):
     def update_statistics(self, data):
 
         for key, value in self.plot_layout.items():
-            value.update_figure(data[key])
+            if key in data.keys():
+                value.update_figure(data[key])
 
     def update_done_playing(self, done_playing):
 

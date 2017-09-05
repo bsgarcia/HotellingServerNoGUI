@@ -30,7 +30,6 @@ class HttpHandler(http.server.SimpleHTTPRequestHandler, Logger):
 
         else:
             response = "Request is empty."
-
         try:
             self.server.parent.check_client_connection(self.client_address[0], response)
         except Exception as err:
@@ -81,7 +80,8 @@ class Server(Thread, Logger):
         self.clients = {}
 
         self.shutdown_event = Event()
-        self.waiting_event = Event()
+        self.wait_event = Event()
+        # self.wait_condition = Condition()
 
         self.tcp_server = None
 
@@ -91,45 +91,58 @@ class Server(Thread, Logger):
     def run(self):
 
         while not self.shutdown_event.is_set():
+
             self.log("Waiting for a message...")
             msg = self.queue.get()
             self.log("I received msg '{}'.".format(msg))
+
             if msg and msg[0] == "Go":
-                try:
 
-                    if self.param["local"]:
-                        ip_address = "localhost"
-                    else:
-                        ip_address = self.param["ip_address"]
+                if self.param["local"]:
+                    ip_address = "localhost"
+                else:
+                    ip_address = self.param["ip_address"]
 
-                    self.log("Try to connect using ip {}...".format(ip_address))
-                    self.tcp_server = TCPGamingServer(
-                        parent=self,
-                        server_address=(ip_address, self.param["port"]),
-                        cont=self.cont,
-                        controller_queue=self.controller_queue,
-                        server_queue=self.queue
-                    )
-                    self.controller_queue.put(("server_running", ))
+                self.log("Try to connect using ip {}...".format(ip_address))
 
-                    self.tcp_server.serve_forever()
+                self.tcp_server = TCPGamingServer(
+                    parent=self,
+                    server_address=(ip_address, self.param["port"]),
+                    cont=self.cont,
+                    controller_queue=self.controller_queue,
+                    server_queue=self.queue
+                )
 
-                except Exception as e:
-                    self.log("Error: {}".format(e))
-                    self.controller_queue.put(("server_error", str(e)))
+                self.tcp_server.timeout = 3
 
-                finally:
-                    self.log("Close server...")
-                    self.shutdown()
-                    self.log("Server closed.")
+                self.controller_queue.put(("server_running", ))
+
+                self.wait_event.clear()
+
+                self.tcp_server.serve_forever()
+
+                # self.run_server()
 
         self.log("I'm dead.")
+
+    def run_server(self):
+
+        while True:
+
+            self.tcp_server.handle_request()
+
+            if self.wait_event.is_set():
+                self.tcp_server.server_close()
+                break
+
+        self.log("Shutdown.")
 
     def shutdown(self):
 
         if self.tcp_server is not None:
             self.tcp_server.shutdown()
             self.tcp_server.server_close()
+            self.log("Shutdown.")
 
     def end(self):
         self.shutdown_event.set()
@@ -166,10 +179,8 @@ class Server(Thread, Logger):
         elif role == "firm":
             if game_id in self.cont.data.firms_id.keys():
                 role_id = self.cont.data.firms_id[game_id]
-        else:
-            return 0
-
-        self.update_time(role=role, role_id=role_id, time_diff=time_diff)
+        if role:
+            self.update_time(role=role, role_id=role_id, time_diff=time_diff)
 
     def update_time(self, role, role_id, time_diff):
         self.cont.data.current_state["time_since_last_request_{}s".format(role)][role_id] = str(time_diff)
@@ -185,6 +196,6 @@ class Timer(Thread):
     def run(self):
 
         while not self.parent.shutdown_event.is_set():
-            self.func()
+            if not self.parent.wait_event.is_set():
+                self.func()
             Event().wait(self.wait)
-

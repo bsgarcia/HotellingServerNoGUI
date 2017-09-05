@@ -230,7 +230,8 @@ class TwoLinesPlot(MplCanvas, Logger):
         for line, d in zip(self.lines, data):
             line.set_xdata(range(len(d)))
             line.set_ydata(d)
-
+        
+        self.clear()
         self.axes.relim()
         self.axes.autoscale_view()
 
