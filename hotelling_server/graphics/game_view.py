@@ -3,7 +3,8 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QWidget, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout, QLabel, QAbstractItemView
 import numpy as np
 
-from hotelling_server.graphics.widgets.plot_layouts import OneLinePlot, PlotLayout, TwoLinesPlot
+from hotelling_server.graphics.widgets.plot_layouts import PlotLayout
+from hotelling_server.graphics.widgets.plot import OneLinePlot, TwoLinesPlot
 from hotelling_server.graphics.widgets.trial_counter import TrialCounter
 from utils.utils import Logger
 
@@ -54,8 +55,6 @@ class GameFrame(QWidget, Logger):
                 plot_class=OneLinePlot
         )
 
-        # self.done_playing_layout = DonePlayingLayout(parent=self)
-
         self.setup()
 
     def setup(self):
@@ -74,7 +73,6 @@ class GameFrame(QWidget, Logger):
         for widget in self.table.values():
             self.layout.addWidget(widget)
 
-        # self.layout.addLayout(self.done_playing_layout, stretch=0)
         self.layout.addWidget(self.stop_button, stretch=0, alignment=Qt.AlignBottom)
 
         # add to layout
@@ -82,6 +80,7 @@ class GameFrame(QWidget, Logger):
 
         # noinspection PyUnresolvedReferences
         self.stop_button.clicked.connect(self.push_stop_button)
+        # noinspection PyUnresolvedReferences
         self.switch_button.clicked.connect(self.push_switch_button)
 
     def prepare(self, parameters):
@@ -120,18 +119,19 @@ class GameFrame(QWidget, Logger):
         switch = self.switch_button.text() == "View figures"
         self.switch_button.setText(("View figures", "View tables")[switch])
 
-        tohide = (self.plot_layout, self.table)[switch]
-        toshow = (self.table, self.plot_layout)[switch]
+        to_hide = (self.plot_layout, self.table)[switch]
+        to_show = (self.table, self.plot_layout)[switch]
 
-        self.hide_and_show(tohide=tohide, toshow=toshow)
+        self.hide_and_show(to_hide=to_hide, to_show=to_show)
 
         self.switch_button.setEnabled(True)
 
-    def hide_and_show(self, tohide, toshow):
+    @staticmethod
+    def hide_and_show(to_hide, to_show):
 
-        for widget in tohide.values():
+        for widget in to_hide.values():
             widget.hide()
-        for widget in toshow.values():
+        for widget in to_show.values():
             widget.show()
 
     def push_stop_button(self):
@@ -271,8 +271,9 @@ class GameFrame(QWidget, Logger):
                            "customer_states",
                            "time_since_last_request_customers")
 
-        labels = {"firm": firm_labels,
-                   "customer": customer_labels}
+        labels = {
+            "firm": firm_labels,
+            "customer": customer_labels}
 
         # transform into nicer labels
         fancy_labels = {"firm": [name.replace("_", " ").capitalize()
