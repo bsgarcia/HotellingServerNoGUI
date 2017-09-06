@@ -32,27 +32,27 @@ class GameFrame(QWidget, Logger):
         self.plot_layout = dict()
 
         self.plot_layout["firm_profits"] = PlotLayout(
-                parent=self,
-                title="",
-                plot_class=TwoLinesPlot
+            parent=self,
+            title="",
+            plot_class=TwoLinesPlot
         )
 
         self.plot_layout["firm_distance"] = PlotLayout(
-                parent=self,
-                title="",
-                plot_class=TwoLinesPlot
+            parent=self,
+            title="",
+            plot_class=TwoLinesPlot
         )
 
         self.plot_layout["customer_mean_extra_view_choices"] = PlotLayout(
-                parent=self,
-                title="",
-                plot_class=OneLinePlot
+            parent=self,
+            title="",
+            plot_class=OneLinePlot
         )
 
         self.plot_layout["customer_mean_utility"] = PlotLayout(
-                parent=self,
-                title="",
-                plot_class=OneLinePlot
+            parent=self,
+            title="",
+            plot_class=OneLinePlot
         )
 
         self.setup()
@@ -88,7 +88,7 @@ class GameFrame(QWidget, Logger):
         self.log("Preparing...")
         self.prepare_figures()
         self.prepare_buttons()
-        self.prepare_state_table(parameters)
+        self.prepare_tables(parameters)
         self.prepare_ip_label()
         self.log("Preparation done!")
 
@@ -152,9 +152,9 @@ class GameFrame(QWidget, Logger):
 
         self.trial_counter.set_trial_number(trial_n)
 
-    def prepare_state_table(self, parameters):
+    def prepare_tables(self, parameters):
 
-        ids, labels, fancy_labels = self.get_state_table_data(parameters)
+        ids, labels, fancy_labels = self.get_tables_data(parameters)
         ids = self.parent().mod.controller.data.assignement
 
         for role in ["firm", "customer"]:
@@ -185,13 +185,12 @@ class GameFrame(QWidget, Logger):
             # set rows names (server ids, then game ids)
             for i, idx in enumerate(rows):
                 self.table[role].setVerticalHeaderItem(
-                    i, QTableWidgetItem("Server id: {}".format(idx)
-                    )
+                    i, QTableWidgetItem("Server id: {}".format(idx))
                 )
 
-    def update_state_table(self, parameters):
+    def update_tables(self, parameters):
 
-        ids, labels, fancy_labels = self.get_state_table_data(parameters)
+        ids, labels, fancy_labels = self.get_tables_data(parameters)
 
         for role in ["firm", "customer"]:
 
@@ -204,9 +203,9 @@ class GameFrame(QWidget, Logger):
                         i, QTableWidgetItem("Server id: {} | Game id: {}".format(*idx))   
                     )
 
-            self.fill_state_table(role, rows, columns, parameters)
+            self.fill_tables(role, rows, columns, parameters)
 
-    def fill_state_table(self, role, rows, columns, parameters):
+    def fill_tables(self, role, rows, columns, parameters):
 
         # for each game_id
         for x, (server_id, game_id) in enumerate(rows):
@@ -218,7 +217,6 @@ class GameFrame(QWidget, Logger):
                 cond = game_id in parameters["{}s_id".format(role)].keys()
 
                 if cond:
-
                     role_id = parameters["{}s_id".format(role)][game_id]
 
                     # if data is available
@@ -226,7 +224,7 @@ class GameFrame(QWidget, Logger):
                         string = str(data[role_id])
                         self.table[role].setItem(x, y, QTableWidgetItem(string))
 
-    def get_state_table_data(self, parameters):
+    def get_tables_data(self, parameters):
 
         ids = self.get_ids(parameters)
         labels, fancy_labels = self.get_labels()
@@ -292,22 +290,20 @@ class GameFrame(QWidget, Logger):
         for widget in self.plot_layout.values():
             widget.plot.clear()
 
-        # self.done_playing_layout.clear()
-
         self.plot_layout["firm_distance"].initialize_figure(
-                initial_data=[np.arange(11), np.arange(11)], labels=["position A", "position B"]
+            initial_data=[np.arange(11), np.arange(11)], labels=["position A", "position B"]
         )
 
         self.plot_layout["firm_profits"].initialize_figure(
-                initial_data=[np.arange(11), np.arange(11)], labels=["profits A", "profits B"]
+            initial_data=[np.arange(11), np.arange(11)], labels=["profits A", "profits B"]
         )
 
         self.plot_layout["customer_mean_extra_view_choices"].initialize_figure(
-                initial_data=np.arange(11), labels="mean view choices"
+            initial_data=np.arange(11), labels="mean view choices"
         )
 
         self.plot_layout["customer_mean_utility"].initialize_figure(
-                initial_data=np.arange(11), labels="mean customer utility"
+            initial_data=np.arange(11), labels="mean customer utility"
         )
 
         self.log("Figure initialized.")

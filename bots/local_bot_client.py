@@ -220,6 +220,7 @@ class HotellingLocalBots(Logger, Thread):
         return firm_choice
 
     # ------------------------- Firm choice functions --------------------------------- #
+
     def play_active_firm(self, firm_id):
 
         if not self.data.current_state["active_replied"]:

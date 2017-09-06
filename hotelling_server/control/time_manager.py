@@ -15,10 +15,7 @@ class TimeManager(Logger):
 
     def setup(self):
         
-        if self.data.time_manager_state != "end_game":
-            self.state = self.data.time_manager_state
-        else:
-            self.state = "beginning_init"
+        self.state = self.data.time_manager_state
 
         self.log("NEW STATE: {}.".format(self.state))
 
@@ -28,22 +25,26 @@ class TimeManager(Logger):
         self.beginning_time_step()
 
     def check_state(self):
-
+        
+        # time to init
         if self.state == "beginning_init":
             if self.data.current_state["init_done"]:
                 self.state = "beginning_time_step"
                 self.log("NEW STATE: {}.".format(self.state))
-
+        
+        # active firm must play
         elif self.state == "beginning_time_step":
             if self.data.current_state["active_replied"]:
                 self.state = "active_has_played"
                 self.log("NEW STATE: {}.".format(self.state))
-
+        
+        # then customers need to choose a perimeter as well as a firm to buy to
         elif self.state == "active_has_played":
             if np.sum(self.data.current_state["customer_replies"]) == self.data.param["game"]["n_customers"]:
                 self.state += "_and_all_customers_replied"
                 self.log("NEW STATE: {}.".format(self.state))
 
+        # firms need to know their scores, then it is the end of the turn
         elif self.state == "active_has_played_and_all_customers_replied":
             if self.data.current_state["passive_gets_results"] and self.data.current_state["active_gets_results"]:
 
@@ -51,13 +52,15 @@ class TimeManager(Logger):
                 self.log("NEW STATE: {}.".format(self.state))
                 self.end_time_step()
                 
+                # if the game did not ended
                 if self.state != "end_game":
                     self.beginning_time_step()
                     self.state = "beginning_time_step"
                     self.log("NEW STATE: {}.".format(self.state))
 
     def beginning_time_step(self):
-
+        
+        # Reset conditions (which are used in order to pass to another state)
         self.data.current_state["customer_replies"] = np.zeros(self.data.param["game"]["n_customers"])
         self.data.current_state["active_replied"] = False
         self.data.current_state["passive_gets_results"] = False
@@ -65,20 +68,28 @@ class TimeManager(Logger):
 
     def end_time_step(self):
 
-        self.log("Game server goes next step.")
-        self.data.update_history()
-        self.data.current_state["firm_status"] = self.data.current_state["firm_status"][::-1]
-        self.controller.queue.put(("compute_figures", ))
-        self.t += 1
+        self.log("Game server goes next turn.")
 
+        # save history
+        self.data.update_history()
+        
+        # reverse firm status (passive/active)
+        self.data.current_state["firm_status"] = self.data.current_state["firm_status"][::-1]
+        
+        # compute figures in order to show them in game view
+        self.controller.queue.put(("time_manager_compute_figures", ))
+        self.t += 1
+        
+        # the game is going to stop, it's time to declare ending time
         if not self.continue_game and not self.ending_t:
             self.log("This turn is going to be the last one!")
             self.ending_t = self.t
 
+        # ending time is defined and all clients got it (if it's works correctly)
         elif not self.continue_game and self.ending_t:
             self.log("GAME ENDS NOW.")
             self.state = "end_game"
-            self.controller.queue.put(("game_stop_game", ))
+            self.controller.queue.put(("time_manager_stop_game", ))
 
     def stop_as_soon_as_possible(self):
         self.continue_game = False

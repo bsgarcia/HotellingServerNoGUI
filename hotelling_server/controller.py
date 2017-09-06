@@ -37,9 +37,6 @@ class Controller(Thread, Logger):
         self.graphic_queue = self.mod.ui.queue
         self.communicate = self.mod.ui.communicate
 
-        # Last command received
-        self.last_request = None
-
         # For giving go signal to server
         self.server_queue = self.server.queue
 
@@ -57,7 +54,6 @@ class Controller(Thread, Logger):
             self.log("Waiting for a message.")
             message = self.queue.get()
             self.handle_message(message)
-            self.last_request = message[0]
 
         self.close_program()
 
@@ -73,7 +69,7 @@ class Controller(Thread, Logger):
         if not self.running_server.is_set():
             self.server.start()
         
-        # Connect the server and run it
+        # Connect the server and 'serve forever'
         self.server_queue.put(("Go", ))
 
         self.ask_interface("show_frame_game", self.get_current_data())
@@ -95,7 +91,8 @@ class Controller(Thread, Logger):
         self.log("Close program.")
         self.running_game.set()
 
-        # For aborting launching of the (properly speaking) server if it was not launched
+        # For aborting launching of the (properly speaking) 
+        # server if it was not launched
         self.server_queue.put(("Abort",))
         self.server.shutdown()
         self.server.end()
@@ -116,6 +113,7 @@ class Controller(Thread, Logger):
         self.communicate.signal.emit()
 
     def stop_server(self):
+
         self.log("Stop server.")
         self.server.shutdown()
         self.server.wait_event.set()
@@ -192,7 +190,7 @@ class Controller(Thread, Logger):
 
     def ui_look_for_alive_players(self):
 
-        if self.game.game_ended():
+        if self.game.is_ended():
 
             self.ask_interface("show_frame_load_game_new_game")
             self.stop_server()
@@ -202,18 +200,15 @@ class Controller(Thread, Logger):
 
             self.ask_interface("force_to_quit_game")
 
-    # ------------------------------ Game interface (!!!) -------------------------------------- #
+    # ------------------------------ Time Manager interface ------------------------------------ #
 
-    def game_stop_game(self):
-        self.log("'Game' asks 'stop game'.")
+    def time_manager_stop_game(self):
+        self.log("'TimeManager' asks 'stop game'.")
         self.stop_game_second_phase()
 
-    # def update_tables_interface(self):
-        # self.log("'Game' asks 'update_tables_interface")
-        # self.ask_interface("update_tables")
+    def time_manager_compute_figures(self):
 
-    def compute_figures(self):
-        self.log("'Game' asks 'compute_figures'")
+        self.log("'TimeManager' asks 'compute_figures'")
 
         # needs to be moved elsewhere?
         self.statistician.compute_distance()
@@ -226,16 +221,16 @@ class Controller(Thread, Logger):
     def get_current_data(self):
 
         return {
-                "current_state": self.data.current_state,
-                "bot_firms_id": self.data.bot_firms_id,
-                "firms_id": self.data.firms_id,
-                "bot_customers_id": self.data.bot_customers_id,
-                "customers_id": self.data.customers_id,
-                "roles": self.data.roles,
-                "time_manager_t": self.data.controller.time_manager.t,
-                "statistics": self.statistician.data,
-                "map_server_id_game_id": self.data.map_server_id_game_id
-               }
+            "current_state": self.data.current_state,
+            "bot_firms_id": self.data.bot_firms_id,
+            "firms_id": self.data.firms_id,
+            "bot_customers_id": self.data.bot_customers_id,
+            "customers_id": self.data.customers_id,
+            "roles": self.data.roles,
+            "time_manager_t": self.data.controller.time_manager.t,
+            "statistics": self.statistician.data,
+            "map_server_id_game_id": self.data.map_server_id_game_id
+        }
 
     def get_parameters(self, key):
 

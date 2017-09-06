@@ -240,7 +240,6 @@ class Game(Logger):
         self.data.current_state["n_client"][firm_id] = n
         self.data.current_state["active_gets_results"] = True
 
-    def firm_passive_
     # --------------------------------| one liner methods |------------------------------------------ #
 
     def check_end(self, client_t):
@@ -255,7 +254,7 @@ class Game(Logger):
     def get_all_states(self):
         return self.data.current_state["firm_states"] + self.data.current_state["customer_states"]
 
-    def game_ended(self):
+    def is_ended(self):
         return all(state == "end_game" for state in self.get_all_states())
 
     # -----------------------------------| all devices demands |--------------------------------------#

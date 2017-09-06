@@ -1,4 +1,3 @@
-from os import getenv
 from multiprocessing import Queue, Event
 
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt
@@ -29,7 +28,7 @@ class UI(QWidget, Logger):
 
         self.frames = dict()
 
-        # refresh interface and update tables
+        # refresh interface and update data (tables, figures) 
         self.timer = QTimer(self)
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self.update_data)
@@ -47,9 +46,9 @@ class UI(QWidget, Logger):
     def dimensions(self):
 
         desktop = QDesktopWidget()
-        dimensions = desktop.screenGeometry()
-        w = dimensions.width() * 0.9
-        h = dimensions.height() * 0.8
+        dimensions = desktop.screenGeometry()  # get screen geometry
+        w = dimensions.width() * 0.9  # 90% of the screen width
+        h = dimensions.height() * 0.8  # 80% of the screen height
 
         return 300, 100, w, h
 
@@ -58,7 +57,7 @@ class UI(QWidget, Logger):
         self.controller_queue = self.mod.controller.queue
 
         self.frames["assign"] = \
-                assignement_view.AssignementFrame(parent=self)
+            assignement_view.AssignementFrame(parent=self)
 
         self.frames["parameters"] = \
             parametrization_view.ParametersFrame(parent=self)
@@ -113,10 +112,10 @@ class UI(QWidget, Logger):
         self.already_asked_for_saving_parameters = 1
 
         cond1 = sorted(self.mod.controller.data.param["parametrization"].items()) != \
-                sorted(self.frames["parameters"].get_parameters().items())
+            sorted(self.frames["parameters"].get_parameters().items())
 
         cond2 = sorted(self.mod.controller.data.param["assignement"]) != \
-                sorted(self.frames["assign"].get_parameters())
+            sorted(self.frames["assign"].get_parameters())
 
         if cond1 or cond2:
 

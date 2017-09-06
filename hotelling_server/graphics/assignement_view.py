@@ -161,13 +161,16 @@ class AssignementFrame(Logger, QWidget):
     def switch_line_edit(self, idx, from_line):
 
         if self.setup_done:
-
+            
+            # get desired widgets
             line_edit = self.parameters["assign"][idx][0].edit
             check_box = self.parameters["assign"][idx][2].check_box
-
+            
+            # if line edit (containing server ids) is not enabled
             if not line_edit.isEnabled():
                 self.enable_line_edit(line_edit, check_box)
 
+            # if line edit is enabled and signal comes from check box
             elif line_edit.isEnabled() and not from_line:
                 self.disable_line_edit(line_edit, check_box)
 

@@ -1,6 +1,5 @@
 import json
 from utils.utils import Logger
-from sys import getsizeof
 
 
 class Data(Logger):
@@ -12,23 +11,29 @@ class Data(Logger):
         # --- game variables --- #
 
         self.entries = [
-            "firm_positions", "firm_prices", "firm_profits", "firm_cumulative_profits",
-            "customer_firm_choices", "customer_extra_view_choices", "customer_utility", "n_client",
-            "customer_replies", "active_replied", "passive_gets_results", "active_gets_results",
-            "firm_status", "time_since_last_request_firms", "time_since_last_request_customers", "init_done",
+            "firm_positions", "firm_prices", "firm_profits", 
+            "firm_cumulative_profits", "customer_firm_choices",
+            "customer_extra_view_choices", "customer_utility", 
+            "n_client", "customer_replies", "active_replied",
+            "passive_gets_results", "active_gets_results", 
+            "firm_status", "time_since_last_request_firms",
+            "time_since_last_request_customers", "init_done", 
             "firm_states", "customer_states"
         ]
 
         self.history = {s: [] for s in self.entries}
 
         self.new()
+
         self.assignement = {}
         self.parametrization = {}
         self.roles = []
 
         # --- server parameters --- #
 
-        self.keys = ["network", "game", "folders", "map_android_id_server_id", "parametrization", "assignement"]
+        self.keys = ["network", "game", "folders", "map_android_id_server_id", 
+                "parametrization", "assignement"]
+
         self.param = {}
         self.setup()
 
@@ -66,25 +71,25 @@ class Data(Logger):
     def save(self):
 
         self.controller.backup.write(
-                {
-                    "history": self.history,
-                    "current_state": self.current_state,
-                    "firms_id": self.firms_id,
-                    "customers_id": self.customers_id,
-                    "bot_firms_id": self.bot_firms_id,
-                    "bot_customers_id": self.bot_customers_id,
-                    "map_server_id_android_id": self.map_server_id_android_id,
-                    "map_server_id_game_id": self.map_server_id_game_id,
-                    "server_id_in_use": self.server_id_in_use,
-                    "roles": self.roles,
-                    "time_manager_t": self.controller.time_manager.t,
-                    "time_manager_ending_t": self.controller.time_manager.ending_t,
-                    "continue": self.controller.time_manager.continue_game,
-                    "time_manager_state": self.controller.time_manager.state,
-                    "assignement": self.assignement,
-                    "parametrization": self.parametrization
-                }
-            )
+            {
+                "history": self.history,
+                "current_state": self.current_state,
+                "firms_id": self.firms_id,
+                "customers_id": self.customers_id,
+                "bot_firms_id": self.bot_firms_id,
+                "bot_customers_id": self.bot_customers_id,
+                "map_server_id_android_id": self.map_server_id_android_id,
+                "map_server_id_game_id": self.map_server_id_game_id,
+                "server_id_in_use": self.server_id_in_use,
+                "roles": self.roles,
+                "time_manager_t": self.controller.time_manager.t,
+                "time_manager_ending_t": self.controller.time_manager.ending_t,
+                "continue": self.controller.time_manager.continue_game,
+                "time_manager_state": self.controller.time_manager.state,
+                "assignement": self.assignement,
+                "parametrization": self.parametrization
+            }
+        )
 
     def write(self, key, game_id, value):
 
