@@ -1,6 +1,6 @@
 import sys
-from multiprocessing import Queue
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QStyleFactory
+from PyQt5.QtGui import QGuiApplication
 
 from hotelling_server.control import backup
 from . import interface, controller
@@ -8,8 +8,7 @@ from . import interface, controller
 
 class Model:
     """Model class.
-
-    Create the elements of the model, orchestrate their interaction.
+    Create the elements of the model, orchestrate their interactions.
     """
 
     def __init__(self):
@@ -20,7 +19,11 @@ class Model:
 
     def run(self):
 
-        self.controller.start()
-        self.ui.setup()
-        self.ui.show()
-        sys.exit(self.app.exec_())
+        try:
+            self.controller.start()
+            self.ui.setup()
+            self.ui.show()
+            sys.exit(self.app.exec_())
+
+        except Exception as e:
+            self.ui.fatal_error(error_message=str(e))

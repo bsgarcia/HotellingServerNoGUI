@@ -1,13 +1,13 @@
-from bots.bot_client import HotellingPlayer
+from bots.bot_client import HotellingBot
 
 
 def main():
 
-    n = 13
+    n = 1
 
     for i in range(n):
 
-        bc = HotellingPlayer(name="HotellingPlayer{}".format(i))
+        bc = HotellingBot(name="HotellingBot{}".format(i))
         bc.start()
 
 

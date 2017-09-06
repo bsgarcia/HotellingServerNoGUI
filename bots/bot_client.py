@@ -3,16 +3,22 @@ from threading import Thread, Event
 from multiprocessing import Queue
 import numpy as np
 import requests
-import http.client
-
-from utils.utils import Logger, function_name
+from utils.utils import Logger, function_name, get_local_ip
 
 
 class GenericBotClient(Thread, Logger):
 
     with open("hotelling_server/parameters/network.json") as file:
         network_parameters = json.load(file)
-    ip_address, port = "localhost", network_parameters["port"]
+
+    if network_parameters["ip_autodetect"] and not network_parameters["local"]:
+        ip_address = get_local_ip()
+    elif network_parameters["local"]:
+        ip_address = "localhost"
+    else:
+        ip_address = network_parameters["ip_adress"]
+
+    port = network_parameters["port"]
     delay_retry = 1
 
     def __init__(self):
@@ -75,9 +81,9 @@ class GenericBotClient(Thread, Logger):
         self.queue.put(("ask_server", self.server_demand))
 
 
-class HotellingPlayer(GenericBotClient):
+class HotellingBot(GenericBotClient):
 
-    name = "HotellingPlayer"
+    name = "HotellingBot"
 
     with open("hotelling_server/parameters/game.json") as f:
         game_parameters = json.load(f)
@@ -152,11 +158,14 @@ class HotellingPlayer(GenericBotClient):
 
         else:
             self.customer_attributes["min_price"] = 0
-            firm_choice = None
+            firm_choice = -1
 
         return firm_choice
 
-    def customer_end_of_turn(self):
+    def customer_end_of_turn(self, end):
+
+        if end:
+            self.end_game()
 
         self.t += 1
         self.ask_customer_firm_choices()
@@ -165,31 +174,34 @@ class HotellingPlayer(GenericBotClient):
 
     def firm_passive_beginning_of_turn(self):
 
-        self.ask_firm_opponent_choice()
+        self.ask_firm_passive_opponent_choice()
 
     def firm_active_beginning_of_turn(self, opp_position, opp_price):
 
         self.log("Active firm: opp position and price are {} and {}.".format(opp_position, opp_price))
         own_position = np.random.randint(1, self.n_positions)
         own_price = np.random.randint(1, self.firm_attributes["n_prices"])
-        self.ask_firm_choice_recording(own_position, own_price)
+        self.ask_firm_active_choice_recording(own_position, own_price)
 
-    def firm_active_end_of_turn(self, n_clients):
-
-        self.log("I am active and I got {} clients.".format(n_clients))
+    def firm_active_end_of_turn(self, choices, end):
+        n_client = len([int(c) for c in choices if c])
+        self.log("I am active and I got {} clients.".format(n_client))
+        if end:
+            self.end_game()
         self.t += 1
         self.firm_passive_beginning_of_turn()
 
-    def firm_passive_end_of_turn(self, opp_position, opp_price, n_clients):
-
-        self.log("I am passive and I got {} clients.".format(n_clients))
+    def firm_passive_end_of_turn(self, choices, end):
+        n_client = len([int(c) for c in choices if c])
+        self.log("I am passive and I got {} clients.".format(n_client))
+        if end:
+            self.end_game()
         self.t += 1
-        self.firm_active_beginning_of_turn(opp_position, opp_price)
+        self.firm_active_beginning_of_turn(self.opp_position, self.opp_price)
 
     # ------------------------- Init -------------------------------------------------- #
 
     def ask_init(self):
-
         fake_android_id = self.name
         self.state = "init"
         self.ask_server("ask_init/{}".format(fake_android_id))
@@ -199,6 +211,8 @@ class HotellingPlayer(GenericBotClient):
         if self.state == "init":
 
             self.game_id, self.t, self.role, self.position = args[:4]
+
+            self.score = args[-1]
 
             self.n_positions = self.game_parameters["n_positions"]
 
@@ -210,12 +224,12 @@ class HotellingPlayer(GenericBotClient):
                 self.firm_attributes["n_prices"] = self.game_parameters["n_prices"]
 
                 if self.firm_attributes["state"] == "active":
-                    self.queue.put(("firm_active_beginning_of_turn", initial_opponent_position, initial_opponent_price))
+                    self.queue.put(("firm_active_beginning_of_turn", initial_opponent_position, initial_opponent_price,))
                 else:
                     self.queue.put(("firm_passive_beginning_of_turn",))
 
             else:
-                self.customer_attributes["extra_view_possibilities"] = np.arange(0, self.n_positions, 2)
+                self.customer_attributes["extra_view_possibilities"] = np.arange(0, self.n_positions - 1)
                 self.queue.put(("ask_customer_firm_choices",))
 
         else:
@@ -229,7 +243,7 @@ class HotellingPlayer(GenericBotClient):
 
     def reply_customer_firm_choices(self, t, position_0, position_1, price_0, price_1):
         if self.t == t and self.state == "customer_firm_choices":
-            self.queue.put(("customer_choice", position_0, position_1, price_0, price_1))
+            self.queue.put(("customer_choice", position_0, position_1, price_0, price_1,))
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 
@@ -239,47 +253,65 @@ class HotellingPlayer(GenericBotClient):
             self.game_id, self.t, extra_view_choice, firm_choice
         ]]))
 
-    def reply_customer_choice_recording(self, t):
+    def reply_customer_choice_recording(self, t, end):
         if self.t == t and self.state == "customer_choice_recording":
-            self.queue.put(("customer_end_of_turn", ))
+            self.queue.put(("customer_end_of_turn", end,))
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 
     # ------------------------- Firm communication ------------------------------------ #
 
-    def ask_firm_opponent_choice(self):
+    def ask_firm_passive_opponent_choice(self):
         self.state = "firm_opponent_choice"
-        self.ask_server("ask_firm_opponent_choice/{}/{}".format(self.game_id, self.t))
+        self.ask_server("ask_firm_passive_opponent_choice/{}/{}".format(self.game_id, self.t))
 
-    def reply_firm_opponent_choice(self, t, position, price, n_clients):
+    def reply_firm_passive_opponent_choice(self, t, position, price):
         if self.t == t and self.state == "firm_opponent_choice":
-            self.queue.put(("firm_passive_end_of_turn", position, price, n_clients))
+            self.opp_position = position
+            self.opp_price = price
+            self.queue.put(("ask_firm_passive_customer_choices", ))
 
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 
-    def ask_firm_choice_recording(self, position, price):
+    def ask_firm_active_choice_recording(self, position, price):
         self.state = "firm_choice_recording"
-        self.ask_server("ask_firm_choice_recording/" + "/".join([str(i) for i in [self.game_id, self.t, position, price]]))
+        self.ask_server("ask_firm_active_choice_recording/" + "/".join([str(i) for i in [self.game_id, self.t, position, price]]))
 
-    def reply_firm_choice_recording(self, t):
+    def reply_firm_active_choice_recording(self, t):
         if self.t == t and self.state == "firm_choice_recording":
-            self.queue.put(("ask_firm_n_clients",))
+            self.queue.put(("ask_firm_active_customer_choices",))
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 
-    def ask_firm_n_clients(self):
-        self.state = "firm_n_clients"
-        self.ask_server("ask_firm_n_clients/" + "/".join([str(i) for i in [self.game_id, self.t]]))
+    def ask_firm_active_customer_choices(self):
+        self.state = "firm_customer_choices"
+        self.ask_server("ask_firm_active_customer_choices/" + "/".join([str(i) for i in [self.game_id, self.t]]))
 
-    def reply_firm_n_clients(self, t, n):
-        if self.t == t and self.state == "firm_n_clients":
-            self.queue.put(("firm_active_end_of_turn", n,))
+    def ask_firm_passive_customer_choices(self):
+        self.state = "firm_customer_choices"
+        self.ask_server("ask_firm_passive_customer_choices/" + "/".join([str(i) for i in [self.game_id, self.t]]))
+
+    def reply_firm_active_customer_choices(self, *args):
+        t = args[0]
+        choices = args[1:-1]
+        end = args[-1]
+        if self.t == t and self.state == "firm_customer_choices":
+            self.queue.put(("firm_active_end_of_turn", choices, end,))
+        else:
+            raise Exception("Time problem or state problem with: {}".format(function_name()))
+
+    def reply_firm_passive_customer_choices(self, *args):
+        t = args[0]
+        choices = args[1:-1]
+        end = args[-1]
+        if self.t == t and self.state == "firm_customer_choices":
+            self.queue.put(("firm_passive_end_of_turn", choices, end,))
         else:
             raise Exception("Time problem or state problem with: {}".format(function_name()))
 
 
 def main():
 
-    bc = HotellingPlayer()
+    bc = HotellingBot()
     bc.run()

@@ -1,7 +1,7 @@
 from multiprocessing import Queue, Event
 from threading import Thread
 
-from utils.utils import Logger 
+from utils.utils import Logger
 from hotelling_server.control import backup, data, game, server, statistician, id_manager, time_manager
 
 
@@ -18,6 +18,13 @@ class Controller(Thread, Logger):
         # For receiving inputs
         self.queue = Queue()
 
+        self.running_game = Event()
+        self.running_server = Event()
+
+        self.shutdown = Event()
+        self.fatal_error = Event()
+        self.continue_game = Event()
+
         self.data = data.Data(controller=self)
         self.time_manager = time_manager.TimeManager(controller=self)
         self.id_manager = id_manager.IDManager(controller=self)
@@ -32,11 +39,6 @@ class Controller(Thread, Logger):
 
         # For giving go signal to server
         self.server_queue = self.server.queue
-        self.running_game = Event()
-
-        self.shutdown = Event()
-        self.fatal_error = Event()
-        self.continue_game = Event()
 
     def run(self):
 
@@ -45,12 +47,10 @@ class Controller(Thread, Logger):
         self.log("Got go signal from UI: '{}'.".format(go_signal_from_ui))
 
         self.ask_interface("show_frame_setting_up")
-
-        # Launch server manager
-        self.server.start()
-        self.server_queue.put(("Go", ))
+        self.ask_interface("show_frame_load_game_new_game")
 
         while not self.shutdown.is_set():
+
             self.log("Waiting for a message.")
             message = self.queue.get()
             self.handle_message(message)
@@ -61,11 +61,16 @@ class Controller(Thread, Logger):
 
         self.ask_interface("show_frame_setting_up")
 
-        # Go signal for launching the (properly speaking) server
-
         self.fatal_error.clear()
         self.continue_game.set()
         self.running_game.set()
+
+        # Launch server thread
+        if not self.running_server.is_set():
+            self.server.start()
+        
+        # Connect the server and 'serve forever'
+        self.server_queue.put(("Go", ))
 
         self.ask_interface("show_frame_game", self.get_current_data())
 
@@ -76,26 +81,22 @@ class Controller(Thread, Logger):
         self.log("Received stop task")
         self.continue_game.clear()
         self.time_manager.stop_as_soon_as_possible()
-        # Wait then for a signal of the request manager for allowing interface to show a button to starting menu
 
     def stop_game_second_phase(self):
 
         self.running_game.clear()
-        self.ask_interface("show_frame_load_game_new_game")
 
     def close_program(self):
 
         self.log("Close program.")
-        self.shutdown.set()
         self.running_game.set()
 
-        # For aborting launching of the (properly speaking) server if it was not launched
+        # For aborting launching of the (properly speaking) 
+        # server if it was not launched
         self.server_queue.put(("Abort",))
-
-        # Stop server if it was running
-        self.server.end()
         self.server.shutdown()
-        self.log("Program closed.")
+        self.server.end()
+        self.shutdown.set()
 
     def fatal_error_of_communication(self):
 
@@ -111,23 +112,32 @@ class Controller(Thread, Logger):
         self.graphic_queue.put((instruction, arg))
         self.communicate.signal.emit()
 
+    def stop_server(self):
+
+        self.log("Stop server.")
+        self.server.shutdown()
+        self.server.wait_event.set()
+
     # ------------------------------- Message handling ----------------------------------------------- #
 
     def handle_message(self, message):
 
-        command = message[0]
-        args = message[1:]
-        if len(args):
-            eval("self.{}(*args)".format(command))
-        else:
-            eval("self.{}()".format(command))
+        try:
+            command = message[0]
+            args = message[1:]
+            if len(args):
+                eval("self.{}(*args)".format(command))
+            else:
+                eval("self.{}()".format(command))
 
-    # ------------------------------ Server interface ----------------------------------------------- #
+        except Exception as err:
+            self.ask_interface("fatal_error", str(err))
 
+    # ------------------------------ Server interface ----------------------------------------#
     def server_running(self):
         self.log("Server running.")
-        self.ask_interface("show_frame_load_game_new_game")
-        # self.server_queue.put(("reply", response))
+        self.running_server.set()
+        self.server.wait_event.clear()
 
     def server_error(self, error_message):
         self.log("Server error.")
@@ -137,23 +147,21 @@ class Controller(Thread, Logger):
         response = self.game.handle_request(server_data)
         self.server_queue.put(("reply", response))
 
-    # ------------------------------ UI interface (!!!) -------------------------------------- #
+    # ------------------------------ UI interface  -------------------------------------------#
 
-    def ui_run_game(self):
+    def ui_run_game(self, interface_parameters):
         self.log("UI ask 'run game'.")
+        self.data.new()
         self.time_manager.setup()
-        # parameters  = self.get_state_parameters()
-        # self.ask_interface("update_data_viewer", parameters)
-        self.game.new()
         self.launch_game()
+        self.game.new(interface_parameters)
 
     def ui_load_game(self, file):
+        self.log("UI ask 'load game'.")
         self.data.load(file)
         self.time_manager.setup()
-        # parameters  = self.get_state_parameters()
-        # self.ask_interface("update_data_viewer", parameters)
         self.launch_game()
-        self.log("UI ask 'load game'.")
+        self.game.load()
 
     def ui_stop_game(self):
         self.log("UI ask 'stop game'.")
@@ -167,19 +175,40 @@ class Controller(Thread, Logger):
         self.log("UI ask 'retry server'.")
         self.server_queue.put(("Go",))
 
-    def ui_save_interface_parameters(self, param):
+    def ui_save_game_parameters(self, key, data):
         self.log("UI ask 'save game parameters'.")
-        self.data.save_param("interface", param)
+        self.data.save_param(key, data)
         self.log("Save interface parameters.")
 
-    # ------------------------------ Game interface (!!!) -------------------------------------- #
+    def ui_stop_bots(self):
+        self.log("UI ask 'stop bots'.")
+        self.game.stop_bots()
 
-    def game_stop_game(self):
-        self.log("'Game' ask 'stop game'.")
+    def ui_stop_server(self):
+        self.log("UI asks 'stop server'.")
+        self.stop_server()
+
+    def ui_look_for_alive_players(self):
+
+        if self.game.is_ended():
+
+            self.ask_interface("show_frame_load_game_new_game")
+            self.stop_server()
+            self.game.stop_bots()
+
+        else:
+
+            self.ask_interface("force_to_quit_game")
+
+    # ------------------------------ Time Manager interface ------------------------------------ #
+
+    def time_manager_stop_game(self):
+        self.log("'TimeManager' asks 'stop game'.")
         self.stop_game_second_phase()
 
-    def update_data_viewer(self):
-        self.log("'Game' ask 'update_data_viewer'.")
+    def time_manager_compute_figures(self):
+
+        self.log("'TimeManager' asks 'compute_figures'")
 
         # needs to be moved elsewhere?
         self.statistician.compute_distance()
@@ -187,25 +216,23 @@ class Controller(Thread, Logger):
         self.statistician.compute_profits()
         self.statistician.compute_mean_utility()
 
-        parameters = self.get_current_data()
-        self.ask_interface("update_data_viewer", parameters)
-
     # ---------------------- Parameters management -------------------------------------------- #
-    
+
     def get_current_data(self):
-        
+
         return {
-                    "history": self.data.history,
-                    "current_state": self.data.current_state,
-                    "firms_id": self.data.firms_id,
-                    "customers_id": self.data.customers_id,
-                    "server_id_in_use": self.data.server_id_in_use,
-                    "roles": self.data.roles,
-                    "time_manager_t": self.data.controller.time_manager.t,
-                    "time_manager_state": self.data.controller.time_manager.state,
-                    "statistics": self.statistician.data
-               }
+            "current_state": self.data.current_state,
+            "bot_firms_id": self.data.bot_firms_id,
+            "firms_id": self.data.firms_id,
+            "bot_customers_id": self.data.bot_customers_id,
+            "customers_id": self.data.customers_id,
+            "roles": self.data.roles,
+            "time_manager_t": self.data.controller.time_manager.t,
+            "statistics": self.statistician.data,
+            "map_server_id_game_id": self.data.map_server_id_game_id
+        }
 
     def get_parameters(self, key):
 
         return self.data.param[key]
+

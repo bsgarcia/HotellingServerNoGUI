@@ -1,4 +1,4 @@
-from pylab import np, plt
+from pylab import np
 from utils.utils import Logger
 
 
@@ -10,6 +10,7 @@ class Statistician(Logger):
         self.data = {}
         self.pos = [[], []]
         self.profits = [[], []]
+        self.cumulative_profits = [[], []]
         self.mean_extra_view_choices = []
         self.mean_utility = []
 
@@ -29,6 +30,15 @@ class Statistician(Logger):
         self.mean_extra_view_choices.append(mean)
 
         self.data["customer_mean_extra_view_choices"] = self.mean_extra_view_choices
+
+    def compute_cumulative_profits(self):
+
+        profits = self.controller.data.current_state["firm_cumulative_profits"]
+
+        for i in range(len(self.profits)):
+            self.cumulative_profits[i].append(profits[i])
+
+        self.data["firm_cumulative_profits"] = self.cumulative_profits
 
     def compute_profits(self):
 
