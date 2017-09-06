@@ -73,6 +73,7 @@ class Game(Logger):
         self.launch_bots()
 
     # -------------------------------| bots |------------------------------------------------------------ #
+
     def launch_bots(self):
         """launch bots based on assignement settings"""
 
@@ -137,8 +138,9 @@ class Game(Logger):
         firm_choice = self.data.current_state["customer_firm_choices"][customer_id]
         view_choice = self.data.current_state["customer_extra_view_choices"][customer_id]
         price = self.data.current_state["firm_prices"][firm_choice]
+        found = int(firm_choice >= 0)
 
-        utility = int(firm_choice >= 0) * uc - ((ec * view_choice) + price)
+        utility = found * uc - ((ec * view_choice) + found * price)
 
         self.data.current_state["customer_utility"][customer_id] = utility
         self.data.current_state["customer_cumulative_utility"][customer_id] += utility
@@ -161,13 +163,12 @@ class Game(Logger):
 
         remaining = self.n_agents - (len(self.data.firms_id) + len(self.data.customers_id))
 
-        self.log("Number of missing agents: {}".format(remaining))
-
         if not remaining:
             self.data.current_state["init_done"] = True
             self.time_manager.check_state()
 
     # ---------------------------| firms sides methods |----------------------------------------- #
+
     def get_opponent_choices(self, opponent_id):
 
         if self.time_manager.t == 0:
@@ -175,6 +176,7 @@ class Game(Logger):
                 self.data.current_state[key][opponent_id]
                 for key in ["firm_positions", "firm_prices"]
             ]
+
         else:
             opponent_choices = [
                 self.data.history[key][self.time_manager.t - 1][opponent_id]
@@ -238,7 +240,9 @@ class Game(Logger):
         self.data.current_state["n_client"][firm_id] = n
         self.data.current_state["active_gets_results"] = True
 
+    def firm_passive_
     # --------------------------------| one liner methods |------------------------------------------ #
+
     def check_end(self, client_t):
         return int(client_t == self.time_manager.ending_t) if self.time_manager.ending_t else 0
 
@@ -421,7 +425,7 @@ class Game(Logger):
                     self.time_manager.t,
                     self.data.current_state["firm_positions"][opponent_id],
                     self.data.current_state["firm_prices"][opponent_id],
-                )
+                    )
 
                 self.time_manager.check_state()
                 self.data.current_state["firm_states"][firm_id] = function_name()
@@ -441,7 +445,7 @@ class Game(Logger):
                     t,
                     self.data.history["firm_positions"][t][opponent_id],
                     self.data.history["firm_prices"][t][opponent_id],
-                )
+                    )
 
     def ask_firm_passive_customer_choices(self, game_id, t):
 

@@ -211,7 +211,7 @@ class HotellingLocalBots(Logger, Thread):
         elif len(available_prices) == 2:
             distance = [abs(own_position - pos) for pos in available_positions]
             firms = [i + j for i, j in zip(available_prices, distance)]
-            firm_choice = np.random.randint(2) if firms[0] == firms[1] else np.argmax(firms)
+            firm_choice = np.random.randint(2) if firms[0] == firms[1] else np.argmin(firms)
 
         else:
             self.customer_attributes["min_price"] = 0

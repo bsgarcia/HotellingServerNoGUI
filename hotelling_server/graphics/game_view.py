@@ -201,9 +201,8 @@ class GameFrame(QWidget, Logger):
             # set row names (server ids, game ids)
             for i, idx in enumerate(rows):
                     self.table[role].setVerticalHeaderItem(
-                            i, QTableWidgetItem("Server id: {} | Game id: {}".format(*idx)
-                                    )
-                            )
+                        i, QTableWidgetItem("Server id: {} | Game id: {}".format(*idx))   
+                    )
 
             self.fill_state_table(role, rows, columns, parameters)
 
@@ -211,12 +210,17 @@ class GameFrame(QWidget, Logger):
 
         # for each game_id
         for x, (server_id, game_id) in enumerate(rows):
+
             # for each label
             for y, label in enumerate(columns):
+
                 data = parameters["current_state"][label]
                 cond = game_id in parameters["{}s_id".format(role)].keys()
+
                 if cond:
+
                     role_id = parameters["{}s_id".format(role)][game_id]
+
                     # if data is available
                     if len(data) > int(role_id):
                         string = str(data[role_id])

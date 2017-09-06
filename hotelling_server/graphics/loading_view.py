@@ -36,7 +36,7 @@ class LoadGameNewGameFrame(QWidget, Logger):
         self.widgets["localhost"] = QCheckBox()
         self.widgets["ip_address"] = QLineEdit()
         
-        # do ugly things to have the right alignement for each widget
+        # do ugly things to get the right alignement for each widget
         for i, (label, widget) in enumerate(self.widgets.items()):
 
             grid_layout.addWidget(QLabel(label), i, 0, alignment=Qt.AlignLeft)
