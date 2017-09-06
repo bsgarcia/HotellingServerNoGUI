@@ -311,7 +311,7 @@ class GameFrame(QWidget, Logger):
     def update_statistics(self, data):
 
         for key, value in self.plot_layout.items():
-            if key in data.keys():
+            if key in data.keys() and not value.isHidden():
                 value.update_figure(data[key])
 
     def update_done_playing(self, done_playing):

@@ -36,7 +36,7 @@ class Controller(Thread, Logger):
         # For giving instructions to graphic process
         self.graphic_queue = self.mod.ui.queue
         self.communicate = self.mod.ui.communicate
-       
+
         # Last command received
         self.last_request = None
 
@@ -69,10 +69,11 @@ class Controller(Thread, Logger):
         self.continue_game.set()
         self.running_game.set()
 
-        # Launch server manager
+        # Launch server thread
         if not self.running_server.is_set():
             self.server.start()
-
+        
+        # Connect the server and run it
         self.server_queue.put(("Go", ))
 
         self.ask_interface("show_frame_game", self.get_current_data())
@@ -115,9 +116,9 @@ class Controller(Thread, Logger):
         self.communicate.signal.emit()
 
     def stop_server(self):
-        self.server.wait_event.set()
-        self.server.shutdown()
         self.log("Stop server.")
+        self.server.shutdown()
+        self.server.wait_event.set()
 
     # ------------------------------- Message handling ----------------------------------------------- #
 
@@ -134,10 +135,11 @@ class Controller(Thread, Logger):
         except Exception as err:
             self.ask_interface("fatal_error", str(err))
 
-    # ------------------------------ Server interface -----------------------#
+    # ------------------------------ Server interface ----------------------------------------#
     def server_running(self):
         self.log("Server running.")
         self.running_server.set()
+        self.server.wait_event.clear()
 
     def server_error(self, error_message):
         self.log("Server error.")
@@ -147,12 +149,13 @@ class Controller(Thread, Logger):
         response = self.game.handle_request(server_data)
         self.server_queue.put(("reply", response))
 
-    # ------------------------------ UI interface (!!!) ----------------------#
+    # ------------------------------ UI interface  -------------------------------------------#
 
     def ui_run_game(self, interface_parameters):
         self.log("UI ask 'run game'.")
-        self.launch_game()
+        self.data.new()
         self.time_manager.setup()
+        self.launch_game()
         self.game.new(interface_parameters)
 
     def ui_load_game(self, file):
@@ -183,14 +186,20 @@ class Controller(Thread, Logger):
         self.log("UI ask 'stop bots'.")
         self.game.stop_bots()
 
+    def ui_stop_server(self):
+        self.log("UI asks 'stop server'.")
+        self.stop_server()
+
     def ui_look_for_alive_players(self):
 
         if self.game.game_ended():
+
+            self.ask_interface("show_frame_load_game_new_game")
             self.stop_server()
             self.game.stop_bots()
-            self.ask_interface("show_frame_load_game_new_game")
 
         else:
+
             self.ask_interface("force_to_quit_game")
 
     # ------------------------------ Game interface (!!!) -------------------------------------- #

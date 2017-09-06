@@ -5,14 +5,14 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QPushButton,
 from utils.utils import Logger
 
 
-class AssignementFrame(QWidget, Logger):
+class AssignementFrame(Logger, QWidget):
 
     name = "AssignementFrame"
 
     def __init__(self, parent):
 
         # noinspection PyArgumentList
-        QWidget.__init__(self, parent=parent)
+        super().__init__(parent=parent)
 
         self.layout = QVBoxLayout()
 
@@ -114,10 +114,10 @@ class AssignementFrame(QWidget, Logger):
 
     def push_next_button(self):
         
-        not_safe = self.check_assignement_validity()
-
-        if not_safe:
-            self.show_warning(msg="Wrong input for server id: '{}'".format(not_safe))
+        warning = self.check_assignement_validity()
+        
+        if warning:
+            self.show_warning(msg=warning)
 
         else:
             self.log("Push 'next' button.")
@@ -135,9 +135,18 @@ class AssignementFrame(QWidget, Logger):
             self.parent().show_frame_load_game_new_game()
 
     def check_assignement_validity(self):
-        for (server_id, role, bot) in self.get_parameters():
+
+        assignement = list(enumerate(self.get_parameters()))
+
+        for i, (server_id, role, bot) in assignement:
+
             if server_id != "Bot" and not server_id.isdigit():
-                return server_id
+                return "Wrong input: '{}'.".format(server_id)
+
+            for j, (other_id, other_role, other_bot) in assignement:
+
+                if other_id == server_id and other_id != "Bot" and i != j:
+                    return "Two identical inputs: '{}'.".format(server_id)
 
     def get_parameters(self):
         return [[i.get_value(), j.get_value(), k.get_value()] for i, j, k in self.parameters["assign"]]
@@ -184,8 +193,11 @@ class AssignementFrame(QWidget, Logger):
         self.next_button.setFocus()
         self.next_button.setEnabled(True)
 
+    # --------------------------------- Widgets used in assignement menu --------------------------------- # 
+
 
 class RadioParameter(object):
+    """role (firm/customer)"""
 
     def __init__(self, checked):
 
@@ -225,6 +237,7 @@ class RadioParameter(object):
 
 
 class IntParameter(object):
+    """server_id"""
 
     def __init__(self, parent, value, idx):
 
@@ -258,6 +271,7 @@ class IntParameter(object):
 
 
 class CheckParameter(object):
+    """bot or not"""
 
     def __init__(self, parent, checked, idx):
 

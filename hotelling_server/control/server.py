@@ -4,7 +4,7 @@ from multiprocessing import Queue, Event
 from threading import Thread
 import time
 
-from utils.utils import Logger, get_local_ip
+from utils.utils import Logger
 
 
 class HttpHandler(http.server.SimpleHTTPRequestHandler, Logger):
@@ -52,8 +52,9 @@ class HttpHandler(http.server.SimpleHTTPRequestHandler, Logger):
 
 class TCPGamingServer(Logger, socketserver.TCPServer):
 
+    allow_reuse_address = True
+
     def __init__(self, parent, server_address, cont, controller_queue, server_queue):
-        self.allow_reuse_address = True
         self.server_queue = server_queue
         self.cont = cont
         self.controller_queue = controller_queue
@@ -86,6 +87,7 @@ class Server(Thread, Logger):
         self.tcp_server = None
 
         self.timer = Timer(self, 1, self.check_all_client_time_since_last_request)
+
         self.timer.start()
 
     def run(self):
@@ -113,35 +115,17 @@ class Server(Thread, Logger):
                     server_queue=self.queue
                 )
 
-                self.tcp_server.timeout = 3
-
                 self.controller_queue.put(("server_running", ))
-
-                self.wait_event.clear()
 
                 self.tcp_server.serve_forever()
 
-                # self.run_server()
-
         self.log("I'm dead.")
-
-    def run_server(self):
-
-        while True:
-
-            self.tcp_server.handle_request()
-
-            if self.wait_event.is_set():
-                self.tcp_server.server_close()
-                break
-
-        self.log("Shutdown.")
 
     def shutdown(self):
 
         if self.tcp_server is not None:
-            self.tcp_server.shutdown()
             self.tcp_server.server_close()
+            self.tcp_server.shutdown()
             self.log("Shutdown.")
 
     def end(self):

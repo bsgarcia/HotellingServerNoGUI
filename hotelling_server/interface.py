@@ -31,7 +31,7 @@ class UI(QWidget, Logger):
 
         # refresh interface and update tables
         self.timer = QTimer(self)
-        self.timer.setInterval(2000)
+        self.timer.setInterval(1000)
         self.timer.timeout.connect(self.update_data)
         self.timer.start()
 
@@ -129,7 +129,7 @@ class UI(QWidget, Logger):
                 self.log('Saving of parameters aborted.')
     
     def update_data(self):
-
+        
         self.update_tables()
         self.update_figures()
 
@@ -277,7 +277,9 @@ class UI(QWidget, Logger):
     def unexpected_client_id(self, client_id):
 
         msg = "Unexpected id: '{}'.".format(client_id)
+
         question = "Do you want to go back to assignement menu?"
+
         yes = "Quit game and go back to assignement"
         no = "Do not quit"
 
@@ -362,7 +364,7 @@ class UI(QWidget, Logger):
         self.controller_queue.put(("ui_stop_bots", ))
 
     def stop_server(self):
-        self.controller_queue.put(("stop_server",))
+        self.controller_queue.put(("ui_stop_server",))
 
     def look_for_alive_players(self):
         self.controller_queue.put(("ui_look_for_alive_players", ))

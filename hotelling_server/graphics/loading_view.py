@@ -35,7 +35,8 @@ class LoadGameNewGameFrame(QWidget, Logger):
 
         self.widgets["localhost"] = QCheckBox()
         self.widgets["ip_address"] = QLineEdit()
-
+        
+        # do ugly things to have the right alignement for each widget
         for i, (label, widget) in enumerate(self.widgets.items()):
 
             grid_layout.addWidget(QLabel(label), i, 0, alignment=Qt.AlignLeft)
@@ -73,11 +74,8 @@ class LoadGameNewGameFrame(QWidget, Logger):
         self.widgets["localhost"].stateChanged.connect(self.switch_line_edit)
 
     def switch_line_edit(self):
-
-        if self.widgets["localhost"].isChecked():
-            self.widgets["ip_address"].setEnabled(False)
-        else:
-            self.widgets["ip_address"].setEnabled(True)
+        
+        self.widgets["ip_address"].setEnabled(not self.widgets["localhost"].isChecked())
 
     def click_new_game(self):
 

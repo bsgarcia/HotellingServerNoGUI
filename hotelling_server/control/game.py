@@ -39,9 +39,6 @@ class Game(Logger):
 
         self.unexpected_id_list = []
 
-        # reset data in case a game was previously launched during the same session
-        self.data.new()
-
         self.data.roles = ["" for i in range(self.n_agents)]
         self.data.current_state["time_since_last_request_firms"] = ["" for i in range(self.n_firms)]
         self.data.current_state["time_since_last_request_customers"] = ["" for i in range(self.n_customers)]
@@ -296,7 +293,7 @@ class Game(Logger):
         position = customer_id + 1
         exploration_cost = self.interface_parameters["exploration_cost"]
         utility_consumption = self.interface_parameters["utility_consumption"]
-        utility = self.data.current_state["customer_utility"][customer_id]
+        utility = self.data.current_state["customer_cumulative_utility"][customer_id]
 
         self.check_remaining_agents()
         self.data.current_state["customer_states"][customer_id] = function_name()
@@ -372,9 +369,9 @@ class Game(Logger):
 
         if t == self.time_manager.t:
 
-            if not self.data.current_state["customer_replies"][customer_id]:
+            out = self.reply(function_name(), self.time_manager.t, self.check_end(t))
 
-                self.data.current_state["customer_replies"][customer_id] = 1
+            if not self.data.current_state["customer_replies"][customer_id]:
 
                 self.data.current_state["customer_extra_view_choices"][customer_id] = extra_view
 
@@ -384,7 +381,7 @@ class Game(Logger):
                     self.data.current_state["customer_firm_choices"][customer_id] = -1
 
                 self.compute_utility(customer_id)
-
+                self.data.current_state["customer_replies"][customer_id] = 1
                 self.time_manager.check_state()
 
             else:
@@ -396,7 +393,7 @@ class Game(Logger):
             else:
                 self.data.current_state["customer_states"][customer_id] = function_name()
 
-            return self.reply(function_name(), self.time_manager.t, self.check_end(t))
+            return out
 
         elif t > self.time_manager.t:
             return "error/time_is_superior"
@@ -417,7 +414,7 @@ class Game(Logger):
         if t == self.time_manager.t:
 
             if self.time_manager.state == "active_has_played" or \
-            self.time_manager.state == "active_has_played_and_all_customers_replied":
+                self.time_manager.state == "active_has_played_and_all_customers_replied":
 
                 out = self.reply(
                     function_name(),
