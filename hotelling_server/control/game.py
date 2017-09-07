@@ -227,8 +227,8 @@ class Game(Logger):
         self.data.current_state["active_replied"] = True
         self.data.current_state["firm_states"][firm_id] = state
 
-    def firm_active_second_step(self, game_id, firm_id, t):
-        """firm active second call of a turn"""
+    def firm_end_of_turn(self, game_id, firm_id, t, status):
+        """both firm end of turn"""
 
         opponent_id = (firm_id + 1) % 2
 
@@ -238,7 +238,17 @@ class Game(Logger):
         self.data.current_state["firm_cumulative_profits"][firm_id] += n * price
         self.data.current_state["firm_profits"][firm_id] = n * price
         self.data.current_state["n_client"][firm_id] = n
-        self.data.current_state["active_gets_results"] = True
+        self.data.current_state["{}_gets_results".format(status)] = True
+
+    # --------------------------------| customer sides methods |------------------------------------- #
+
+    def customer_end_of_turn(self, customer_id, extra_view, firm):
+
+        self.data.current_state["customer_extra_view_choices"][customer_id] = extra_view
+        self.data.current_state["customer_firm_choices"][customer_id] = int(firm)
+        self.data.current_state["customer_replies"][customer_id] = 1
+
+        self.compute_utility(customer_id)
 
     # --------------------------------| one liner methods |------------------------------------------ #
 
@@ -256,12 +266,19 @@ class Game(Logger):
 
     def is_ended(self):
         return all(state == "end_game" for state in self.get_all_states())
+    
+    def get_prices_and_positions(self):
+        return self.data.current_state["firm_positions"], self.data.current_state["firm_prices"]
+    
+    def set_state(self, role, role_id, state):
+        self.data.current_state["{}_states".format(role)][role_id] = state
 
-    # -----------------------------------| all devices demands |--------------------------------------#
+    # -----------------------------------| init methods |--------------------------------------#
 
     def ask_init(self, android_id):
 
-        server_id, game_id = self.controller.id_manager.get_ids_from_android_id(android_id, max_n=len(self.data.roles))
+        server_id, game_id = \
+            self.controller.id_manager.get_ids_from_android_id(android_id, max_n=len(self.data.roles))
 
         if game_id != -1:
 
@@ -290,19 +307,26 @@ class Game(Logger):
         else:
             customer_id = self.data.customers_id[game_id]
 
-        if self.game_ended():
+        if self.is_ended():
             return "error/game_ended"
+
+        position, exploration_cost, utility_consumption, utility = self.get_customers_data(customer_id)
+
+        self.check_remaining_agents()
+
+        self.set_state(role="customer", role_id=customer_id, state=function_name())
+
+        return self.reply(func_name, game_id, self.time_manager.t, role, position, exploration_cost,
+                utility_consumption, utility)
+
+    def get_customers_data(self, customer_id):
 
         position = customer_id + 1
         exploration_cost = self.interface_parameters["exploration_cost"]
         utility_consumption = self.interface_parameters["utility_consumption"]
         utility = self.data.current_state["customer_cumulative_utility"][customer_id]
 
-        self.check_remaining_agents()
-        self.data.current_state["customer_states"][customer_id] = function_name()
-
-        return self.reply(func_name, game_id, self.time_manager.t, role, position, exploration_cost,
-                utility_consumption, utility)
+        return position, exploration_cost, utility_consumption, utility
 
     def init_firms(self, func_name, game_id, role):
 
@@ -314,8 +338,19 @@ class Game(Logger):
         else:
             firm_id = self.data.firms_id[game_id]
 
-        if self.game_ended():
+        if self.is_ended():
             return "error/game_ended"
+
+        state, position, price, opp_position, opp_price, profits = self.get_firms_data(firm_id)
+
+        self.check_remaining_agents()
+
+        self.set_state(role="firm", role_id=firm_id, state=function_name())
+
+        return self.reply(func_name, game_id, self.time_manager.t, role, position, state, price,
+                          opp_position, opp_price, profits)
+
+    def get_firms_data(self, firm_id):
 
         opponent_id = (firm_id + 1) % 2
 
@@ -327,11 +362,7 @@ class Game(Logger):
         opp_price = self.data.current_state["firm_prices"][opponent_id]
         profits = self.data.current_state["firm_cumulative_profits"][firm_id]
 
-        self.check_remaining_agents()
-        self.data.current_state["firm_states"][firm_id] = function_name()
-
-        return self.reply(func_name, game_id, self.time_manager.t, role, position, state, price,
-                          opp_position, opp_price, profits)
+        return state, position, price, opp_position, opp_price, profits
 
     # -----------------------------------| customer demands |--------------------------------------#
 
@@ -345,9 +376,9 @@ class Game(Logger):
         if t == self.time_manager.t:
             if self.time_manager.state == "active_has_played":
 
-                x = self.data.current_state["firm_positions"]
-                prices = self.data.current_state["firm_prices"]
-                self.data.current_state["customer_states"][customer_id] = function_name()
+                x, prices = self.get_prices_and_positions()
+
+                self.set_state(role="customer", role_id=customer_id, state=function_name())
 
                 return self.reply(function_name(), self.time_manager.t, x[0], x[1], prices[0], prices[1])
             else:
@@ -376,25 +407,15 @@ class Game(Logger):
 
             if not self.data.current_state["customer_replies"][customer_id]:
 
-                self.data.current_state["customer_extra_view_choices"][customer_id] = extra_view
-
-                if firm != '-1':
-                    self.data.current_state["customer_firm_choices"][customer_id] = firm
-                else:
-                    self.data.current_state["customer_firm_choices"][customer_id] = -1
-
-                self.compute_utility(customer_id)
-                self.data.current_state["customer_replies"][customer_id] = 1
+                self.customer_end_of_turn(customer_id=customer_id, extra_view=extra_view, firm=firm)
                 self.time_manager.check_state()
 
             else:
                 self.log("Customer {} asks for recording his choice as t {} but already replied"
                          .format(game_id, t, extra_view, firm))
 
-            if self.check_end(t):
-                self.data.current_state["customer_states"][customer_id] = "end_game"
-            else:
-                self.data.current_state["customer_states"][customer_id] = function_name()
+            state = "end_game" if self.check_end(t) else function_name()
+            self.set_state(role="customer", role_id=customer_id, state=state)
 
             return out
 
@@ -424,10 +445,10 @@ class Game(Logger):
                     self.time_manager.t,
                     self.data.current_state["firm_positions"][opponent_id],
                     self.data.current_state["firm_prices"][opponent_id],
-                    )
+                )
 
                 self.time_manager.check_state()
-                self.data.current_state["firm_states"][firm_id] = function_name()
+                self.set_state(role="firm", role_id=firm_id, state=function_name())
 
                 return out
 
@@ -440,40 +461,33 @@ class Game(Logger):
         else:
 
             return self.reply(
-                    function_name(),
-                    t,
-                    self.data.history["firm_positions"][t][opponent_id],
-                    self.data.history["firm_prices"][t][opponent_id],
-                    )
+                function_name(),
+                t,
+                self.data.history["firm_positions"][t][opponent_id],
+                self.data.history["firm_prices"][t][opponent_id],
+            )
 
     def ask_firm_passive_customer_choices(self, game_id, t):
 
         firm_id = self.data.firms_id[game_id]
-        opponent_id = (firm_id + 1) % 2
 
         self.log("Firm passive {} asks for its number of clients.".format(firm_id))
         self.log("Client's time is {}, server's time is {}.".format(t, self.time_manager.t))
 
         if t == self.time_manager.t:
+
             if self.time_manager.state == "active_has_played_and_all_customers_replied":
+
                 if not self.data.current_state["passive_gets_results"]:
 
-                    if self.check_end(t):
-                        self.data.current_state["firm_states"][firm_id] = "end_game"
-                    else:
-                        self.data.current_state["firm_states"][firm_id] = function_name()
-
-                    price = self.data.current_state["firm_prices"][firm_id]
-
                     choices = self.get_client_choices(firm_id, t)
-                    n, n_opp = self.get_nb_of_clients(firm_id, opponent_id, t)
 
                     out = self.reply(function_name(), self.time_manager.t, choices, self.check_end(t))
+                    
+                    self.firm_end_of_turn(game_id=game_id, firm_id=firm_id, t=t, status="passive")
 
-                    self.data.current_state["firm_cumulative_profits"][firm_id] += n * price
-                    self.data.current_state["firm_profits"][firm_id] = n * price
-                    self.data.current_state["n_client"][firm_id] = n
-                    self.data.current_state["passive_gets_results"] = True
+                    state = "end_game" if self.check_end(t) else function_name()
+                    self.set_state(role="firm", role_id=firm_id, state=state)
 
                     self.time_manager.check_state()
 
@@ -506,6 +520,9 @@ class Game(Logger):
             if not self.data.current_state["active_replied"]:
 
                 self.firm_active_first_step(firm_id, price, position, function_name())
+
+                self.set_state(role="firm", role_id=firm_id, state=function_name())
+
                 self.time_manager.check_state()
 
             return out
@@ -532,12 +549,10 @@ class Game(Logger):
 
                 out = self.reply(function_name(), self.time_manager.t, choices, self.check_end(t))
 
-                self.firm_active_second_step(game_id, firm_id, t)
-
-                if self.check_end(t):
-                    self.data.current_state["firm_states"][firm_id] = "end_game"
-                else:
-                    self.data.current_state["firm_states"][firm_id] = function_name()
+                self.firm_end_of_turn(game_id=game_id, firm_id=firm_id, t=t, status="active")
+                
+                state = "end_game" if self.check_end(t) else function_name()
+                self.set_state(role="firm", role_id=firm_id, state=state)
 
                 self.time_manager.check_state()
 

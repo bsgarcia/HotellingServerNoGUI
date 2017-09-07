@@ -140,7 +140,7 @@ class UI(QWidget, Logger):
     def update_tables(self, *args):
 
         data = self.mod.controller.get_current_data()
-        self.frames["game"].update_state_table(data)
+        self.frames["game"].update_tables(data)
         self.frames["game"].set_trial_number(data["time_manager_t"])
 
     def show_frame_load_game_new_game(self, *args):
