@@ -94,7 +94,8 @@ class LoadGameNewGameFrame(QWidget, Logger):
         self.open_file_dialog()
 
     def click_devices(self):
-
+        
+        self.write_network_parameters()
         self.set_buttons_activation(False)
         self.parent().show_frame_devices()
 
