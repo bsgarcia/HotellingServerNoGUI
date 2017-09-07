@@ -24,6 +24,7 @@ class Controller(Thread, Logger):
         self.shutdown = Event()
         self.fatal_error = Event()
         self.continue_game = Event()
+        self.device_scanning_event = Event()
 
         self.data = data.Data(controller=self)
         self.time_manager = time_manager.TimeManager(controller=self)
@@ -118,6 +119,14 @@ class Controller(Thread, Logger):
         self.server.shutdown()
         self.server.wait_event.set()
 
+    def scan_network_for_new_devices(self):
+
+        if not self.running_server.is_set():
+            self.server.start()
+
+        self.server_queue.put(("Go", ))
+        self.device_scanning_event.set()
+
     # ------------------------------- Message handling ----------------------------------------------- #
 
     def handle_message(self, message):
@@ -144,8 +153,23 @@ class Controller(Thread, Logger):
         self.ask_interface("server_error", error_message)
 
     def server_request(self, server_data):
-        response = self.game.handle_request(server_data)
-        self.server_queue.put(("reply", response))
+        
+        if self.device_scanning_event.is_set():
+
+            android_id = server_data.split("/")[-1]
+            self.id_manager.get_ids_from_android_id(android_id, max_n=1)
+
+            response = "error/adding_new_device"
+            self.server_queue.put(("reply", response))
+            self.stop_server()
+
+            self.device_scanning_event.clear()
+            self.ask_interface("stop_scanning_network")
+            
+        else:
+
+            response = self.game.handle_request(server_data)
+            self.server_queue.put(("reply", response))
 
     # ------------------------------ UI interface  -------------------------------------------#
 

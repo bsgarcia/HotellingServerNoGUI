@@ -28,6 +28,7 @@ class LoadGameNewGameFrame(QWidget, Logger):
 
         self.buttons["new"].clicked.connect(self.click_new_game)
         self.buttons["load"].clicked.connect(self.click_load_game)
+        self.buttons["devices"].clicked.connect(self.click_devices)
 
     def fill_layout(self):
 
@@ -52,11 +53,14 @@ class LoadGameNewGameFrame(QWidget, Logger):
 
         self.buttons["new"] = QPushButton("New game")
         self.buttons["load"] = QPushButton("Load game")
+        self.buttons["devices"] = QPushButton("Devices management")
 
         horizontal_layout.addWidget(self.buttons["new"], alignment=Qt.AlignCenter)
         horizontal_layout.addWidget(self.buttons["load"], alignment=Qt.AlignCenter)
 
         self.layout.addLayout(horizontal_layout)
+        self.layout.addWidget(self.buttons["devices"], alignment=Qt.AlignBottom)
+
         self.setLayout(self.layout)
 
     def prepare(self):
@@ -88,6 +92,11 @@ class LoadGameNewGameFrame(QWidget, Logger):
         self.write_network_parameters()
         self.set_buttons_activation(False)
         self.open_file_dialog()
+
+    def click_devices(self):
+
+        self.set_buttons_activation(False)
+        self.parent().show_frame_devices()
 
     def set_buttons_activation(self, value):
 

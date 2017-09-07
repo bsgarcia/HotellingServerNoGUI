@@ -3,7 +3,7 @@ from multiprocessing import Queue, Event
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QMessageBox, QDesktopWidget
 
-from .graphics import game_view, loading_view, parametrization_view, setting_up_view, assignement_view
+from .graphics import game_view, loading_view, parametrization_view, setting_up_view, assignement_view, devices_view
 from utils.utils import Logger
 
 
@@ -55,6 +55,9 @@ class UI(QWidget, Logger):
     def setup(self):
 
         self.controller_queue = self.mod.controller.queue
+
+        self.frames["devices"] = \
+            devices_view.DevicesFrame(parent=self)
 
         self.frames["assign"] = \
             assignement_view.AssignementFrame(parent=self)
@@ -129,8 +132,9 @@ class UI(QWidget, Logger):
     
     def update_data(self):
         
-        self.update_tables()
-        self.update_figures()
+        if self.mod.controller.running_game.is_set():
+            self.update_tables()
+            self.update_figures()
 
     def update_figures(self, *args):
 
@@ -142,6 +146,14 @@ class UI(QWidget, Logger):
         data = self.mod.controller.get_current_data()
         self.frames["game"].update_tables(data)
         self.frames["game"].set_trial_number(data["time_manager_t"])
+
+    def show_frame_devices(self, *args):
+
+        for frame in self.frames.values():
+            frame.hide()
+
+        self.frames["devices"].prepare()
+        self.frames["devices"].show()
 
     def show_frame_load_game_new_game(self, *args):
 
@@ -302,6 +314,11 @@ class UI(QWidget, Logger):
         else:
             if not self.close():
                 self.manage_fatal_error_of_communication()
+                
+
+    def stop_scanning_network(self, *args):
+        self.log("Controller asks 'stop scanning network'")
+        self.frames["devices"].close_loading()
 
     def look_for_msg(self):
 
