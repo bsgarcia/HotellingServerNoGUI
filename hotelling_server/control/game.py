@@ -39,26 +39,34 @@ class Game(Logger):
 
         self.unexpected_id_list = []
 
-        self.data.roles = ["" for i in range(self.n_agents)]
-        self.data.current_state["time_since_last_request_firms"] = ["" for i in range(self.n_firms)]
-        self.data.current_state["time_since_last_request_customers"] = ["" for i in range(self.n_customers)]
-        self.data.current_state["firm_states"] = ["" for i in range(self.n_firms)]
-        self.data.current_state["customer_states"] = ["" for i in range(self.n_customers)]
+        self.data.roles = [""] * self.n_agents
+
+        self.data.current_state["time_since_last_request_firms"] = [""] * self.n_firms
+        self.data.current_state["time_since_last_request_customers"] = [""] * self.n_customers
+        self.data.current_state["firm_states"] = [""] * self.n_firms
+        self.data.current_state["customer_states"] = [""] * self.n_customers
 
         self.data.current_state["firm_status"] = ["active", "passive"]
         self.data.current_state["n_client"] = [0, 0]
         self.data.current_state["firm_profits"] = [0, 0]
         self.data.current_state["firm_cumulative_profits"] = [0, 0]
 
-        self.data.current_state["firm_positions"] = np.random.choice(range(1, self.game_parameters["n_positions"]),
-                size=2, replace=False)
-        self.data.current_state["firm_prices"] = np.random.randint(1, self.game_parameters["n_prices"], size=2)
+        self.data.current_state["firm_positions"] = \
+            np.random.choice(range(1, self.game_parameters["n_positions"]), size=2, replace=False)
 
-        self.data.current_state["customer_extra_view_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
-        self.data.current_state["customer_firm_choices"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
-        self.data.current_state["customer_utility"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
-        self.data.current_state["customer_replies"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
-        self.data.current_state["customer_cumulative_utility"] = np.zeros(self.game_parameters["n_customers"], dtype=int)
+        self.data.current_state["firm_prices"] = \
+            np.random.randint(1, self.game_parameters["n_prices"], size=2)
+        
+        # init customer current_state arrays
+        customer_keys = ("customer_extra_view_choices",
+            "customer_firm_choices",
+            "customer_utility",
+            "customer_replies",
+            "customer_cumulative_utility")
+
+        for key in customer_keys:
+            self.data.current_state[key] = \
+                np.zeros(self.game_parameters["n_customers"], dtype=int)
 
         self.launch_bots()
 
@@ -89,7 +97,8 @@ class Game(Logger):
                 n_agents_to_wait += 1
 
         if n_firms > 0 or n_customers > 0:
-            self.bots = HotellingLocalBots(self.controller, n_firms, n_customers, n_agents_to_wait)
+            self.bots = \
+                HotellingLocalBots(self.controller, n_firms, n_customers, n_agents_to_wait)
             self.bots.start()
 
     def stop_bots(self):
@@ -100,7 +109,7 @@ class Game(Logger):
     def handle_request(self, request):
 
         self.log("Got request: '{}'.".format(request))
-        self.log("CURRENT STATE: {}".format(self.time_manager.state))
+        self.log("Current state: {}".format(self.time_manager.state))
 
         # save data in case server shuts down
         self.data.save()
@@ -130,20 +139,6 @@ class Game(Logger):
         return to_client
 
     # -----------------------| game sides methods |------------------------------------------- #
-
-    def compute_utility(self, customer_id):
-
-        uc = self.interface_parameters["utility_consumption"]
-        ec = self.interface_parameters["exploration_cost"]
-        firm_choice = self.data.current_state["customer_firm_choices"][customer_id]
-        view_choice = self.data.current_state["customer_extra_view_choices"][customer_id]
-        price = self.data.current_state["firm_prices"][firm_choice]
-        found = int(firm_choice >= 0)
-
-        utility = found * uc - ((ec * view_choice) + found * price)
-
-        self.data.current_state["customer_utility"][customer_id] = utility
-        self.data.current_state["customer_cumulative_utility"][customer_id] += utility
 
     def get_role(self, server_id):
 
@@ -241,6 +236,20 @@ class Game(Logger):
         self.data.current_state["{}_gets_results".format(status)] = True
 
     # --------------------------------| customer sides methods |------------------------------------- #
+
+    def compute_utility(self, customer_id):
+
+        uc = self.interface_parameters["utility_consumption"]
+        ec = self.interface_parameters["exploration_cost"]
+        firm_choice = self.data.current_state["customer_firm_choices"][customer_id]
+        view_choice = self.data.current_state["customer_extra_view_choices"][customer_id]
+        price = self.data.current_state["firm_prices"][firm_choice]
+        found = int(firm_choice >= 0)
+
+        utility = found * uc - ((ec * view_choice) + found * price)
+
+        self.data.current_state["customer_utility"][customer_id] = utility
+        self.data.current_state["customer_cumulative_utility"][customer_id] += utility
 
     def customer_end_of_turn(self, customer_id, extra_view, firm):
 
@@ -438,7 +447,7 @@ class Game(Logger):
         if t == self.time_manager.t:
 
             if self.time_manager.state == "active_has_played" or \
-                self.time_manager.state == "active_has_played_and_all_customers_replied":
+                    self.time_manager.state == "active_has_played_and_all_customers_replied":
 
                 out = self.reply(
                     function_name(),
