@@ -18,7 +18,8 @@ class LoadGameNewGameFrame(QWidget, Logger):
         self.buttons = dict()
         self.widgets = dict()
 
-        self.param = self.parent().mod.controller.get_parameters("network")
+        self.controller = self.parent().mod.controller 
+        self.param = self.controller.get_parameters("network")
 
         self.setup()
 
@@ -38,7 +39,7 @@ class LoadGameNewGameFrame(QWidget, Logger):
         self.widgets["ip_address"] = QLineEdit()
         
         # do ugly things to get the right alignement for each widget
-        for i, (label, widget) in enumerate(self.widgets.items()):
+        for i, (label, widget) in sorted(enumerate(self.widgets.items())):
 
             grid_layout.addWidget(QLabel(label), i, 0, alignment=Qt.AlignLeft)
 
@@ -126,5 +127,5 @@ class LoadGameNewGameFrame(QWidget, Logger):
         self.param["ip_address"] = self.widgets["ip_address"].text()
         self.param["local"] = self.widgets["localhost"].isChecked()
 
-        self.parent().mod.controller.backup.save_param("network", self.param)
-        self.parent().mod.controller.backup.save_param("network", self.param)
+        self.controller.backup.save_param("network", self.param)
+        self.controller.data.setup()

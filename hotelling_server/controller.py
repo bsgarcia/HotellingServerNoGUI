@@ -66,12 +66,7 @@ class Controller(Thread, Logger):
         self.continue_game.set()
         self.running_game.set()
 
-        # Launch server thread
-        if not self.running_server.is_set():
-            self.server.start()
-        
-        # Connect the server and 'serve forever'
-        self.server_queue.put(("Go", ))
+        self.start_server()
 
         self.ask_interface("show_frame_game", self.get_current_data())
 
@@ -119,14 +114,30 @@ class Controller(Thread, Logger):
         self.server.shutdown()
         self.server.wait_event.set()
 
-    def scan_network_for_new_devices(self):
+    def start_server(self):
 
         if not self.running_server.is_set():
             self.server.start()
 
         self.server_queue.put(("Go", ))
+
+    def scan_network_for_new_devices(self):
+
+        self.start_server()
         self.device_scanning_event.set()
 
+    def add_device_to_map_android_id_server_id(self, server_data):
+
+        android_id = server_data.split("/")[-1]
+        self.id_manager.get_ids_from_android_id(android_id, max_n=1)
+
+        response = "error/adding_new_device"
+        self.server_queue.put(("reply", response))
+        self.stop_server()
+
+        self.device_scanning_event.clear()
+        self.ask_interface("stop_scanning_network")
+     
     # ------------------------------- Message handling ----------------------------------------------- #
 
     def handle_message(self, message):
@@ -154,23 +165,17 @@ class Controller(Thread, Logger):
 
     def server_request(self, server_data):
         
+        # when using device manager to add new clients to json mapping
         if self.device_scanning_event.is_set():
 
-            android_id = server_data.split("/")[-1]
-            self.id_manager.get_ids_from_android_id(android_id, max_n=1)
-
-            response = "error/adding_new_device"
-            self.server_queue.put(("reply", response))
-            self.stop_server()
-
-            self.device_scanning_event.clear()
-            self.ask_interface("stop_scanning_network")
-            
+            self.add_device_to_map_android_id_server_id(server_data)
+        
+        # when game is launched
         else:
 
             response = self.game.handle_request(server_data)
             self.server_queue.put(("reply", response))
-
+   
     # ------------------------------ UI interface  -------------------------------------------#
 
     def ui_run_game(self, interface_parameters):

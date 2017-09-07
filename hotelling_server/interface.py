@@ -1,6 +1,6 @@
 from multiprocessing import Queue, Event
 
-from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt
+from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt, QSettings
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QMessageBox, QDesktopWidget
 
 from .graphics import game_view, loading_view, parametrization_view, setting_up_view, assignement_view, devices_view
@@ -92,6 +92,13 @@ class UI(QWidget, Logger):
 
         self.setLayout(self.layout)
 
+        try: 
+            settings = QSettings("tamere", "duopoly")
+            self.restoreGeometry(settings.value("geometry"))
+
+        except Exception as e:
+           self.log(str(e)) 
+
         self.send_go_signal()
 
     def closeEvent(self, event):
@@ -102,6 +109,7 @@ class UI(QWidget, Logger):
 
                 self.check_for_saving_parameters()
 
+            self.save_geometry()
             self.log("Close window")
             self.close_window()
             event.accept()
@@ -109,6 +117,11 @@ class UI(QWidget, Logger):
         else:
             self.log("Ignore close window.")
             event.ignore()
+
+    def save_geometry(self):
+
+        settings = QSettings("tamere", "duopoly")
+        settings.setValue("geometry", self.saveGeometry())
 
     def check_for_saving_parameters(self):
 
