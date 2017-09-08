@@ -12,6 +12,7 @@ class ConfigFilesManager(Logger):
     @classmethod
     def run(cls):
 
+        # noinspection SpellCheckingInspection
         parameters_folder = "hotelling_server/parameters"
         templates_folder = "templates"
 

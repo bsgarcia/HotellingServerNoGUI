@@ -1,5 +1,4 @@
 from utils.utils import Logger
-import json
 
 
 class IDManager(Logger):

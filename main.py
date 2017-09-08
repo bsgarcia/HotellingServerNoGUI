@@ -1,6 +1,6 @@
 def main():
     
-    from config_files_manager import ConfigFilesManager
+    from hotelling_server.parameters.config_files_manager import ConfigFilesManager
 
     ConfigFilesManager.run()
 

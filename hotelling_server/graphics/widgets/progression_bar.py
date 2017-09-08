@@ -26,11 +26,14 @@ class ProgressionBar(QWidget):
         self.label.setContentsMargins(30, 30, 30, 0)
 
         self.setLayout(self.grid)
+
         spacer_row_span = 10
         self.grid.addItem(QSpacerItem(0, 1), 0, 0, spacer_row_span, 10)
+
         # noinspection PyArgumentList
         self.grid.addWidget(self.label, spacer_row_span + 1, 5, Qt.AlignCenter)
         self.grid.addItem(QSpacerItem(0, 0), spacer_row_span + 2, 1, 2, 10)
+
         # noinspection PyArgumentList
         self.grid.addWidget(self.progression_bar, spacer_row_span + 3 + 2, 3, 1, 5)
         self.grid.addItem(QSpacerItem(0, 0), spacer_row_span + 5, 1, spacer_row_span, 10)

@@ -8,6 +8,7 @@ from utils.utils import Logger, function_name, get_local_ip
 
 class GenericBotClient(Thread, Logger):
 
+    # noinspection SpellCheckingInspection
     with open("hotelling_server/parameters/network.json") as file:
         network_parameters = json.load(file)
 
@@ -16,7 +17,7 @@ class GenericBotClient(Thread, Logger):
     elif network_parameters["local"]:
         ip_address = "localhost"
     else:
-        ip_address = network_parameters["ip_adress"]
+        ip_address = network_parameters["ip_address"]
 
     port = network_parameters["port"]
     delay_retry = 1
@@ -81,10 +82,13 @@ class GenericBotClient(Thread, Logger):
         self.queue.put(("ask_server", self.server_demand))
 
 
+# noinspection SpellCheckingInspection
 class HotellingBot(GenericBotClient):
 
+    # noinspection SpellCheckingInspection
     name = "HotellingBot"
 
+    # noinspection SpellCheckingInspection
     with open("hotelling_server/parameters/game.json") as f:
         game_parameters = json.load(f)
 
@@ -104,6 +108,10 @@ class HotellingBot(GenericBotClient):
 
         self.customer_attributes = {}
         self.firm_attributes = {}
+
+        self.opp_position = None
+        self.opp_price = None
+        self.score = None
 
     def run(self):
 
@@ -224,7 +232,9 @@ class HotellingBot(GenericBotClient):
                 self.firm_attributes["n_prices"] = self.game_parameters["n_prices"]
 
                 if self.firm_attributes["state"] == "active":
-                    self.queue.put(("firm_active_beginning_of_turn", initial_opponent_position, initial_opponent_price,))
+                    self.queue.put(("firm_active_beginning_of_turn",
+                                    initial_opponent_position,
+                                    initial_opponent_price,))
                 else:
                     self.queue.put(("firm_passive_beginning_of_turn",))
 
@@ -276,7 +286,8 @@ class HotellingBot(GenericBotClient):
 
     def ask_firm_active_choice_recording(self, position, price):
         self.state = "firm_choice_recording"
-        self.ask_server("ask_firm_active_choice_recording/" + "/".join([str(i) for i in [self.game_id, self.t, position, price]]))
+        self.ask_server("ask_firm_active_choice_recording/" + "/".join(
+            [str(i) for i in [self.game_id, self.t, position, price]]))
 
     def reply_firm_active_choice_recording(self, t):
         if self.t == t and self.state == "firm_choice_recording":

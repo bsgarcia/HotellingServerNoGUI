@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QGridLayout, QPushButton,
-        QLabel, QCheckBox, QLineEdit, QMessageBox, QHBoxLayout, QButtonGroup)
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QPushButton, QLabel, \
+    QCheckBox, QLineEdit, QMessageBox, QHBoxLayout, QButtonGroup
 from utils.utils import Logger
 
 
@@ -27,6 +27,10 @@ class ParametersFrame(QWidget, Logger):
 
         self.error = None
 
+        self.order = ["save",
+                      "exploration_cost",
+                      "utility_consumption"]
+
         self.setup()
 
     def setup(self):
@@ -44,14 +48,12 @@ class ParametersFrame(QWidget, Logger):
             IntParameter(text="Utility consumption",
                          initial_value=param["utility_consumption"], value_range=[0, 100])
 
-        self.order = ["save",
-                      "exploration_cost",
-                      "utility_consumption"]
-
         self.fill_layout()
 
         # noinspection PyUnresolvedReferences
         self.run_button.clicked.connect(self.push_run_button)
+
+        # noinspection PyUnresolvedReferences
         self.previous_button.clicked.connect(self.push_previous_button)
 
     def fill_layout(self):
@@ -90,7 +92,7 @@ class ParametersFrame(QWidget, Logger):
 
         else:
             self.log("Push 'previous' button.")
-            self.parent().show_frame_assignement()
+            self.parent().show_frame_assignment()
 
     def get_parameters(self):
 
@@ -182,4 +184,3 @@ class CheckParameter(object):
 
         layout.addWidget(self.label, x, y, alignment=Qt.AlignCenter)
         layout.addWidget(self.check_box, x, y + 1, alignment=Qt.AlignLeft)
-

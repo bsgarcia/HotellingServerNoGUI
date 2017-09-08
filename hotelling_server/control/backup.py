@@ -40,7 +40,9 @@ class Backup(Logger):
 
             return data
 
-    def save_param(self, key, new_value):
+    @staticmethod
+    def save_param(key, new_value):
 
+        # noinspection SpellCheckingInspection
         with open("hotelling_server/parameters/{}.json".format(key), "w") as param_file:
             json.dump(new_value, param_file)

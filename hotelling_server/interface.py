@@ -4,7 +4,7 @@ from subprocess import getoutput
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt, QSettings
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QMessageBox, QDesktopWidget
 
-from .graphics import game_view, loading_view, parametrization_view, setting_up_view, assignement_view, devices_view
+from .graphics import game_view, loading_view, parametrization_view, setting_up_view, assignment_view, devices_view
 from utils.utils import Logger
 
 
@@ -32,6 +32,8 @@ class UI(QWidget, Logger):
         # refresh interface and update data (tables, figures) 
         self.timer = QTimer(self)
         self.timer.setInterval(1000)
+
+        # noinspection PyUnresolvedReferences
         self.timer.timeout.connect(self.update_data)
         self.timer.start()
 
@@ -40,6 +42,8 @@ class UI(QWidget, Logger):
         self.queue = Queue()
 
         self.communicate = Communicate()
+        
+        self.settings = QSettings("HumanoidVsAndroid", "Duopoly")
 
         self.controller_queue = None
 
@@ -63,7 +67,7 @@ class UI(QWidget, Logger):
             devices_view.DevicesFrame(parent=self)
 
         self.frames["assign"] = \
-            assignement_view.AssignementFrame(parent=self)
+            assignment_view.AssignmentFrame(parent=self)
 
         self.frames["parameters"] = \
             parametrization_view.ParametersFrame(parent=self)
@@ -97,8 +101,7 @@ class UI(QWidget, Logger):
         
         # get saved geometry
         try: 
-            settings = QSettings("tamere", "duopoly")
-            self.restoreGeometry(settings.value("geometry"))
+            self.restoreGeometry(self.settings.value("geometry"))
 
         except Exception as e:
             self.log(str(e)) 
@@ -111,25 +114,33 @@ class UI(QWidget, Logger):
         getoutput("git fetch")
         git_msg = getoutput("git diff origin/master")
         self.log("Git message is: '{}'".format(git_msg))
+
         if git_msg:
+
             if self.show_question(
                     "An update is available.",
                     question="Do you want to update now?", yes="Yes", no="No", focus="Yes"):
+
                 git_output = getoutput("git pull")
                 self.log("User wants to update. Git message is: {}".format(git_output))
                 success = 0
+
                 if "Updating" in git_output:
                     success = 1
+
                 else:
                     for msg in ["git stash", "git pull", "git stash pop"]:
                         git_output = getoutput(msg)
                         self.log("Command is '{}' Git message is: '{}'".format(msg, git_output))
+
                     if "Updating" in git_output:
                         success = 1
+
                 if success:
                     self.show_info("Updated successfully. Modifications will be effective at the next restart.")
+
                 else:
-                    self.show_warning("An error occured. No modifications have been done.")
+                    self.show_warning("An error occurred. No modifications have been done.")
 
     def closeEvent(self, event):
 
@@ -150,8 +161,7 @@ class UI(QWidget, Logger):
 
     def save_geometry(self):
 
-        settings = QSettings("tamere", "duopoly")
-        settings.setValue("geometry", self.saveGeometry())
+        self.settings.setValue("geometry", self.saveGeometry())
 
     def check_for_saving_parameters(self):
 
@@ -160,15 +170,15 @@ class UI(QWidget, Logger):
         cond1 = sorted(self.mod.controller.data.param["parametrization"].items()) != \
             sorted(self.frames["parameters"].get_parameters().items())
 
-        cond2 = sorted(self.mod.controller.data.param["assignement"]) != \
+        cond2 = sorted(self.mod.controller.data.param["assignment"]) != \
             sorted(self.frames["assign"].get_parameters())
 
         if cond1 or cond2:
 
-            if self.show_question("Do you want to save the change in parameters and assignement?"):
+            if self.show_question("Do you want to save the change in parameters and assignment?"):
 
                 self.save_parameters("parametrization", self.frames["parameters"].get_parameters())
-                self.save_parameters("assignement", self.frames["assign"].get_parameters())
+                self.save_parameters("assignment", self.frames["assign"].get_parameters())
 
             else:
                 self.log('Saving of parameters aborted.')
@@ -179,18 +189,18 @@ class UI(QWidget, Logger):
             self.update_tables()
             self.update_figures()
 
-    def update_figures(self, *args):
+    def update_figures(self):
 
         data = self.mod.controller.get_current_data()["statistics"]
         self.frames["game"].update_statistics(data)
 
-    def update_tables(self, *args):
+    def update_tables(self):
 
         data = self.mod.controller.get_current_data()
         self.frames["game"].update_tables(data)
         self.frames["game"].set_trial_number(data["time_manager_t"])
 
-    def show_frame_devices(self, *args):
+    def show_frame_devices(self):
 
         for frame in self.frames.values():
             frame.hide()
@@ -198,7 +208,7 @@ class UI(QWidget, Logger):
         self.frames["devices"].prepare()
         self.frames["devices"].show()
 
-    def show_frame_load_game_new_game(self, *args):
+    def show_frame_load_game_new_game(self):
 
         for frame in self.frames.values():
             frame.hide()
@@ -215,14 +225,14 @@ class UI(QWidget, Logger):
 
         self.frames["game"].show()
 
-    def show_frame_setting_up(self, *args):
+    def show_frame_setting_up(self):
 
         for frame in self.frames.values():
             frame.hide()
 
         self.frames["setting_up"].show()
 
-    def show_frame_parameters(self, *args):
+    def show_frame_parameters(self):
 
         for frame in self.frames.values():
             frame.hide()
@@ -230,7 +240,7 @@ class UI(QWidget, Logger):
         self.frames["parameters"].prepare()
         self.frames["parameters"].show()
 
-    def show_frame_assignement(self, *args):
+    def show_frame_assignment(self):
 
         for frame in self.frames.values():
             frame.hide()
@@ -241,17 +251,17 @@ class UI(QWidget, Logger):
     def show_question(self, msg, question="", yes="Yes", no="No", focus="No"):
         """question with customs buttons"""
 
-        msgbox = QMessageBox()
+        msgbox = QMessageBox(self)
         msgbox.setText(msg)
         msgbox.setInformativeText(question)
         msgbox.setIcon(QMessageBox.Question)
-        quit = msgbox.addButton(yes, QMessageBox.ActionRole)
-        dont = msgbox.addButton(no, QMessageBox.ActionRole)
-        msgbox.setDefaultButton((quit, dont)[focus==no])
+        no_button = msgbox.addButton(no, QMessageBox.ActionRole)
+        yes_button = msgbox.addButton(yes, QMessageBox.ActionRole)
+        msgbox.setDefaultButton((no_button, yes_button)[focus == no])
 
         msgbox.exec_()
 
-        return msgbox.clickedButton() == quit
+        return msgbox.clickedButton() == yes_button
 
     def show_warning(self, msg):
 
@@ -319,19 +329,20 @@ class UI(QWidget, Logger):
         self.close_window()
         self.close()
 
-    def force_to_quit_game(self, *args):
+    def force_to_quit_game(self):
 
         msg = "Some players did not end their last turn!"
         question = "Do you want to quit anyway?"
         yes = "Quit game"
         no = "Do not quit"
 
-        quit = self.show_question(msg=msg, question=question, yes=yes, no=no)
+        reply_yes = self.show_question(msg=msg, question=question, yes=yes, no=no)
 
-        if quit:
+        if reply_yes:
             self.show_frame_load_game_new_game()
             self.stop_bots()
             self.stop_server()
+
         else:
             self.frames["game"].stop_button.setEnabled(True)
 
@@ -339,17 +350,18 @@ class UI(QWidget, Logger):
 
         msg = "Unexpected id: '{}'.".format(client_id)
 
-        question = "Do you want to go back to assignement menu?"
+        question = "Do you want to go back to assignment menu?"
 
-        yes = "Quit game and go back to assignement"
+        yes = "Quit game and go back to assignment"
         no = "Do not quit"
 
         go_back = self.show_question(msg=msg, question=question, yes=yes, no=no)
 
         if go_back:
-            self.show_frame_assignement()
+            self.show_frame_assignment()
             self.stop_bots()
             self.stop_server()
+
         else:
             self.frames["game"].stop_button.setEnabled(True)
 
@@ -361,17 +373,18 @@ class UI(QWidget, Logger):
         no = "Save and quit"
         focus = "Quit"
 
-        quit = self.show_question(msg=msg, question=question, yes=yes, no=no, focus=focus)
+        want_to_quit = self.show_question(msg=msg, question=question, yes=yes, no=no, focus=focus)
 
-        if not quit:
+        if not want_to_quit:
             self.frames["devices"].save_mapping()
 
         self.show_frame_load_game_new_game()
 
     def fatal_error_of_communication(self):
 
-        ok = self.show_critical_and_ok(msg="Fatal error of communication. You need to relaunch the game AFTER "
-                                           "having relaunched the apps on Android's clients.")
+        ok = self.show_critical_and_ok(
+            msg="Fatal error of communication. You need to relaunch the game AFTER "
+                "having relaunched the apps on Android's clients.")
 
         if ok:
             self.show_load_game_new_game_frame()
@@ -380,7 +393,7 @@ class UI(QWidget, Logger):
             if not self.close():
                 self.manage_fatal_error_of_communication()
                 
-    def stop_scanning_network(self, *args):
+    def stop_scanning_network(self):
 
         self.log("Controller asks 'stop scanning network'")
         self.frames["devices"].show_device_added()
@@ -412,7 +425,7 @@ class UI(QWidget, Logger):
 
     def get_current_interface_parameters(self):
         return {"parametrization": self.frames["parameters"].get_parameters(),
-                "assignement": self.frames["assign"].get_parameters()}
+                "assignment": self.frames["assign"].get_parameters()}
 
     def get_game_parameters(self):
         return self.mod.controller.data.param["game"]
@@ -449,4 +462,3 @@ class UI(QWidget, Logger):
 
     def look_for_alive_players(self):
         self.controller_queue.put(("ui_look_for_alive_players", ))
-

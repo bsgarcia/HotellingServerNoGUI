@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QWidget, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout, QLabel, QAbstractItemView
+from PyQt5.QtWidgets import QWidget, QPushButton, QTableWidget, QTableWidgetItem, \
+    QHeaderView, QVBoxLayout, QLabel, QAbstractItemView
 import numpy as np
 
 from hotelling_server.graphics.widgets.plot_layouts import PlotLayout
@@ -155,7 +156,7 @@ class GameFrame(QWidget, Logger):
     def prepare_tables(self, parameters):
 
         ids, labels, fancy_labels = self.get_tables_data(parameters)
-        ids = self.parent().mod.controller.data.assignement
+        ids = self.parent().mod.controller.data.assignment
 
         for role in ["firm", "customer"]:
 
@@ -249,8 +250,10 @@ class GameFrame(QWidget, Logger):
 
         # sort server ids and game ids by role (firm vs customer)
         for role in ["firm", "customer"]:
-            ids[role] = [(server_id, game_id) for server_id, game_id in server_id_game_id
-                    if parameters["roles"][game_id] == role]
+            ids[role] = [
+                (server_id, game_id) for server_id, game_id in server_id_game_id
+                if parameters["roles"][game_id] == role
+            ]
         return ids
 
     @staticmethod
@@ -278,10 +281,13 @@ class GameFrame(QWidget, Logger):
             "customer": customer_labels}
 
         # transform into nicer labels
-        fancy_labels = {"firm": [name.replace("_", " ").capitalize()
-                                for name in firm_labels],
-                        "customer": [name.replace("_", " ").capitalize()
-                                    for name in customer_labels]}
+        fancy_labels = {
+            "firm": [
+                name.replace("_", " ").capitalize()
+                for name in firm_labels],
+            "customer": [
+                name.replace("_", " ").capitalize()
+                for name in customer_labels]}
 
         return labels, fancy_labels
 
@@ -321,4 +327,3 @@ class GameFrame(QWidget, Logger):
     def update_done_playing_labels(self, done_playing_labels):
 
         self.done_playing_layout.update_labels(done_playing_labels)
-

@@ -18,24 +18,29 @@ class Game(Logger):
         # get parameters from interface and json files
         self.game_parameters = self.controller.data.param["game"]
         self.parametrization = self.controller.data.param["parametrization"]
-        self.assignement = self.controller.data.param["assignement"]
+        self.assignment = self.controller.data.param["assignment"]
 
         # set number of type of players
         self.n_customers = self.game_parameters["n_customers"]
         self.n_firms = self.game_parameters["n_firms"]
         self.n_agents = self.n_firms + self.n_customers
 
-    # ----------------------------------- sides methods --------------------------------------#
+        # ---------------- #
+        self.bots = None
+        self.interface_parameters = None
+        self.unexpected_id_list = None
+
+        # ----------------------------------- sides methods --------------------------------------#
 
     def new(self, parameters):
         """called if new game is launched"""
 
         # parameters coming from interface
         self.data.parametrization = parameters["parametrization"]
-        self.data.assignement = parameters["assignement"]
+        self.data.assignment = parameters["assignment"]
 
         self.interface_parameters = self.data.parametrization
-        self.assignement = self.data.assignement
+        self.assignment = self.data.assignment
 
         self.unexpected_id_list = []
 
@@ -58,11 +63,13 @@ class Game(Logger):
             np.random.randint(1, self.game_parameters["n_prices"], size=2)
         
         # init customer current_state arrays
-        customer_keys = ("customer_extra_view_choices",
+        customer_keys = (
+            "customer_extra_view_choices",
             "customer_firm_choices",
             "customer_utility",
             "customer_replies",
-            "customer_cumulative_utility")
+            "customer_cumulative_utility"
+        )
 
         for key in customer_keys:
             self.data.current_state[key] = \
@@ -75,7 +82,7 @@ class Game(Logger):
 
         self.data.setup()
         self.interface_parameters = self.data.parametrization
-        self.assignement = self.data.assignement
+        self.assignment = self.data.assignment
         self.unexpected_id_list = []
 
         self.launch_bots()
@@ -83,13 +90,13 @@ class Game(Logger):
     # -------------------------------| bots |------------------------------------------------------------ #
 
     def launch_bots(self):
-        """launch bots based on assignement settings"""
+        """launch bots based on assignment settings"""
 
         n_firms = 0
         n_customers = 0
         n_agents_to_wait = 0
 
-        for server_id, role, bot in self.assignement:
+        for server_id, role, bot in self.assignment:
             if bot:
                 n_firms += role == "firm"
                 n_customers += role == "customer"
@@ -142,7 +149,7 @@ class Game(Logger):
 
     def get_role(self, server_id):
 
-        for idx, role, bot in self.assignement:
+        for idx, role, bot in self.assignment:
             if idx == str(server_id):
                 return role
 
@@ -222,7 +229,7 @@ class Game(Logger):
         self.data.current_state["active_replied"] = True
         self.data.current_state["firm_states"][firm_id] = state
 
-    def firm_end_of_turn(self, game_id, firm_id, t, status):
+    def firm_end_of_turn(self, firm_id, t, status):
         """both firm end of turn"""
 
         opponent_id = (firm_id + 1) % 2
@@ -325,8 +332,9 @@ class Game(Logger):
 
         self.set_state(role="customer", role_id=customer_id, state=function_name())
 
-        return self.reply(func_name, game_id, self.time_manager.t, role, position, exploration_cost,
-                utility_consumption, utility)
+        return self.reply(
+            func_name, game_id, self.time_manager.t, role, position, exploration_cost,
+            utility_consumption, utility)
 
     def get_customers_data(self, customer_id):
 

@@ -1,7 +1,8 @@
 from os import path
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog, QGridLayout, QCheckBox, QLineEdit, QLabel, QHBoxLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog, QGridLayout, \
+    QCheckBox, QLineEdit, QLabel, QHBoxLayout
 
 from utils.utils import Logger, get_local_ip
 
@@ -38,7 +39,7 @@ class LoadGameNewGameFrame(QWidget, Logger):
         self.widgets["localhost"] = QCheckBox()
         self.widgets["ip_address"] = QLineEdit()
         
-        # do ugly things to get the right alignement for each widget
+        # Do ugly things to get the right alignment for each widget
         for i, (label, widget) in sorted(enumerate(self.widgets.items())):
 
             grid_layout.addWidget(QLabel(label), i, 0, alignment=Qt.AlignLeft)
@@ -86,7 +87,7 @@ class LoadGameNewGameFrame(QWidget, Logger):
 
         self.write_network_parameters()
         self.set_buttons_activation(False)
-        self.parent().show_frame_assignement()
+        self.parent().show_frame_assignment()
 
     def click_load_game(self):
 

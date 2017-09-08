@@ -5,6 +5,7 @@ import numpy as np
 from utils.utils import Logger
 
 
+# noinspection SpellCheckingInspection
 class HotellingLocalBots(Logger, Thread):
 
     name = "HotellingLocalBots"
@@ -147,9 +148,10 @@ class HotellingLocalBots(Logger, Thread):
             self.time_manager.check_state()
 
         else:
-            self.log("Error: "
-                    "Remaining agents to connect although all bots "
-                    "and all real players seem to be connected.")
+            self.log(
+                "Error: "
+                "Remaining agents to connect although all bots "
+                "and all real players seem to be connected.")
 
     # -------------------------------- customer ------------------------------------------- #
     def play_customer(self, customer_id):

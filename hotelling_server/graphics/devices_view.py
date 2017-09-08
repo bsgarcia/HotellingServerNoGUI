@@ -1,8 +1,7 @@
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import (QWidget, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout, QLabel,
-QMessageBox, QAbstractItemView, QGridLayout, QButtonGroup, 
-QHBoxLayout, QProgressDialog, QLineEdit, QFormLayout, QProgressBar, QDialog)
-from multiprocessing import Event
+from PyQt5.QtWidgets import QWidget, QPushButton, QTableWidget, QTableWidgetItem, \
+    QHeaderView, QVBoxLayout, QLabel, QMessageBox, QAbstractItemView, QGridLayout, \
+    QHBoxLayout, QLineEdit, QFormLayout, QProgressBar, QDialog
 
 from utils.utils import Logger
 import operator
@@ -26,7 +25,7 @@ class DevicesFrame(QWidget, Logger):
         self.remove_button = QPushButton()
         self.scan_button = QPushButton()
         
-        # window poppin to add a device 
+        # Window popping to add a device
         self.add_window = QDialog(self)
         self.add_window.setLayout(QVBoxLayout())
         self.add_window.setWindowTitle("Add a device")
@@ -39,15 +38,21 @@ class DevicesFrame(QWidget, Logger):
         self.cancel_button = QPushButton()
         self.cancel_scanning_button = QPushButton()
 
-        self.scanning_widgets = [self.progress_bar,
+        self.scanning_widgets = [
+            self.progress_bar,
             self.label_scanning,
             self.add_manually_button,
             self.cancel_scanning_button]
         
         self.timer = QTimer()
+        # noinspection PyUnresolvedReferences
         self.timer.timeout.connect(self.show_no_device_found)
 
         self.table = QTableWidget()
+        self.form_layout = QFormLayout()
+
+        self.server_id = QLineEdit()
+        self.device_name = QLineEdit()
 
         self.setup()
 
@@ -92,11 +97,6 @@ class DevicesFrame(QWidget, Logger):
 
     def fill_add_window_layout(self):
 
-        self.form_layout = QFormLayout()
-
-        self.server_id = QLineEdit()
-        self.device_name = QLineEdit()
-
         self.form_layout.addRow(QLabel("Device name"), self.device_name)
         self.form_layout.addRow(QLabel("Server id"), self.server_id)
 
@@ -118,12 +118,7 @@ class DevicesFrame(QWidget, Logger):
         # add tables
         self.layout.addWidget(self.table)
 
-        # button layout :
-        # | remove | add  |
-        # | quit withou | save |
-
         grid_layout = QGridLayout()
-
         horizontal_layout = QHBoxLayout()
 
         # in order to aggregate buttons in the center of the window

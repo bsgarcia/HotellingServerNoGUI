@@ -1,8 +1,6 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QStyleFactory
-from PyQt5.QtGui import QGuiApplication
+from PyQt5.QtWidgets import QApplication
 
-from hotelling_server.control import backup
 from . import interface, controller
 
 

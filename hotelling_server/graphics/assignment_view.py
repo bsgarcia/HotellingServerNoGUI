@@ -1,13 +1,12 @@
 from PyQt5.QtCore import Qt, QObject, QEvent
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QPushButton,
-        QLabel, QCheckBox, QLineEdit, QMessageBox, QGridLayout, QRadioButton, QButtonGroup, QHBoxLayout)
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QCheckBox, \
+    QLineEdit, QMessageBox, QGridLayout, QRadioButton, QButtonGroup, QHBoxLayout
 
 from utils.utils import Logger
 
 
-class AssignementFrame(Logger, QWidget):
-
-    name = "AssignementFrame"
+class AssignmentFrame(Logger, QWidget):
+    name = "AssignmentFrame"
 
     def __init__(self, parent):
 
@@ -35,21 +34,24 @@ class AssignementFrame(Logger, QWidget):
 
         game_param = self.parent().get_game_parameters()
 
-        roles = ["firm" for i in range(game_param["n_firms"])] \
-                + ["customer" for i in range(game_param["n_customers"])]
+        # noinspection PyUnusedLocal
+        roles = \
+            ["firm" for i in range(game_param["n_firms"])] \
+            + ["customer" for i in range(game_param["n_customers"])]
 
         n_agents = len(roles)
 
         labels = ("Server id", "Firm " + " Customer", "Bot")
 
+        # noinspection PyUnusedLocal
         self.parameters["assign"] = [[] for i in range(n_agents)]
 
         # ----- check if an old config exists --------- #
 
-        old_assign = self.parent().mod.controller.data.param["assignement"]
+        old_assign = self.parent().mod.controller.data.param["assignment"]
 
         if len(old_assign) != len(self.parameters["assign"]):
-            self.show_warning(msg="assignement.json not matching game.json config file!")
+            self.show_warning(msg="assignment.json not matching game.json config file!")
             self.new_setup(n_agents, roles)
         else:
             self.load_setup(old_assign)
@@ -58,7 +60,9 @@ class AssignementFrame(Logger, QWidget):
 
         self.fill_layout(labels, n_agents)
 
+        # noinspection PyUnresolvedReferences
         self.next_button.clicked.connect(self.push_next_button)
+        # noinspection PyUnresolvedReferences
         self.previous_button.clicked.connect(self.push_previous_button)
 
         self.setup_done = True
@@ -90,32 +94,28 @@ class AssignementFrame(Logger, QWidget):
 
         self.setLayout(self.layout)
 
-    def load_setup(self, assignement):
+    def load_setup(self, assignment):
 
-        for i, (server_id, role, bot) in enumerate(assignement):
-
+        for i, (server_id, role, bot) in enumerate(assignment):
             self.parameters["assign"][i].append(IntParameter(parent=self, value=server_id, idx=i))
 
             self.parameters["assign"][i].append(RadioParameter(checked=role))
 
-            self.parameters["assign"][i].append(CheckParameter(parent=self,
-                checked=bot, idx=i))
+            self.parameters["assign"][i].append(CheckParameter(parent=self, checked=bot, idx=i))
 
     def new_setup(self, n_agents, roles):
 
         for i in range(n_agents):
-
             self.parameters["assign"][i].append(IntParameter(parent=self, value="Bot", idx=i))
 
             self.parameters["assign"][i].append(RadioParameter(checked=roles[i]))
 
-            self.parameters["assign"][i].append(CheckParameter(parent=self,
-                checked=True, idx=i))
+            self.parameters["assign"][i].append(CheckParameter(parent=self, checked=True, idx=i))
 
     def push_next_button(self):
-        
-        warning = self.check_assignement_validity()
-        
+
+        warning = self.check_assignment_validity()
+
         if warning:
             self.show_warning(msg=warning)
 
@@ -134,16 +134,16 @@ class AssignementFrame(Logger, QWidget):
             self.log("Push 'previous' button.")
             self.parent().show_frame_load_game_new_game()
 
-    def check_assignement_validity(self):
+    def check_assignment_validity(self):
 
-        assignement = list(enumerate(self.get_parameters()))
+        assignment = list(enumerate(self.get_parameters()))
 
-        for i, (server_id, role, bot) in assignement:
+        for i, (server_id, role, bot) in assignment:
 
             if server_id != "Bot" and not server_id.isdigit():
                 return "Wrong input: '{}'.".format(server_id)
 
-            for j, (other_id, other_role, other_bot) in assignement:
+            for j, (other_id, other_role, other_bot) in assignment:
 
                 if other_id == server_id and other_id != "Bot" and i != j:
                     return "Two identical inputs: '{}'.".format(server_id)
@@ -161,21 +161,21 @@ class AssignementFrame(Logger, QWidget):
     def switch_line_edit(self, idx, from_line):
 
         if self.setup_done:
-            
+
             # get desired widgets
             line_edit = self.parameters["assign"][idx][0].edit
             check_box = self.parameters["assign"][idx][2].check_box
-            
+
             # if line edit (containing server ids) is not enabled
             if not line_edit.isEnabled():
                 self.enable_line_edit(line_edit, check_box)
 
             # if line edit is enabled and signal comes from check box
             elif line_edit.isEnabled() and not from_line:
-                self.disable_line_edit(line_edit, check_box)
+                self.disable_line_edit(line_edit)
 
     @staticmethod
-    def disable_line_edit(line_edit, check_box):
+    def disable_line_edit(line_edit):
 
         line_edit.setText("Bot")
         line_edit.setEnabled(False)
@@ -196,7 +196,7 @@ class AssignementFrame(Logger, QWidget):
         self.next_button.setFocus()
         self.next_button.setEnabled(True)
 
-    # --------------------------------- Widgets used in assignement menu --------------------------------- # 
+        # --------------------------------- Widgets used in assignment menu --------------------------------- #
 
 
 class RadioParameter(object):
@@ -277,24 +277,22 @@ class CheckParameter(object):
     """bot or not"""
 
     def __init__(self, parent, checked, idx):
-
         self.parent = parent
         self.idx = idx
         self.check_box = QCheckBox()
         self.setup(checked)
 
     def setup(self, checked):
+        # noinspection PyUnresolvedReferences
         self.check_box.stateChanged.connect(
-                lambda: self.parent.switch_line_edit(idx=self.idx, from_line=False))
+            lambda: self.parent.switch_line_edit(idx=self.idx, from_line=False))
 
         self.check_box.setChecked(checked)
 
     def get_value(self):
-
         return self.check_box.isChecked()
 
     def add_to_grid_layout(self, layout, x, y):
-
         layout.addWidget(self.check_box, x, y)
 
 

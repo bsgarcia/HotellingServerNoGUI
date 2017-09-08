@@ -1,11 +1,14 @@
 from PyQt5.QtWidgets import *
 import numpy as np
+
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-
 from matplotlib.backends import qt_compat
-use_pyside = qt_compat.QT_API == qt_compat.QT_API_PYSIDE
+
 from utils.utils import Logger
+
+# noinspection SpellCheckingInspection
+use_pyside = qt_compat.QT_API == qt_compat.QT_API_PYSIDE
 
 
 class MplCanvas(FigureCanvas):
@@ -59,7 +62,6 @@ class OneLinePlot(MplCanvas):
         )
 
         # Customize axes
-        # self.axes.set_ylim(-0.01, 1.1)
         self.axes.legend(framealpha=0, fontsize=self.font_size, loc=4)
         self.axes.set_autoscaley_on(True)
 

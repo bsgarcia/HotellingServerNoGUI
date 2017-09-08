@@ -27,6 +27,8 @@ class BotController(Logger):
     def setup(self):
 
         for key in ["network", "game", "folders", "map_android_id_server_id", "parametrization"]:
+
+            # noinspection SpellCheckingInspection
             with open("hotelling_server/parameters/{}.json".format(key)) as file:
                 self.parameters[key] = json.load(file)
 
@@ -67,6 +69,7 @@ class BotController(Logger):
         self.server.end()
         self.shutdown.set()
 
+    # noinspection PyMethodMayBeStatic
     def handle_message(self, message):
 
         command = message[0]

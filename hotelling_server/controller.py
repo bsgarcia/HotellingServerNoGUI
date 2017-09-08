@@ -10,8 +10,7 @@ class Controller(Thread, Logger):
     name = "Controller"
 
     def __init__(self, model):
-        
-        # init 
+
         super().__init__()
 
         self.mod = model
@@ -106,7 +105,10 @@ class Controller(Thread, Logger):
 
     def ask_interface(self, instruction, arg=None):
 
-        self.graphic_queue.put((instruction, arg))
+        if arg is not None:
+            self.graphic_queue.put((instruction, arg))
+        else:
+            self.graphic_queue.put((instruction, ))
         self.communicate.signal.emit()
 
     def stop_server(self):
@@ -155,12 +157,15 @@ class Controller(Thread, Logger):
             self.ask_interface("fatal_error", str(err))
 
     # ------------------------------ Server interface ----------------------------------------#
+
     def server_running(self):
+
         self.log("Server running.")
         self.running_server.set()
         self.server.wait_event.clear()
 
     def server_error(self, error_message):
+
         self.log("Server error.")
         self.ask_interface("server_error", error_message)
 
@@ -171,7 +176,7 @@ class Controller(Thread, Logger):
 
             self.add_device_to_map_android_id_server_id(server_data)
         
-        # when game is launched
+        # When game is launched
         else:
 
             response = self.game.handle_request(server_data)
@@ -205,9 +210,9 @@ class Controller(Thread, Logger):
         self.log("UI ask 'retry server'.")
         self.server_queue.put(("Go",))
 
-    def ui_save_game_parameters(self, key, data):
+    def ui_save_game_parameters(self, key, value):
         self.log("UI ask 'save game parameters'.")
-        self.data.save_param(key, data)
+        self.data.save_param(key, value)
         self.log("Save interface parameters.")
 
     def ui_stop_bots(self):
@@ -240,7 +245,7 @@ class Controller(Thread, Logger):
 
         self.log("'TimeManager' asks 'compute_figures'")
 
-        # needs to be moved elsewhere?
+        # Needs to be moved elsewhere?
         self.statistician.compute_distance()
         self.statistician.compute_mean_extra_view_choices()
         self.statistician.compute_profits()
@@ -265,4 +270,3 @@ class Controller(Thread, Logger):
     def get_parameters(self, key):
 
         return self.data.param[key]
-

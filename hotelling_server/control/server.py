@@ -155,6 +155,7 @@ class Server(Thread, Logger):
 
         game_id = self.clients[ip]["game_id"]
         role = self.cont.data.roles[game_id]
+        role_id = None
 
         if role == "customer":
             if game_id in self.cont.data.customers_id.keys():
@@ -163,7 +164,7 @@ class Server(Thread, Logger):
         elif role == "firm":
             if game_id in self.cont.data.firms_id.keys():
                 role_id = self.cont.data.firms_id[game_id]
-        if role:
+        if role_id is not None:
             self.update_time(role=role, role_id=role_id, time_diff=time_diff)
 
     def update_time(self, role, role_id, time_diff):

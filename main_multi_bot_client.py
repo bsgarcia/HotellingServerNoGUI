@@ -7,6 +7,7 @@ def main():
 
     for i in range(n):
 
+        # noinspection SpellCheckingInspection
         bc = HotellingBot(name="HotellingBot{}".format(i))
         bc.start()
 
