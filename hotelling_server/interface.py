@@ -108,6 +108,7 @@ class UI(QWidget, Logger):
     def check_update(self):
 
         self.log("I check for updates.")
+        getoutput("git fetch")
         git_msg = getoutput("git diff origin/master")
         self.log("Git message is: '{}'".format(git_msg))
         if git_msg and "remote: Counting objects: " in git_msg:
@@ -117,13 +118,13 @@ class UI(QWidget, Logger):
                 git_output = getoutput("git pull")
                 self.log("User wants to update. Git message is: {}".format(git_output))
                 success = 0
-                if "insertions" in git_output or "deletions" in git_output:
+                if "Updating" in git_output:
                     success = 1
                 else:
                     for msg in ["git stash", "git pull", "git stash pop"]:
-                        git_output = getoutput("git stash")
-                        self.log("User wants to update. Command is '{}' Git message is: '{}'".format(msg, git_output))
-                    if "insertions" in git_output or "deletions" in git_output:
+                        git_output = getoutput(msg)
+                        self.log("Command is '{}' Git message is: '{}'".format(msg, git_output))
+                    if "Updating" in git_output:
                         success = 1
                 if success:
                     if self.show_question(
@@ -174,9 +175,9 @@ class UI(QWidget, Logger):
 
             else:
                 self.log('Saving of parameters aborted.')
-    
+
     def update_data(self):
-        
+
         if self.mod.controller.running_game.is_set():
             self.update_tables()
             self.update_figures()
@@ -310,7 +311,7 @@ class UI(QWidget, Logger):
 
     def fatal_error(self, error_message):
 
-        self.show_critical(msg="Server error.\nError message: '{}'.".format(error_message))
+        self.show_critical(msg="Fatal error.\nError message: '{}'.".format(error_message))
         self.close_window()
         self.close()
 
@@ -444,4 +445,4 @@ class UI(QWidget, Logger):
 
     def look_for_alive_players(self):
         self.controller_queue.put(("ui_look_for_alive_players", ))
-    
+
