@@ -20,6 +20,7 @@ class Model:
     def run(self):
 
         try:
+
             self.controller.start()
             self.ui.setup()
             self.ui.show()

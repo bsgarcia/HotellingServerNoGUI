@@ -1,4 +1,5 @@
 from multiprocessing import Queue, Event
+from subprocess import getoutput
 
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt, QSettings
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QMessageBox, QDesktopWidget
@@ -54,6 +55,8 @@ class UI(QWidget, Logger):
 
     def setup(self):
 
+        self.check_update()
+
         self.controller_queue = self.mod.controller.queue
 
         self.frames["devices"] = \
@@ -101,6 +104,22 @@ class UI(QWidget, Logger):
             self.log(str(e)) 
 
         self.send_go_signal()
+
+    def check_update(self):
+
+        out = getoutput("git fetch origin")
+        if out and "remote: Counting objects: " in out:
+            if self.show_question(
+                    "An update is available.",
+                    question="Do you want to update now?", yes="Yes", no="No", focus="Yes"):
+                git_output = getoutput("git pull")
+                if "insertions" in git_output or "deletions" in git_output:
+                    if self.show_question(
+                            "You have to close the app and relaunch it for modifications to apply.",
+                            question="Do you close the app now?", yes="Yes", no="No", focus="Yes"):
+                        self.close()
+                else:
+                    self.show_warning("An error occurs. No modifications have been done.")
 
     def closeEvent(self, event):
 
