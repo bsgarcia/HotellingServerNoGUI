@@ -106,7 +106,7 @@ class UI(QWidget, Logger):
         self.send_go_signal()
 
     def check_update(self):
-        """git <3 <3 <3 TAMERE"""
+        """git <3 <3 <3 TAMERE marche stp"""
 
         out = getoutput("git fetch origin")
         if out and "remote: Counting objects: " in out:
