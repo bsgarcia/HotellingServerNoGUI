@@ -106,7 +106,7 @@ class UI(QWidget, Logger):
         self.send_go_signal()
 
     def check_update(self):
-        """git <3 <3 <3 TAMERE marche stp"""
+        """git <3 <3 <3 TAMERE marche stp ❤ """
 
         self.log("I check for updates.")
         git_msg = getoutput("git diff origin/master")

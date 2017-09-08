@@ -317,7 +317,7 @@ class DevicesFrame(QWidget, Logger):
                 cond2 = i != j
 
                 if cond0 and cond2 or cond1 and cond2:
-                    return "Device already exist at row {}.".format(i + 1)
+                    return "Device already exists at row {}.".format(i + 1)
 
     def save_mapping(self):
 
