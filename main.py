@@ -1,5 +1,6 @@
 def main():
-
+       
+    print("ta mere")
     from config_files_manager import ConfigFilesManager
 
     ConfigFilesManager.run()
