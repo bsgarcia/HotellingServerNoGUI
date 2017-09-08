@@ -344,8 +344,8 @@ class UI(QWidget, Logger):
             if not self.close():
                 self.manage_fatal_error_of_communication()
                 
-
     def stop_scanning_network(self, *args):
+
         self.log("Controller asks 'stop scanning network'")
         self.frames["devices"].show_device_added()
 
