@@ -198,7 +198,9 @@ class DevicesFrame(QWidget, Logger):
 
         self.log("Push 'add' button")
         
-        self.label_scanning
+        ip = self.controller.get_parameters("network")["ip_address"]
+        self.label_scanning.setText("Scanning with ip '{}' ...".format(ip))
+
         self.show_scanning()
         self.hide_add_form()
         self.add_window.show()
