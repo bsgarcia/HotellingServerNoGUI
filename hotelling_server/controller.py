@@ -10,7 +10,8 @@ class Controller(Thread, Logger):
     name = "Controller"
 
     def __init__(self, model):
-
+        
+        # init 
         super().__init__()
 
         self.mod = model
