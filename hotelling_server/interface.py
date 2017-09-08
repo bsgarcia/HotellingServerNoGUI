@@ -91,13 +91,14 @@ class UI(QWidget, Logger):
         self.layout.addLayout(grid, stretch=1)
 
         self.setLayout(self.layout)
-
+        
+        # get saved geometry
         try: 
             settings = QSettings("tamere", "duopoly")
             self.restoreGeometry(settings.value("geometry"))
 
         except Exception as e:
-           self.log(str(e)) 
+            self.log(str(e)) 
 
         self.send_go_signal()
 
@@ -315,6 +316,21 @@ class UI(QWidget, Logger):
             self.stop_server()
         else:
             self.frames["game"].stop_button.setEnabled(True)
+
+    def devices_quit_without_saving(self):
+
+        msg = "You did not save your modifications."
+        question = "Quit without saving?"
+        yes = "Quit"
+        no = "Save and quit"
+
+        quit = self.show_question(msg=msg, question=question, yes=yes, no=no)
+
+        if quit:
+            self.show_frame_load_game_new_game()
+        else:
+            self.frames["devices"].push_save_button()
+            self.show_frame_load_game_new_game()
 
     def fatal_error_of_communication(self):
 

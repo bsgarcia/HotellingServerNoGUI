@@ -1,6 +1,7 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QWidget, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout, QLabel,
-QMessageBox, QAbstractItemView, QGridLayout, QButtonGroup, QHBoxLayout, QProgressDialog)
+QMessageBox, QAbstractItemView, QGridLayout, QButtonGroup, QHBoxLayout, QProgressDialog, QLineEdit, QFormLayout,
+QDialog)
 from multiprocessing import Event
 
 from utils.utils import Logger
@@ -19,11 +20,18 @@ class DevicesFrame(QWidget, Logger):
 
         self.controller = parent.mod.controller
 
-        self.cancel_button = QPushButton()
+        self.quit_button = QPushButton()
         self.save_button = QPushButton()
         self.add_button = QPushButton()
         self.remove_button = QPushButton()
         self.scan_button = QPushButton()
+        
+        # window poppin to add a device 
+        self.add_window = QDialog(self)
+        self.add_window.setLayout(QVBoxLayout())
+        self.add_window.setWindowTitle("Add a device")
+        self.ok_button = QPushButton()
+        self.cancel_button = QPushButton()
 
         self.table = QTableWidget()
 
@@ -32,33 +40,19 @@ class DevicesFrame(QWidget, Logger):
     def setup(self):
 
         self.setLayout(self.layout)
+    
+        self.fill_layout()
 
-        # add tables
-        self.layout.addWidget(self.table)
+        self.fill_add_window_layout()
 
-        # button layout :
-        # | scan network  |
-        # | remove | add  |
-        # | cancel | save |
-
-        self.layout.addWidget(self.scan_button, stretch=0, alignment=Qt.AlignCenter)
-
-        grid_layout = QGridLayout()
-
-        horizontal_layout = QHBoxLayout()
-        horizontal_layout.addStretch(48)
-        horizontal_layout.addLayout(grid_layout)
-        horizontal_layout.addStretch(48)
-
-        grid_layout.addWidget(self.remove_button, 0, 0, alignment=Qt.AlignCenter)
-        grid_layout.addWidget(self.cancel_button, 1, 0, alignment=Qt.AlignCenter)
-        grid_layout.addWidget(self.add_button, 0, 1, alignment=Qt.AlignCenter)
-        grid_layout.addWidget(self.save_button, 1, 1, alignment=Qt.AlignCenter)
-
-        self.layout.addLayout(horizontal_layout)
+        # noinspection PyUnresolvedReferences
+        self.quit_button.clicked.connect(self.push_quit_button)
 
         # noinspection PyUnresolvedReferences
         self.cancel_button.clicked.connect(self.push_cancel_button)
+
+        # noinspection PyUnresolvedReferences
+        self.ok_button.clicked.connect(self.push_ok_button)
 
         # noinspection PyUnresolvedReferences
         self.add_button.clicked.connect(self.push_add_button)
@@ -72,6 +66,52 @@ class DevicesFrame(QWidget, Logger):
         # noinspection PyUnresolvedReferences
         self.scan_button.clicked.connect(self.push_scan_button)
 
+    def fill_add_window_layout(self):
+
+        form_layout = QFormLayout()
+
+        self.server_id = QLineEdit()
+        self.device_name = QLineEdit()
+
+        form_layout.addRow(QLabel("Device name"), self.device_name)
+        form_layout.addRow(QLabel("Server id"), self.server_id)
+
+        horizontal_layout = QHBoxLayout()
+
+        horizontal_layout.addWidget(self.ok_button, alignment=Qt.AlignRight)
+        horizontal_layout.addWidget(self.cancel_button, alignment=Qt.AlignRight)
+
+        self.add_window.layout().addLayout(form_layout)
+        self.add_window.layout().addLayout(horizontal_layout)
+
+    def fill_layout(self):
+
+        # add tables
+        self.layout.addWidget(self.table)
+
+        # button layout :
+        # | scan network  |
+        # | remove | add  |
+        # | quit | save |
+
+        self.layout.addWidget(self.scan_button, stretch=0, alignment=Qt.AlignCenter)
+
+        grid_layout = QGridLayout()
+
+        horizontal_layout = QHBoxLayout()
+
+        # in order to aggregate buttons in the center of the window
+        horizontal_layout.addStretch(48)
+        horizontal_layout.addLayout(grid_layout)
+        horizontal_layout.addStretch(48)
+
+        grid_layout.addWidget(self.remove_button, 0, 0, alignment=Qt.AlignCenter)
+        grid_layout.addWidget(self.quit_button, 1, 0, alignment=Qt.AlignCenter)
+        grid_layout.addWidget(self.add_button, 0, 1, alignment=Qt.AlignCenter)
+        grid_layout.addWidget(self.save_button, 1, 1, alignment=Qt.AlignCenter)
+
+        self.layout.addLayout(horizontal_layout)
+
     def prepare(self):
 
         self.log("Preparing...")
@@ -80,25 +120,58 @@ class DevicesFrame(QWidget, Logger):
         self.log("Preparation done!")
 
     def prepare_buttons(self):
-
-        self.cancel_button.setText("Cancel")
+        
+        # main window buttons
+        self.quit_button.setText("Quit")
         self.add_button.setText("Add device")
         self.save_button.setText("Save")
         self.remove_button.setText("Remove device")
         self.scan_button.setText("Scan network for new devices...")
 
+        # add device window buttons
+        self.cancel_button.setText("Cancel")
+        self.ok_button.setText("Ok")
+
+    def push_ok_button(self):
+
+        self.log("Push 'ok' button")
+       
+        n_rows = int(self.table.rowCount())
+        self.table.insertRow(n_rows)
+        self.table.setItem(n_rows, 0, QTableWidgetItem(self.device_name.text()))
+        self.table.setItem(n_rows, 1, QTableWidgetItem(self.server_id.text()))
+
+        mapping_to_check = self.get_new_mapping()[1]
+        is_correct = self.check_mapping(mapping_to_check) 
+        
+        if is_correct:
+            self.add_window.close()
+        else:
+            self.table.removeRow(n_rows)
+
+        self.table.scrollToBottom()
+
     def push_cancel_button(self):
-        self.log("Push 'cancel' button")
-        self.parent().show_frame_load_game_new_game()
+
+        self.add_window.close()
+
+    def push_quit_button(self):
+
+        self.log("Push 'quit' button")
+        self.parent().devices_quit_without_saving()
 
     def push_add_button(self):
-        self.log("Push 'add device' button")
-        self.table.insertRow(self.table.rowCount())
-        self.table.scrollToBottom()
+
+        self.log("Push 'add' button")
+        self.add_window.show()
 
     def push_remove_button(self):
         self.log("Push 'remove device' button")
-        self.table.removeRow(self.table.currentRow())
+
+        if self.table.currentRow():
+            self.table.removeRow(self.table.currentRow())
+        else:
+            self.show_info(msg="Please select a device to remove.")
 
     def push_scan_button(self):
         self.log("Push 'scan device' button")
@@ -127,6 +200,19 @@ class DevicesFrame(QWidget, Logger):
         self.log("Push 'save' button")
 
         new_mapping, mapping_to_check = self.get_new_mapping()
+        is_correct = self.check_mapping(mapping_to_check)
+
+        if is_correct:
+
+            self.write_map_android_id_server_id(new_mapping)
+            self.show_info(msg="Mapping successfully saved in 'map_android_id_server_id.json'.")
+
+            # update data
+            self.controller.data.setup()
+
+            self.parent().show_frame_load_game_new_game()
+
+    def check_mapping(self, mapping_to_check):
 
         warning = self.check_mapping_validity(mapping_to_check)
 
@@ -134,11 +220,7 @@ class DevicesFrame(QWidget, Logger):
             self.show_warning(msg=warning)
 
         else:
-            self.write_map_android_id_server_id(new_mapping)
-            self.show_info(msg="Mapping successfully saved in 'map_android_id_server_id.json'.")
-
-        # update data
-        self.controller.data.setup()
+            return True
 
     def prepare_table(self):
 
@@ -195,7 +277,7 @@ class DevicesFrame(QWidget, Logger):
         for i, (k, v) in mapping_to_check:
 
             if not str(v).isdigit():
-                return "Wrong input for server id '{}' with key '{}' at row '{}'.".format(v, k, i + 1)
+                return "Wrong input for server id '{}'.".format(v)
 
             for j, (other_k, other_v) in mapping_to_check:
 
@@ -204,7 +286,7 @@ class DevicesFrame(QWidget, Logger):
                 cond2 = i != j
 
                 if cond0 and cond2 or cond1 and cond2:
-                    return "Identical input at row '{}' and '{}'.".format(i + 1, j + 1)
+                    return "Device already exist at row {}.".format(i + 1)
 
     def show_warning(self, **instructions):
 
@@ -234,5 +316,4 @@ class DevicesFrame(QWidget, Logger):
     def close_loading(self):
 
         self.progress_dialog.close()
-        
 
