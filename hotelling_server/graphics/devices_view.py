@@ -1,7 +1,7 @@
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (QWidget, QPushButton, QTableWidget, QTableWidgetItem, QHeaderView, QVBoxLayout, QLabel,
-QMessageBox, QAbstractItemView, QGridLayout, QButtonGroup, QHBoxLayout, QProgressDialog, QLineEdit, QFormLayout,
-QDialog)
+QMessageBox, QAbstractItemView, QGridLayout, QButtonGroup, 
+QHBoxLayout, QProgressDialog, QLineEdit, QFormLayout, QProgressBar, QDialog)
 from multiprocessing import Event
 
 from utils.utils import Logger
@@ -19,6 +19,7 @@ class DevicesFrame(QWidget, Logger):
         self.layout = QVBoxLayout()
 
         self.controller = parent.mod.controller
+        self.old_mapping = self.controller.get_parameters("map_android_id_server_id")
 
         self.quit_button = QPushButton()
         self.save_button = QPushButton()
@@ -30,8 +31,22 @@ class DevicesFrame(QWidget, Logger):
         self.add_window = QDialog(self)
         self.add_window.setLayout(QVBoxLayout())
         self.add_window.setWindowTitle("Add a device")
+        
+        self.progress_bar = QProgressBar()
+        self.label = QLabel("Scanning...")
+
+        self.add_manually_button = QPushButton()
         self.ok_button = QPushButton()
         self.cancel_button = QPushButton()
+        self.cancel_scanning_button = QPushButton()
+
+        self.scanning_widgets = [self.progress_bar,
+            self.label,
+            self.add_manually_button,
+            self.cancel_scanning_button]
+        
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.show_no_device_found)
 
         self.table = QTableWidget()
 
@@ -40,19 +55,12 @@ class DevicesFrame(QWidget, Logger):
     def setup(self):
 
         self.setLayout(self.layout)
-    
+        
+        # ---------------- main frame ------------------------------------ # 
         self.fill_layout()
-
-        self.fill_add_window_layout()
 
         # noinspection PyUnresolvedReferences
         self.quit_button.clicked.connect(self.push_quit_button)
-
-        # noinspection PyUnresolvedReferences
-        self.cancel_button.clicked.connect(self.push_cancel_button)
-
-        # noinspection PyUnresolvedReferences
-        self.ok_button.clicked.connect(self.push_ok_button)
 
         # noinspection PyUnresolvedReferences
         self.add_button.clicked.connect(self.push_add_button)
@@ -63,26 +71,48 @@ class DevicesFrame(QWidget, Logger):
         # noinspection PyUnresolvedReferences
         self.remove_button.clicked.connect(self.push_remove_button)
 
+        # ---------------- add  device window ------------------------------------ # 
+
+        self.fill_add_window_layout()
+
         # noinspection PyUnresolvedReferences
-        self.scan_button.clicked.connect(self.push_scan_button)
+        self.ok_button.clicked.connect(self.push_ok_button)
+
+        # noinspection PyUnresolvedReferences
+        self.cancel_button.clicked.connect(self.push_cancel_button)
+
+        # noinspection PyUnresolvedReferences
+        self.cancel_scanning_button.clicked.connect(self.push_cancel_scanning_button)
+
+        # noinspection PyUnresolvedReferences
+        self.add_manually_button.clicked.connect(self.push_add_manually_button)
+
+        self.progress_bar.setMinimum(0)
+        self.progress_bar.setMaximum(0)
+        self.progress_bar.setMinimumWidth(200)
 
     def fill_add_window_layout(self):
 
-        form_layout = QFormLayout()
+        self.form_layout = QFormLayout()
 
         self.server_id = QLineEdit()
         self.device_name = QLineEdit()
 
-        form_layout.addRow(QLabel("Device name"), self.device_name)
-        form_layout.addRow(QLabel("Server id"), self.server_id)
+        self.form_layout.addRow(QLabel("Device name"), self.device_name)
+        self.form_layout.addRow(QLabel("Server id"), self.server_id)
 
         horizontal_layout = QHBoxLayout()
 
         horizontal_layout.addWidget(self.ok_button, alignment=Qt.AlignRight)
         horizontal_layout.addWidget(self.cancel_button, alignment=Qt.AlignRight)
 
-        self.add_window.layout().addLayout(form_layout)
+        self.add_window.layout().addLayout(self.form_layout)
         self.add_window.layout().addLayout(horizontal_layout)
+
+        self.add_window.layout().addWidget(self.label, alignment=Qt.AlignCenter)
+        self.add_window.layout().addWidget(self.progress_bar, alignment=Qt.AlignCenter)
+        self.add_window.layout().addWidget(self.add_manually_button, alignment=Qt.AlignBottom)
+        self.add_window.layout().addWidget(self.cancel_scanning_button, alignment=Qt.AlignBottom)
 
     def fill_layout(self):
 
@@ -90,11 +120,8 @@ class DevicesFrame(QWidget, Logger):
         self.layout.addWidget(self.table)
 
         # button layout :
-        # | scan network  |
         # | remove | add  |
-        # | quit | save |
-
-        self.layout.addWidget(self.scan_button, stretch=0, alignment=Qt.AlignCenter)
+        # | quit withou | save |
 
         grid_layout = QGridLayout()
 
@@ -122,15 +149,16 @@ class DevicesFrame(QWidget, Logger):
     def prepare_buttons(self):
         
         # main window buttons
-        self.quit_button.setText("Quit")
+        self.quit_button.setText("Cancel")
         self.add_button.setText("Add device")
-        self.save_button.setText("Save")
+        self.save_button.setText("Save and quit")
         self.remove_button.setText("Remove device")
-        self.scan_button.setText("Scan network for new devices...")
 
         # add device window buttons
         self.cancel_button.setText("Cancel")
+        self.cancel_scanning_button.setText("Cancel")
         self.ok_button.setText("Ok")
+        self.add_manually_button.setText("Enter manually")
 
     def push_ok_button(self):
 
@@ -146,24 +174,43 @@ class DevicesFrame(QWidget, Logger):
         
         if is_correct:
             self.add_window.close()
+            self.table.scrollToBottom()
         else:
             self.table.removeRow(n_rows)
 
-        self.table.scrollToBottom()
+    def push_cancel_scanning_button(self): 
+
+        self.log("Push 'cancel scanning' button")
+        self.timer.stop()
+        self.add_window.close()
 
     def push_cancel_button(self):
 
+        self.log("Push 'cancel add device' button")
         self.add_window.close()
 
     def push_quit_button(self):
 
         self.log("Push 'quit' button")
+
         self.parent().devices_quit_without_saving()
 
     def push_add_button(self):
 
         self.log("Push 'add' button")
+        
+        self.show_scanning()
+        self.hide_add_form()
         self.add_window.show()
+
+    def push_add_manually_button(self):
+
+        self.log("Push 'add add_manually_button' button")
+        
+        self.timer.stop()
+
+        self.hide_scanning()
+        self.show_add_form()
 
     def push_remove_button(self):
         self.log("Push 'remove device' button")
@@ -173,30 +220,14 @@ class DevicesFrame(QWidget, Logger):
         else:
             self.show_info(msg="Please select a device to remove.")
 
-    def push_scan_button(self):
-        self.log("Push 'scan device' button")
+    def launch_scan(self):
         
-        # get current json file mapping 
-        old_data = len(self.controller.get_parameters("map_android_id_server_id"))
-        
+        self.timer.start(15000)
+
         self.controller.queue.put(("scan_network_for_new_devices", ))
         
-        self.show_loading(msg="Scanning...")
-        
-        # load new json file mapping 
-        self.controller.data.setup()
-        
-        # get the new config
-        new_data = len(self.controller.get_parameters("map_android_id_server_id"))
-        
-        if old_data == new_data:
-            self.show_warning(msg="No device found.")
-        else:
-            self.show_info(msg="Android device added.")
-
-        self.prepare_table()
-
     def push_save_button(self):
+
         self.log("Push 'save' button")
 
         new_mapping, mapping_to_check = self.get_new_mapping()
@@ -302,18 +333,41 @@ class DevicesFrame(QWidget, Logger):
             QMessageBox.Ok
         )
 
-    def show_loading(self, **instructions):
+    def show_no_device_found(self):
+       
+        self.show_warning(msg="No device found.")
+        self.add_window.close()
+        self.timer.stop()
 
-        self.progress_dialog = QProgressDialog(parent=self)
-        self.progress_dialog.setWindowTitle("Hold on")
-        self.progress_dialog.setModal(True)
-        self.progress_dialog.setLabelText("Scanning...")
-        self.progress_dialog.setMinimum(0)
-        self.progress_dialog.setMaximum(0)
-        self.progress_dialog.setMinimumDuration(0)
-        self.progress_dialog.exec_()
+    def show_device_added(self):
 
-    def close_loading(self):
+        self.show_info(msg="New device added.")
+        self.add_window.close()
+        self.timer.stop()
+        self.prepare_table()
 
-        self.progress_dialog.close()
+    def hide_add_form(self):
 
+        for widget in range(self.form_layout.count()):
+            self.form_layout.itemAt(widget).widget().hide()
+
+        self.ok_button.hide()
+        self.cancel_button.hide()
+
+    def show_add_form(self):
+
+        for widget in range(self.form_layout.count()):
+            self.form_layout.itemAt(widget).widget().show()
+
+        self.ok_button.show()
+        self.cancel_button.show()
+
+    def hide_scanning(self):
+
+        for widget in self.scanning_widgets:
+            widget.hide()
+
+    def show_scanning(self):
+        
+        for widget in self.scanning_widgets:
+            widget.show()

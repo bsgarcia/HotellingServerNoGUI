@@ -209,7 +209,7 @@ class UI(QWidget, Logger):
         self.frames["assign"].prepare()
         self.frames["assign"].show()
 
-    def show_question(self, msg, question="", yes="Yes", no="No"):
+    def show_question(self, msg, question="", yes="Yes", no="No", focus="dont"):
         """question with customs buttons"""
 
         msgbox = QMessageBox()
@@ -218,7 +218,7 @@ class UI(QWidget, Logger):
         msgbox.setIcon(QMessageBox.Question)
         quit = msgbox.addButton(yes, QMessageBox.ActionRole)
         dont = msgbox.addButton(no, QMessageBox.ActionRole)
-        msgbox.setDefaultButton(dont)
+        msgbox.setDefaultButton((quit, dont)[focus=="dont"])
 
         msgbox.exec_()
 
@@ -323,8 +323,9 @@ class UI(QWidget, Logger):
         question = "Quit without saving?"
         yes = "Quit"
         no = "Save and quit"
+        focus = "Quit"
 
-        quit = self.show_question(msg=msg, question=question, yes=yes, no=no)
+        quit = self.show_question(msg=msg, question=question, yes=yes, no=no, focus=focus)
 
         if quit:
             self.show_frame_load_game_new_game()
@@ -347,7 +348,7 @@ class UI(QWidget, Logger):
 
     def stop_scanning_network(self, *args):
         self.log("Controller asks 'stop scanning network'")
-        self.frames["devices"].close_loading()
+        self.frames["devices"].show_device_added()
 
     def look_for_msg(self):
 
