@@ -127,10 +127,7 @@ class UI(QWidget, Logger):
                     if "Updating" in git_output:
                         success = 1
                 if success:
-                    if self.show_question(
-                            "You have to close the app and relaunch it for modifications to apply.",
-                            question="Do you close the app now?", yes="Yes", no="No", focus="Yes"):
-                        self.close()
+                    self.show_info("Updated successfully. Modifications will be effective at the next restart.")
                 else:
                     self.show_warning("An error occured. No modifications have been done.")
 
@@ -290,6 +287,13 @@ class UI(QWidget, Logger):
         QMessageBox().critical(
             self, "", msg,  # Parent, title, message
             QMessageBox.Close
+        )
+
+    def show_info(self, msg):
+
+        QMessageBox().information(
+            self, "", msg,
+            QMessageBox.Ok
         )
 
     def error_loading_session(self):
