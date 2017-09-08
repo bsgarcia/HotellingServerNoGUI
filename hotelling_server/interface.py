@@ -108,19 +108,31 @@ class UI(QWidget, Logger):
     def check_update(self):
         """git <3 <3 <3 TAMERE"""
 
-        out = getoutput("git fetch origin")
-        if out and "remote: Counting objects: " in out:
+        self.log("I check for updates.")
+        git_msg = getoutput("git diff origin/master")
+        self.log("Git message is: '{}'".format(git_msg))
+        if git_msg and "remote: Counting objects: " in git_msg:
             if self.show_question(
                     "An update is available.",
                     question="Do you want to update now?", yes="Yes", no="No", focus="Yes"):
                 git_output = getoutput("git pull")
+                self.log("User wants to update. Git message is: {}".format(git_output))
+                success = 0
                 if "insertions" in git_output or "deletions" in git_output:
+                    success = 1
+                else:
+                    for msg in ["git stash", "git pull", "git stash pop"]:
+                        git_output = getoutput("git stash")
+                        self.log("User wants to update. Command is '{}' Git message is: '{}'".format(msg, git_output))
+                    if "insertions" in git_output or "deletions" in git_output:
+                        success = 1
+                if success:
                     if self.show_question(
                             "You have to close the app and relaunch it for modifications to apply.",
                             question="Do you close the app now?", yes="Yes", no="No", focus="Yes"):
                         self.close()
                 else:
-                    self.show_warning("An error occurs. No modifications have been done.")
+                    self.show_warning("An error occured. No modifications have been done.")
 
     def closeEvent(self, event):
 
