@@ -209,7 +209,7 @@ class UI(QWidget, Logger):
         self.frames["assign"].prepare()
         self.frames["assign"].show()
 
-    def show_question(self, msg, question="", yes="Yes", no="No", focus="dont"):
+    def show_question(self, msg, question="", yes="Yes", no="No", focus="No"):
         """question with customs buttons"""
 
         msgbox = QMessageBox()
@@ -218,7 +218,7 @@ class UI(QWidget, Logger):
         msgbox.setIcon(QMessageBox.Question)
         quit = msgbox.addButton(yes, QMessageBox.ActionRole)
         dont = msgbox.addButton(no, QMessageBox.ActionRole)
-        msgbox.setDefaultButton((quit, dont)[focus=="dont"])
+        msgbox.setDefaultButton((quit, dont)[focus==no])
 
         msgbox.exec_()
 
@@ -327,11 +327,10 @@ class UI(QWidget, Logger):
 
         quit = self.show_question(msg=msg, question=question, yes=yes, no=no, focus=focus)
 
-        if quit:
-            self.show_frame_load_game_new_game()
-        else:
-            self.frames["devices"].push_save_button()
-            self.show_frame_load_game_new_game()
+        if not quit:
+            self.frames["devices"].save_mapping()
+
+        self.show_frame_load_game_new_game()
 
     def fatal_error_of_communication(self):
 

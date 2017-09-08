@@ -19,7 +19,6 @@ class DevicesFrame(QWidget, Logger):
         self.layout = QVBoxLayout()
 
         self.controller = parent.mod.controller
-        self.old_mapping = self.controller.get_parameters("map_android_id_server_id")
 
         self.quit_button = QPushButton()
         self.save_button = QPushButton()
@@ -33,7 +32,7 @@ class DevicesFrame(QWidget, Logger):
         self.add_window.setWindowTitle("Add a device")
         
         self.progress_bar = QProgressBar()
-        self.label = QLabel("Scanning...")
+        self.label_scanning = QLabel("Scanning...")
 
         self.add_manually_button = QPushButton()
         self.ok_button = QPushButton()
@@ -41,7 +40,7 @@ class DevicesFrame(QWidget, Logger):
         self.cancel_scanning_button = QPushButton()
 
         self.scanning_widgets = [self.progress_bar,
-            self.label,
+            self.label_scanning,
             self.add_manually_button,
             self.cancel_scanning_button]
         
@@ -109,7 +108,7 @@ class DevicesFrame(QWidget, Logger):
         self.add_window.layout().addLayout(self.form_layout)
         self.add_window.layout().addLayout(horizontal_layout)
 
-        self.add_window.layout().addWidget(self.label, alignment=Qt.AlignCenter)
+        self.add_window.layout().addWidget(self.label_scanning, alignment=Qt.AlignCenter)
         self.add_window.layout().addWidget(self.progress_bar, alignment=Qt.AlignCenter)
         self.add_window.layout().addWidget(self.add_manually_button, alignment=Qt.AlignBottom)
         self.add_window.layout().addWidget(self.cancel_scanning_button, alignment=Qt.AlignBottom)
@@ -199,6 +198,7 @@ class DevicesFrame(QWidget, Logger):
 
         self.log("Push 'add' button")
         
+        self.label_scanning
         self.show_scanning()
         self.hide_add_form()
         self.add_window.show()
@@ -230,12 +230,10 @@ class DevicesFrame(QWidget, Logger):
 
         self.log("Push 'save' button")
 
-        new_mapping, mapping_to_check = self.get_new_mapping()
-        is_correct = self.check_mapping(mapping_to_check)
+        success = self.save_mapping()
+        
+        if success:
 
-        if is_correct:
-
-            self.write_map_android_id_server_id(new_mapping)
             self.show_info(msg="Mapping successfully saved in 'map_android_id_server_id.json'.")
 
             # update data
@@ -251,7 +249,7 @@ class DevicesFrame(QWidget, Logger):
             self.show_warning(msg=warning)
 
         else:
-            return True
+            return 1
 
     def prepare_table(self):
 
@@ -318,6 +316,17 @@ class DevicesFrame(QWidget, Logger):
 
                 if cond0 and cond2 or cond1 and cond2:
                     return "Device already exist at row {}.".format(i + 1)
+
+    def save_mapping(self):
+
+        new_mapping, mapping_to_check = self.get_new_mapping()
+        is_correct = self.check_mapping(mapping_to_check)
+
+        if is_correct:
+
+            self.write_map_android_id_server_id(new_mapping)
+
+            return 1
 
     def show_warning(self, **instructions):
 
