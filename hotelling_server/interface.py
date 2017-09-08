@@ -111,7 +111,7 @@ class UI(QWidget, Logger):
         getoutput("git fetch")
         git_msg = getoutput("git diff origin/master")
         self.log("Git message is: '{}'".format(git_msg))
-        if git_msg in git_msg:
+        if git_msg:
             if self.show_question(
                     "An update is available.",
                     question="Do you want to update now?", yes="Yes", no="No", focus="Yes"):
