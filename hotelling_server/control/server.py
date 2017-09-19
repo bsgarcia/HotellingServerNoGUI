@@ -82,7 +82,6 @@ class Server(Thread, Logger):
 
         self.shutdown_event = Event()
         self.wait_event = Event()
-        # self.wait_condition = Condition()
 
         self.tcp_server = None
 

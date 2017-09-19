@@ -1,4 +1,4 @@
-from os import path, mkdir
+from os import path, mkdir, getcwd
 import json
 import pickle
 from datetime import datetime
@@ -14,13 +14,15 @@ class Backup(Logger):
 
     @property
     def folder(self):
-        folder = path.expanduser(self.controller.data.param["folders"]["save"])
+        folder = getcwd() + "/results"
 
         if not path.exists(folder):
             mkdir(folder)
         return folder
 
     def write(self, data):
+
+        self.log("Saving data to {}".format(self.file))
 
         with open(self.file, "wb") as file:
             pickle.dump(obj=data, file=file)

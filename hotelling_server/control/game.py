@@ -158,7 +158,7 @@ class Game(Logger):
             self.unexpected_client_id(server_id)
 
     def unexpected_client_id(self, server_id):
-        self.controller.ask_interface("unexpected_client_id", server_id)
+        self.log("Unexpected id: {}".format(server_id))
         self.unexpected_id_list.append(server_id)
 
     def check_remaining_agents(self):
@@ -292,27 +292,31 @@ class Game(Logger):
     # -----------------------------------| init methods |--------------------------------------#
 
     def ask_init(self, android_id):
+        
+        if not self.is_ended():
 
-        server_id, game_id = \
-            self.controller.id_manager.get_ids_from_android_id(android_id, max_n=len(self.data.roles))
+            server_id, game_id = \
+                self.controller.id_manager.get_ids_from_android_id(android_id, max_n=len(self.data.roles))
+            
+            if game_id != -1:
 
-        if game_id != -1:
+                role = self.get_role(server_id)
 
-            role = self.get_role(server_id)
+                if not role:
+                    return "Unknown server id: {}".format(server_id)
 
-            if not role:
-                return "Unknown server id: {}".format(server_id)
+                self.data.roles[game_id] = role
 
-            self.data.roles[game_id] = role
+                if role == "firm":
+                    return self.init_firms(function_name(), game_id, role)
 
-            if role == "firm":
-                return self.init_firms(function_name(), game_id, role)
+                else:
+                    return self.init_customers(function_name(), game_id, role)
 
             else:
-                return self.init_customers(function_name(), game_id, role)
-
+                return "Error with ID manager. Maybe not authorized to participate."
         else:
-            return "Error with ID manager. Maybe not authorized to participate."
+            return "Game ended. Connection refused"
 
     def init_customers(self, func_name, game_id, role):
 
@@ -322,9 +326,6 @@ class Game(Logger):
 
         else:
             customer_id = self.data.customers_id[game_id]
-
-        if self.is_ended():
-            return "error/game_ended"
 
         position, exploration_cost, utility_consumption, utility = self.get_customers_data(customer_id)
 
@@ -354,9 +355,6 @@ class Game(Logger):
         # if device already asked for init, get id
         else:
             firm_id = self.data.firms_id[game_id]
-
-        if self.is_ended():
-            return "error/game_ended"
 
         state, position, price, opp_position, opp_price, profits = self.get_firms_data(firm_id)
 
@@ -501,7 +499,7 @@ class Game(Logger):
 
                     out = self.reply(function_name(), self.time_manager.t, choices, self.check_end(t))
                     
-                    self.firm_end_of_turn(game_id=game_id, firm_id=firm_id, t=t, status="passive")
+                    self.firm_end_of_turn(firm_id=firm_id, t=t, status="passive")
 
                     state = "end_game" if self.check_end(t) else function_name()
                     self.set_state(role="firm", role_id=firm_id, state=state)
@@ -566,7 +564,7 @@ class Game(Logger):
 
                 out = self.reply(function_name(), self.time_manager.t, choices, self.check_end(t))
 
-                self.firm_end_of_turn(game_id=game_id, firm_id=firm_id, t=t, status="active")
+                self.firm_end_of_turn(firm_id=firm_id, t=t, status="active")
                 
                 state = "end_game" if self.check_end(t) else function_name()
                 self.set_state(role="firm", role_id=firm_id, state=state)
