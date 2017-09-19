@@ -1,1 +1,2 @@
-{"ip_local": "localhost", "ip_address": "loc", "ip_autodetect": true, "port": 8081, "local": true}
+
+{"ip_local": "localhost", "ip_address": "5.152.176.254", "ip_autodetect": true, "port": 8081, "local": false}
