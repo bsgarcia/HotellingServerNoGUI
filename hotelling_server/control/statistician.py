@@ -1,4 +1,4 @@
-from pylab import np
+import numpy as np
 from utils.utils import Logger
 
 
